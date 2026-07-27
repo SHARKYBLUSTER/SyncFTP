@@ -307,7 +307,8 @@ def execute_sync_task(task):
         
         success, message, stats = connector.sync_directory_to_ftp(
             task['source_directory'],
-            task['target_directory']
+            task['target_directory'],
+            logger=app.logger
         )
         
         result['success'] = success

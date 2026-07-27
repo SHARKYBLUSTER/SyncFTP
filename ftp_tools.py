@@ -327,21 +327,174 @@ class FTPConnector:
         finally:
             self.disconnect()
     
-    def sync_directory_to_ftp(self, local_dir: str, remote_dir: str) -> Tuple[bool, str, Dict[str, Any]]:
+    def _list_local_files(self, local_dir: str) -> List[str]:
+        """
+        Liste tous les fichiers dans un répertoire local de manière récursive.
+        
+        Args:
+            local_dir: Répertoire local à explorer
+            
+        Returns:
+            List[str]: Liste des chemins relatifs des fichiers
+        """
+        files_list = []
+        local_dir = local_dir.rstrip('/\\')
+        
+        for root, dirs, files in os.walk(local_dir):
+            rel_path = os.path.relpath(root, local_dir)
+            for filename in files:
+                local_file_path = os.path.join(root, filename)
+                if os.path.isfile(local_file_path):
+                    if rel_path == '.':
+                        files_list.append(filename)
+                    else:
+                        files_list.append(os.path.join(rel_path, filename))
+        
+        return files_list
+
+    def _list_remote_files_recursive(self, remote_dir: str = "") -> List[str]:
+        """
+        Liste tous les fichiers dans un répertoire FTP de manière récursive.
+        
+        Args:
+            remote_dir: Répertoire FTP à explorer
+            
+        Returns:
+            List[str]: Liste des chemins relatifs des fichiers
+        """
+        files_list = []
+        
+        try:
+            if not self.is_connected():
+                self.connect()
+            
+            # Sauvegarder le répertoire courant
+            original_dir = self._ftp.pwd()
+            
+            # Naviguer vers le répertoire de départ
+            if remote_dir:
+                try:
+                    self._ftp.cwd(remote_dir)
+                except ftplib.error_perm as e:
+                    return files_list
+            
+            # Fonction récursive pour explorer
+            def explore_directory(current_path=""):
+                try:
+                    file_list = []
+                    self._ftp.retrlines('LIST', lambda x: file_list.append(
+                        x.decode('utf-8', errors='ignore') if isinstance(x, bytes) else x
+                    ))
+                    
+                    for line in file_list:
+                        line_stripped = line.strip()
+                        if not line_stripped:
+                            continue
+                        
+                        # Analyser la ligne LIST
+                        parts = line_stripped.split()
+                        if len(parts) < 9:
+                            continue
+                        
+                        # Extraire le nom (dernière colonne)
+                        item_name = ' '.join(parts[8:])
+                        
+                        if line_stripped.startswith('d'):
+                            # C'est un répertoire, explorer récursivement
+                            try:
+                                self._ftp.cwd(item_name)
+                                explore_directory(current_path + '/' + item_name if current_path else item_name)
+                                self._ftp.cwd('..')
+                            except ftplib.error_perm:
+                                # Ignorer les répertoires inaccessible
+                                pass
+                        elif line_stripped.startswith('-'):
+                            # C'est un fichier
+                            if current_path:
+                                files_list.append(current_path + '/' + item_name)
+                            else:
+                                files_list.append(item_name)
+                            
+                except Exception:
+                    pass
+            
+            explore_directory()
+            
+            # Retourner au répertoire original
+            try:
+                self._ftp.cwd(original_dir)
+            except Exception:
+                pass
+                
+        except Exception:
+            pass
+        
+        return files_list
+
+    def _delete_remote_file(self, remote_path: str) -> Tuple[bool, str]:
+        """
+        Supprime un fichier du serveur FTP.
+        
+        Args:
+            remote_path: Chemin du fichier distant à supprimer
+            
+        Returns:
+            Tuple[bool, str]: (succès, message)
+        """
+        try:
+            if not self.is_connected():
+                self.connect()
+            
+            # Extraire le nom de fichier et le répertoire
+            remote_dir = os.path.dirname(remote_path)
+            filename = os.path.basename(remote_path)
+            
+            # Naviguer vers le répertoire du fichier
+            if remote_dir:
+                try:
+                    self._ftp.cwd(remote_dir)
+                except ftplib.error_perm:
+                    return False, f"Impossible d'accéder au répertoire: {remote_dir}"
+            
+            # Supprimer le fichier
+            self._ftp.delete(filename)
+            return True, f"Fichier {filename} supprimé avec succès"
+            
+        except ftplib.all_errors as e:
+            return False, f"Erreur FTP lors de la suppression: {e}"
+        except Exception as e:
+            return False, f"Erreur lors de la suppression: {e}"
+
+    def sync_directory_to_ftp(self, local_dir: str, remote_dir: str, logger=None) -> Tuple[bool, str, Dict[str, Any]]:
         """
         Synchronise un répertoire local vers un répertoire FTP.
-        Upload tous les fichiers trouvés.
+        Upload les fichiers manquants et supprime les fichiers orphelins de la cible.
         
         Args:
             local_dir: Répertoire local source
             remote_dir: Répertoire FTP cible
+            logger: Logger optionnel pour les logs
         
         Returns:
             Tuple[bool, str, Dict]: (succès, message, statistiques)
-            Statistiques: {'uploaded': int, 'skipped': int, 'errors': int, 'total_files': int}
+            Statistiques: {
+                'uploaded': int, 'deleted': int, 'skipped': int, 'errors': int,
+                'source_file_count': int, 'target_file_count': int,
+                'uploaded_files': List[str], 'deleted_files': List[str]
+            }
         """
         import time
-        stats = {'uploaded': 0, 'skipped': 0, 'errors': 0, 'total_files': 0}
+        import logging
+        
+        # Utiliser le logger fourni ou un logger par défaut
+        if logger is None:
+            logger = logging.getLogger(__name__)
+        
+        stats = {
+            'uploaded': 0, 'deleted': 0, 'skipped': 0, 'errors': 0,
+            'source_file_count': 0, 'target_file_count': 0,
+            'uploaded_files': [], 'deleted_files': []
+        }
         
         try:
             if not self.is_connected():
@@ -359,34 +512,50 @@ class FTPConnector:
                 self._create_remote_directory(remote_dir)
                 self._ftp.cwd(remote_dir)
             
-            # Parcourir le répertoire local
-            for root, dirs, files in os.walk(local_dir):
-                # Calculer le chemin relatif
-                rel_path = os.path.relpath(root, local_dir)
+            # Lister les fichiers source et cible
+            logger.info(f"Connexion au serveur FTP établie. Répertoire cible: {self._ftp.pwd()}")
+            
+            source_files = self._list_local_files(local_dir)
+            stats['source_file_count'] = len(source_files)
+            logger.info(f"Nombre de fichiers dans la source: {stats['source_file_count']}")
+            
+            remote_files = self._list_remote_files_recursive()
+            stats['target_file_count'] = len(remote_files)
+            logger.info(f"Nombre de fichiers dans le FTP cible: {stats['target_file_count']}")
+            
+            # Convertir les listes en sets pour comparaison
+            source_set = set(source_files)
+            remote_set = set(remote_files)
+            
+            # Fichiers à uploader (présents dans source mais pas dans remote)
+            files_to_upload = source_set - remote_set
+            # Fichiers à supprimer (présents dans remote mais pas dans source)
+            files_to_delete = remote_set - source_set
+            
+            # Upload des fichiers manquants
+            for relative_path in sorted(files_to_upload):
+                local_file_path = os.path.join(local_dir, relative_path)
                 
-                # Si ce n'est pas le répertoire racine, changer de répertoire distant
-                if rel_path != '.':
-                    try:
-                        self._ftp.cwd(rel_path)
-                    except ftplib.error_perm:
-                        self._create_remote_directory(rel_path)
-                        self._ftp.cwd(rel_path)
-                
-                # Traiter chaque fichier
-                for filename in files:
-                    stats['total_files'] += 1
-                    local_file_path = os.path.join(root, filename)
+                try:
+                    # Extraire le répertoire et le nom de fichier
+                    file_dir = os.path.dirname(relative_path)
+                    filename = os.path.basename(relative_path)
                     
-                    # Skip directories (already handled by os.walk)
-                    if not os.path.isfile(local_file_path):
-                        continue
+                    # Naviguer vers le répertoire distant
+                    if file_dir:
+                        try:
+                            self._ftp.cwd(file_dir)
+                        except ftplib.error_perm:
+                            self._create_remote_directory(file_dir)
+                            self._ftp.cwd(file_dir)
                     
                     # Upload le fichier avec retry
+                    success = False
                     for attempt in range(3):
                         try:
                             with open(local_file_path, 'rb') as f:
                                 self._ftp.storbinary(f'STOR {filename}', f)
-                            stats['uploaded'] += 1
+                            success = True
                             break
                         except ftplib.all_errors as e:
                             if attempt < 2:
@@ -400,22 +569,72 @@ class FTPConnector:
                                     # Naviguer à nouveau
                                     if remote_dir:
                                         self._ftp.cwd(remote_dir)
-                                    if rel_path != '.':
-                                        self._ftp.cwd(rel_path)
+                                    if file_dir:
+                                        self._ftp.cwd(file_dir)
                                 except Exception:
                                     pass
-                            else:
-                                stats['errors'] += 1
-                        except Exception as e:
-                            stats['errors'] += 1
-                            break
+                    
+                    if success:
+                        stats['uploaded'] += 1
+                        stats['uploaded_files'].append(relative_path)
+                        logger.info(f"Fichier écrit sur le FTP: {relative_path}")
+                    else:
+                        stats['errors'] += 1
+                        
+                    # Retourner au répertoire de base
+                    try:
+                        self._ftp.cwd(remote_dir)
+                    except Exception:
+                        pass
+                        
+                except Exception as e:
+                    stats['errors'] += 1
+                    logger.error(f"Erreur lors de l'upload de {relative_path}: {e}")
+            
+            # Suppression des fichiers orphelins
+            for relative_path in sorted(files_to_delete):
+                try:
+                    # Extraire le répertoire et le nom de fichier
+                    file_dir = os.path.dirname(relative_path)
+                    filename = os.path.basename(relative_path)
+                    
+                    # Naviguer vers le répertoire distant
+                    if file_dir:
+                        try:
+                            self._ftp.cwd(file_dir)
+                        except ftplib.error_perm:
+                            # Ne pas supprimer si on ne peut pas accéder au répertoire
+                            continue
+                    
+                    # Supprimer le fichier
+                    self._ftp.delete(filename)
+                    stats['deleted'] += 1
+                    stats['deleted_files'].append(relative_path)
+                    logger.warning(f"Fichier supprimé du FTP: {relative_path}")
+                    
+                    # Retourner au répertoire de base
+                    try:
+                        self._ftp.cwd(remote_dir)
+                    except Exception:
+                        pass
+                        
+                except ftplib.all_errors as e:
+                    stats['errors'] += 1
+                    logger.error(f"Erreur lors de la suppression de {relative_path}: {e}")
+                except Exception as e:
+                    stats['errors'] += 1
+                    logger.error(f"Erreur inattendue lors de la suppression de {relative_path}: {e}")
             
             success = stats['errors'] == 0
-            message = f"Synchronisation terminée: {stats['uploaded']} fichiers uploadés, {stats['errors']} erreurs"
+            message = (f"Synchronisation terminée: {stats['uploaded']} fichiers uploadés, "
+                      f"{stats['deleted']} fichiers supprimés, {stats['errors']} erreurs")
+            
+            logger.info(message)
             
             return success, message, stats
             
         except Exception as e:
+            logger.error(f"Erreur lors de la synchronisation: {e}")
             return False, f"Erreur lors de la synchronisation: {e}", stats
         finally:
             try:
