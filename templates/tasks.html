@@ -1,0 +1,794 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{{ app_name }} - Tâches de synchronisation</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
+        }
+        
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+        
+        header {
+            background: white;
+            padding: 30px;
+            border-radius: 15px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.2);
+            margin-bottom: 30px;
+            text-align: center;
+        }
+        
+        h1 {
+            color: #667eea;
+            font-size: 2.5em;
+            margin-bottom: 10px;
+        }
+        
+        .subtitle {
+            color: #666;
+            font-size: 1.1em;
+        }
+        
+        .section {
+            background: white;
+            padding: 25px;
+            border-radius: 15px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.2);
+            margin-bottom: 30px;
+        }
+        
+        .section-title {
+            font-size: 1.5em;
+            color: #667eea;
+            margin-bottom: 20px;
+            padding-bottom: 10px;
+            border-bottom: 3px solid #667eea;
+        }
+        
+        /* Menu de navigation */
+        .nav-menu {
+            display: flex;
+            gap: 15px;
+            margin-bottom: 25px;
+            justify-content: center;
+            flex-wrap: wrap;
+        }
+        
+        .nav-btn {
+            display: inline-block;
+            padding: 15px 30px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border: none;
+            border-radius: 8px;
+            font-size: 16px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: transform 0.2s, box-shadow 0.2s;
+            text-decoration: none;
+        }
+        
+        .nav-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(102, 126, 234, 0.4);
+        }
+        
+        /* Formulaire */
+        .form-group {
+            margin-bottom: 20px;
+        }
+        
+        .form-group label {
+            display: block;
+            margin-bottom: 8px;
+            font-weight: 600;
+            color: #333;
+        }
+        
+        .form-group input[type="text"],
+        .form-group input[type="number"],
+        .form-group select {
+            width: 100%;
+            padding: 12px;
+            border: 2px solid #e0e0e0;
+            border-radius: 8px;
+            font-size: 16px;
+            transition: border-color 0.3s;
+        }
+        
+        .form-group input:focus,
+        .form-group select:focus {
+            outline: none;
+            border-color: #667eea;
+        }
+        
+        .form-row {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 20px;
+        }
+        
+        /* Boutons */
+        .btn {
+            display: inline-block;
+            padding: 12px 30px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border: none;
+            border-radius: 8px;
+            font-size: 16px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: transform 0.2s, box-shadow 0.2s;
+        }
+        
+        .btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(102, 126, 234, 0.4);
+        }
+        
+        .btn-secondary {
+            background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
+        }
+        
+        .btn-success {
+            background: linear-gradient(135deg, #28a745 0%, #218838 100%);
+        }
+        
+        .btn-danger {
+            background: linear-gradient(135deg, #ff6b6b 0%, #ee5a52 100%);
+        }
+        
+        .btn-warning {
+            background: linear-gradient(135deg, #ffc107 0%, #ff8c00 100%);
+        }
+        
+        /* Carte de tâche */
+        .task-card {
+            background: #f8f9fa;
+            padding: 20px;
+            border-radius: 10px;
+            border-left: 5px solid #667eea;
+            margin-bottom: 15px;
+            transition: transform 0.2s;
+        }
+        
+        .task-card:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 5px 15px rgba(0,0,0,0.1);
+        }
+        
+        .task-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 15px;
+        }
+        
+        .task-header h3 {
+            color: #667eea;
+            font-size: 1.2em;
+            margin: 0;
+        }
+        
+        .task-info {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 10px;
+            margin-bottom: 15px;
+        }
+        
+        .info-item {
+            font-size: 0.95em;
+        }
+        
+        .info-item strong {
+            color: #333;
+        }
+        
+        .info-item span {
+            color: #666;
+        }
+        
+        .task-actions {
+            display: flex;
+            gap: 10px;
+            flex-wrap: wrap;
+        }
+        
+        /* Status badge */
+        .status-badge {
+            display: inline-block;
+            padding: 4px 12px;
+            border-radius: 20px;
+            font-size: 0.85em;
+            font-weight: 600;
+        }
+        
+        .status-badge.enabled {
+            background: #d4edda;
+            color: #155724;
+        }
+        
+        .status-badge.disabled {
+            background: #f8d7da;
+            color: #721c24;
+        }
+        
+        /* Modal */
+        .modal {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0,0,0,0.5);
+            z-index: 1000;
+            align-items: center;
+            justify-content: center;
+        }
+        
+        .modal.show {
+            display: flex;
+        }
+        
+        .modal-content {
+            background: white;
+            padding: 30px;
+            border-radius: 15px;
+            width: 90%;
+            max-width: 600px;
+            max-height: 80vh;
+            overflow-y: auto;
+        }
+        
+        .modal-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+        }
+        
+        .modal-header h2 {
+            color: #667eea;
+            font-size: 1.5em;
+        }
+        
+        .close-btn {
+            background: none;
+            border: none;
+            font-size: 24px;
+            cursor: pointer;
+            color: #999;
+        }
+        
+        .close-btn:hover {
+            color: #333;
+        }
+        
+        .modal-body {
+            margin-bottom: 20px;
+        }
+        
+        .modal-footer {
+            display: flex;
+            justify-content: flex-end;
+            gap: 10px;
+        }
+        
+        /* Loading spinner */
+        .loading {
+            display: inline-block;
+            width: 20px;
+            height: 20px;
+            border: 3px solid rgba(255,255,255,.3);
+            border-radius: 50%;
+            border-top-color: white;
+            animation: spin 1s ease-in-out infinite;
+        }
+        
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+        
+        /* Empty state */
+        .empty-state {
+            text-align: center;
+            padding: 40px;
+            color: #999;
+        }
+        
+        /* Task form section */
+        .task-form {
+            background: #f8f9fa;
+            padding: 20px;
+            border-radius: 10px;
+            margin-bottom: 20px;
+        }
+        
+        .form-actions {
+            display: flex;
+            gap: 10px;
+            justify-content: flex-end;
+            margin-top: 20px;
+        }
+        
+        /* Stats display */
+        .task-stats {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+            gap: 10px;
+            margin-top: 10px;
+            padding: 10px;
+            background: white;
+            border-radius: 8px;
+        }
+        
+        .stat-item {
+            text-align: center;
+            padding: 8px;
+            border-radius: 5px;
+            background: #f8f9fa;
+        }
+        
+        .stat-item .value {
+            font-weight: bold;
+            color: #667eea;
+            font-size: 1.2em;
+        }
+        
+        .stat-item .label {
+            font-size: 0.85em;
+            color: #666;
+        }
+        
+        @media (max-width: 768px) {
+            .nav-menu {
+                flex-direction: column;
+                align-items: center;
+            }
+            
+            .nav-btn {
+                width: 80%;
+                margin-bottom: 10px;
+            }
+            
+            .form-row {
+                grid-template-columns: 1fr;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>🚀 {{ app_name }}</h1>
+            <p class="subtitle">Gérez et testez vos connexions FTP facilement</p>
+        </header>
+        
+        <!-- Menu de navigation -->
+        <div class="section">
+            <div class="nav-menu">
+                <a href="/" class="nav-btn">🏠 TABLEAU DE BORD</a>
+                <a href="/add" class="nav-btn">➕ AJOUTER SERVEUR FTP</a>
+                <a href="/list" class="nav-btn">📋 LISTE DES SERVEURS</a>
+                <a href="/tasks" class="nav-btn">🔄 TACHES DE SYNC</a>
+                <a href="/logs" class="nav-btn">📜 LOGS</a>
+                <a href="/config" class="nav-btn">⚙️ CONFIGURATION</a>
+            </div>
+        </div>
+        
+        <!-- Section: Ajouter une tâche -->
+        <div class="section">
+            <h2 class="section-title">➕ Ajouter une nouvelle tâche de synchronisation</h2>
+            <div class="task-form">
+                <form id="addTaskForm">
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label for="taskName">Nom de la tâche</label>
+                            <input type="text" id="taskName" name="name" placeholder="Nom de la tâche" required>
+                        </div>
+                        <div class="form-group">
+                            <label for="serverSelect">Serveur FTP</label>
+                            <select id="serverSelect" name="server_id" required>
+                                <option value="">-- Sélectionner un serveur --</option>
+                                {% for server in servers %}
+                                    <option value="{{ server.id }}">{{ server.name }} ({{ server.host }})</option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                    </div>
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label for="sourceDir">Répertoire source (local)</label>
+                            <input type="text" id="sourceDir" name="source_directory" placeholder="ex: C:\\Backup\\Photos" required>
+                        </div>
+                        <div class="form-group">
+                            <label for="targetDir">Répertoire cible (FTP)</label>
+                            <input type="text" id="targetDir" name="target_directory" placeholder="/Backup/Photos" required>
+                        </div>
+                    </div>
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label for="syncInterval">Fréquence (secondes)</label>
+                            <input type="number" id="syncInterval" name="sync_interval" value="60" min="10" required>
+                            <small style="display: block; margin-top: 5px; color: #666;">
+                                Intervalle entre chaque synchronisation automatique
+                            </small>
+                        </div>
+                        <div class="form-group">
+                            <label for="taskEnabled">Activé</label>
+                            <select id="taskEnabled" name="enabled">
+                                <option value="true" selected>✅ Oui</option>
+                                <option value="false">❌ Non</option>
+                            </select>
+                        </div>
+                    </div>
+                    <div class="form-actions">
+                        <button type="button" class="btn btn-success" onclick="addNewTask()">
+                            <span id="addTaskBtnText">AJOUTER TÂCHE</span>
+                            <span id="addTaskBtnLoading" class="loading" style="display: none;"></span>
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+        
+        <!-- Section: Liste des tâches -->
+        <div class="section">
+            <h2 class="section-title">📋 Vos tâches de synchronisation</h2>
+            
+            {% if tasks %}
+                <div id="tasksList">
+                    {% for task in tasks %}
+                        <div class="task-card" data-task-id="{{ task.id }}">
+                            <div class="task-header">
+                                <h3>{{ task.name }}</h3>
+                                <span class="status-badge {% if task.get('enabled', True) %}enabled{% else %}disabled{% endif %}">
+                                    {% if task.get('enabled', True) %}ACTIF{% else %}INACTIF{% endif %}
+                                </span>
+                            </div>
+                            <div class="task-info">
+                                <div class="info-item">
+                                    <strong>Serveur:</strong> 
+                                    <span>
+                                        {% for server in servers %}
+                                            {% if server.id == task.server_id %}
+                                                {{ server.name }} ({{ server.host }})
+                                            {% endif %}
+                                        {% endfor %}
+                                    </span>
+                                </div>
+                                <div class="info-item">
+                                    <strong>Source:</strong> <span>{{ task.source_directory }}</span>
+                                </div>
+                                <div class="info-item">
+                                    <strong>Cible:</strong> <span>{{ task.target_directory }}</span>
+                                </div>
+                                <div class="info-item">
+                                    <strong>Intervalle:</strong> <span>{{ task.sync_interval }} secondes</span>
+                                </div>
+                                {% if task.last_run %}
+                                    <div class="info-item">
+                                        <strong>Dernière exécution:</strong> <span>{{ task.last_run[:19] }}</span>
+                                    </div>
+                                {% endif %}
+                            </div>
+                            {% if task.last_result and task.last_result.success %}
+                                <div class="task-stats">
+                                    <div class="stat-item">
+                                        <div class="value">{{ task.last_result.stats.uploaded|default(0) }}</div>
+                                        <div class="label">Fichiers uploadés</div>
+                                    </div>
+                                    <div class="stat-item">
+                                        <div class="value">{{ task.last_result.stats.total_files|default(0) }}</div>
+                                        <div class="label">Total fichiers</div>
+                                    </div>
+                                    <div class="stat-item">
+                                        <div class="value">{{ task.last_result.stats.errors|default(0) }}</div>
+                                        <div class="label">Erreurs</div>
+                                    </div>
+                                </div>
+                            {% endif %}
+                            <div class="task-actions">
+                                <button class="btn" onclick="runTaskNow('{{ task.id }}')" title="Exécuter maintenant">
+                                    ▶️ EXECUTER
+                                </button>
+                                <button class="btn btn-warning" onclick="toggleTask('{{ task.id }}')" title="Activer/Désactiver">
+                                    {% if task.get('enabled', True) %}⏸️ PAUSE{% else %}▶️ REPRENDRE{% endif %}
+                                </button>
+                                <button class="btn btn-secondary" onclick="editTask('{{ task.id }}')" title="Modifier">
+                                    ✏️ MODIFIER
+                                </button>
+                                <button class="btn btn-danger" onclick="deleteTask('{{ task.id }}')" title="Supprimer">
+                                    🗑️ SUPPRIMER
+                                </button>
+                            </div>
+                        </div>
+                    {% endfor %}
+                </div>
+            {% else %}
+                <div class="empty-state">
+                    <p>➖ Aucune tâche de synchronisation configurée</p>
+                    <p style="font-size: 0.9em; color: #ccc;">Ajoutez une tâche via le formulaire ci-dessus</p>
+                </div>
+            {% endif %}
+        </div>
+    </div>
+    
+    <!-- Modal de modification -->
+    <div id="editTaskModal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2>✏️ Modifier la tâche</h2>
+                <button class="close-btn" onclick="closeEditModal()">&times;</button>
+            </div>
+            <div class="modal-body">
+                <form id="editTaskForm">
+                    <input type="hidden" id="editTaskId" name="task_id">
+                    <div class="form-group">
+                        <label for="editTaskName">Nom de la tâche</label>
+                        <input type="text" id="editTaskName" name="name" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="editServerSelect">Serveur FTP</label>
+                        <select id="editServerSelect" name="server_id" required>
+                            <option value="">-- Sélectionner un serveur --</option>
+                            {% for server in servers %}
+                                <option value="{{ server.id }}">{{ server.name }} ({{ server.host }})</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label for="editSourceDir">Répertoire source</label>
+                        <input type="text" id="editSourceDir" name="source_directory" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="editTargetDir">Répertoire cible</label>
+                        <input type="text" id="editTargetDir" name="target_directory" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="editSyncInterval">Fréquence (secondes)</label>
+                        <input type="number" id="editSyncInterval" name="sync_interval" min="10" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="editTaskEnabled">Activé</label>
+                        <select id="editTaskEnabled" name="enabled">
+                            <option value="true">✅ Oui</option>
+                            <option value="false">❌ Non</option>
+                        </select>
+                    </div>
+                </form>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-success" onclick="saveEditTask()">
+                    💾 SAUVEGARDER
+                </button>
+                <button type="button" class="btn btn-secondary" onclick="closeEditModal()">
+                    ANNULER
+                </button>
+            </div>
+        </div>
+    </div>
+    
+    <script>
+        // Ajouter une nouvelle tâche
+        function addNewTask() {
+            const form = document.getElementById('addTaskForm');
+            const formData = new FormData(form);
+            
+            // Afficher le loading
+            document.getElementById('addTaskBtnText').style.display = 'none';
+            document.getElementById('addTaskBtnLoading').style.display = 'inline';
+            
+            fetch('/add_task', {
+                method: 'POST',
+                body: formData
+            })
+            .then(response => {
+                if (response.ok) {
+                    return response.text();
+                }
+                throw new Error('Erreur lors de l\'ajout de la tâche');
+            })
+            .then(() => {
+                // Recharger la page pour voir la nouvelle tâche
+                window.location.reload();
+            })
+            .catch(error => {
+                alert('Erreur: ' + error.message);
+                document.getElementById('addTaskBtnText').style.display = 'inline';
+                document.getElementById('addTaskBtnLoading').style.display = 'none';
+            });
+        }
+        
+        // Exécuter une tâche maintenant
+        function runTaskNow(taskId) {
+            if (confirm('Exécuter cette tâche maintenant?')) {
+                showLoadingOnTask(taskId);
+                
+                fetch(`/run_task/${taskId}`, {
+                    method: 'POST'
+                })
+                .then(response => response.json())
+                .then(result => {
+                    if (result.success) {
+                        alert(`Synchronisation terminée: ${result.message}\nFichiers uploadés: ${result.stats.uploaded || 0}`);
+                        // Recharger la page pour voir les nouveaux résultats
+                        window.location.reload();
+                    } else {
+                        alert('Échec: ' + result.message);
+                    }
+                })
+                .catch(error => {
+                    alert('Erreur: ' + error.message);
+                })
+                .finally(() => {
+                    hideLoadingOnTask(taskId);
+                });
+            }
+        }
+        
+        // Activer/Désactiver une tâche
+        function toggleTask(taskId) {
+            fetch(`/toggle_task/${taskId}`, {
+                method: 'POST'
+            })
+            .then(response => response.json())
+            .then(result => {
+                if (result.success) {
+                    // Recharger la page
+                    window.location.reload();
+                } else {
+                    alert('Erreur: ' + result.message);
+                }
+            })
+            .catch(error => {
+                alert('Erreur: ' + error.message);
+            });
+        }
+        
+        // Supprimer une tâche
+        function deleteTask(taskId) {
+            if (confirm('Êtes-vous sûr de vouloir supprimer cette tâche?')) {
+                fetch(`/delete_task/${taskId}`, {
+                    method: 'POST'
+                })
+                .then(response => response.json())
+                .then(result => {
+                    if (result.success) {
+                        // Supprimer la carte de la tâche de l'interface
+                        const taskCard = document.querySelector(`[data-task-id="${taskId}"]`);
+                        if (taskCard) {
+                            taskCard.remove();
+                        }
+                        
+                        // Vérifier s'il n'y a plus de tâches
+                        if (document.querySelectorAll('.task-card').length === 0) {
+                            document.getElementById('tasksList').innerHTML = `
+                                <div class="empty-state">
+                                    <p>➖ Aucune tâche de synchronisation configurée</p>
+                                    <p style="font-size: 0.9em; color: #ccc;">Ajoutez une tâche via le formulaire ci-dessus</p>
+                                </div>
+                            `;
+                        }
+                    } else {
+                        alert('Erreur: ' + result.message);
+                    }
+                })
+                .catch(error => {
+                    alert('Erreur: ' + error.message);
+                });
+            }
+        }
+        
+        // Ouvrir le modal de modification
+        let currentEditTask = null;
+        
+        function editTask(taskId) {
+            currentEditTask = { id: taskId };
+            
+            // Trouver la tâche dans la liste
+            const taskCard = document.querySelector(`[data-task-id="${taskId}"]`);
+            if (!taskCard) return;
+            
+            // Extraire les informations de la carte
+            const name = taskCard.querySelector('h3').textContent;
+            const serverId = taskCard.dataset.serverId || '';
+            const sourceDir = taskCard.querySelector('.info-item:nth-child(2) span').textContent;
+            const targetDir = taskCard.querySelector('.info-item:nth-child(3) span').textContent;
+            const interval = taskCard.querySelector('.info-item:nth-child(4) span').textContent.replace(' secondes', '');
+            const enabled = taskCard.querySelector('.status-badge.enabled') !== null;
+            
+            // Remplir le formulaire
+            document.getElementById('editTaskId').value = taskId;
+            document.getElementById('editTaskName').value = name;
+            document.getElementById('editServerSelect').value = serverId;
+            document.getElementById('editSourceDir').value = sourceDir;
+            document.getElementById('editTargetDir').value = targetDir;
+            document.getElementById('editSyncInterval').value = interval;
+            document.getElementById('editTaskEnabled').value = enabled ? 'true' : 'false';
+            
+            // Ouvrir le modal
+            document.getElementById('editTaskModal').classList.add('show');
+        }
+        
+        // Fermer le modal de modification
+        function closeEditModal() {
+            document.getElementById('editTaskModal').classList.remove('show');
+            currentEditTask = null;
+        }
+        
+        // Sauvegarder la modification
+        function saveEditTask() {
+            const form = document.getElementById('editTaskForm');
+            const formData = new FormData(form);
+            const taskId = document.getElementById('editTaskId').value;
+            
+            fetch(`/update_task/${taskId}`, {
+                method: 'POST',
+                body: formData
+            })
+            .then(response => response.json())
+            .then(result => {
+                if (result.success) {
+                    closeEditModal();
+                    window.location.reload();
+                } else {
+                    alert('Erreur: ' + result.message);
+                }
+            })
+            .catch(error => {
+                alert('Erreur: ' + error.message);
+            });
+        }
+        
+        // Afficher le loading sur une carte de tâche
+        function showLoadingOnTask(taskId) {
+            const taskCard = document.querySelector(`[data-task-id="${taskId}"]`);
+            if (taskCard) {
+                const actions = taskCard.querySelector('.task-actions');
+                if (actions) {
+                    const loadingSpan = document.createElement('span');
+                    loadingSpan.className = 'loading';
+                    loadingSpan.style.marginLeft = '10px';
+                    actions.prepend(loadingSpan);
+                }
+            }
+        }
+        
+        // Masquer le loading sur une carte de tâche
+        function hideLoadingOnTask(taskId) {
+            const taskCard = document.querySelector(`[data-task-id="${taskId}"]`);
+            if (taskCard) {
+                const loading = taskCard.querySelector('.loading');
+                if (loading) {
+                    loading.remove();
+                }
+            }
+        }
+        
+        // Fermer le modal en cliquant à l'extérieur
+        document.getElementById('editTaskModal').addEventListener('click', function(e) {
+            if (e.target === this) {
+                closeEditModal();
+            }
+        });
+    </script>
+</body>
+</html>

@@ -16,6 +16,8 @@ import os
 import json
 import argparse
 import logging
+import threading
+import time
 from datetime import datetime, timedelta
 from flask import Flask, render_template, request, jsonify, redirect, url_for
 from ftp_tools import FTPConfig, FTPConnector
@@ -23,6 +25,7 @@ from ftp_tools import FTPConfig, FTPConnector
 # Configuration
 APP_NAME = "FTP Server Manager"
 DATA_FILE = "ftp_servers.json"
+TASKS_FILE = "sync_tasks.json"
 LOG_FILE = "app.log"
 CONFIG_FILE = "config.json"
 LOG_FORMAT = "[%(asctime)s] %(levelname)s: %(message)s"
@@ -224,12 +227,201 @@ def test_ftp_connection(server):
     return result
 
 
+# ==================== Gestion des tâches de synchronisation ====================
+
+sync_lock = threading.Lock()
+sync_tasks = []
+sync_threads = {}
+sync_stop_event = threading.Event()
+
+
+def load_tasks():
+    """Charge la liste des tâches de synchronisation depuis le fichier JSON"""
+    if not os.path.exists(TASKS_FILE):
+        return []
+    try:
+        with open(TASKS_FILE, 'r', encoding='utf-8') as f:
+            return json.load(f)
+    except Exception as e:
+        app.logger.error(f"Erreur lors du chargement des tâches: {e}")
+        return []
+
+
+def save_tasks(tasks):
+    """Sauvegarde la liste des tâches de synchronisation dans le fichier JSON"""
+    try:
+        with open(TASKS_FILE, 'w', encoding='utf-8') as f:
+            json.dump(tasks, f, indent=2, ensure_ascii=False)
+        app.logger.info(f"Tâches sauvegardées ({len(tasks)} tâches)")
+    except Exception as e:
+        app.logger.error(f"Erreur lors de la sauvegarde des tâches: {e}")
+
+
+def get_server_by_id(server_id):
+    """Récupère un serveur par son ID"""
+    servers = load_servers()
+    return next((s for s in servers if s['id'] == server_id), None)
+
+
+def execute_sync_task(task):
+    """
+    Exécute une tâche de synchronisation unique
+    
+    Args:
+        task: Dictionnaire contenant les informations de la tâche
+    
+    Returns:
+        dict: Résultat de la synchronisation
+    """
+    result = {
+        'task_id': task['id'],
+        'success': False,
+        'message': '',
+        'stats': {},
+        'timestamp': datetime.now().isoformat()
+    }
+    
+    try:
+        # Récupérer le serveur
+        server = get_server_by_id(task['server_id'])
+        if not server:
+            result['message'] = f"Serveur non trouvé: {task['server_id']}"
+            app.logger.error(result['message'])
+            return result
+        
+        # Créer la configuration FTP
+        config = FTPConfig(
+            host=server['host'],
+            port=int(server.get('port', 21)),
+            username=server.get('username', 'anonymous'),
+            password=server.get('password', ''),
+            use_ssl=server.get('use_ssl', False),
+            timeout=int(server.get('timeout', 30))
+        )
+        
+        connector = FTPConnector(config)
+        
+        # Exécuter la synchronisation
+        app.logger.info(f"Exécution de la tâche {task['id']}: {task['name']}")
+        app.logger.info(f"Source: {task['source_directory']} -> Cible: {task['target_directory']}")
+        
+        success, message, stats = connector.sync_directory_to_ftp(
+            task['source_directory'],
+            task['target_directory']
+        )
+        
+        result['success'] = success
+        result['message'] = message
+        result['stats'] = stats
+        
+        if success:
+            app.logger.info(f"Tâche {task['id']} terminée avec succès: {stats.get('uploaded', 0)} fichiers synchronisés")
+        else:
+            app.logger.error(f"Échec de la tâche {task['id']}: {message}")
+        
+        # Mettre à jour le dernier statut de la tâche
+        tasks = load_tasks()
+        for t in tasks:
+            if t['id'] == task['id']:
+                t['last_run'] = datetime.now().isoformat()
+                t['last_result'] = result
+                break
+        save_tasks(tasks)
+        
+    except Exception as e:
+        result['message'] = f"Erreur: {e}"
+        app.logger.error(f"Erreur lors de l'exécution de la tâche {task['id']}: {e}")
+    
+    return result
+
+
+def sync_worker(task):
+    """
+    Worker thread qui exécute une tâche de synchronisation périodiquement
+    
+    Args:
+        task: Dictionnaire contenant les informations de la tâche
+    """
+    task_id = task['id']
+    interval = task.get('sync_interval', 60)  # en secondes
+    
+    app.logger.info(f"Démarrage du worker pour la tâche {task_id} (intervalle: {interval}s)")
+    
+    # Exécuter immédiatement la première synchronisation
+    if not sync_stop_event.is_set():
+        execute_sync_task(task)
+    
+    # Boucle principale
+    while not sync_stop_event.is_set():
+        try:
+            # Attendre l'intervalle
+            time.sleep(interval)
+            
+            # Vérifier si la tâche existe toujours
+            tasks = load_tasks()
+            task_exists = any(t['id'] == task_id for t in tasks)
+            if not task_exists:
+                break
+            
+            # Exécuter la synchronisation
+            if not sync_stop_event.is_set():
+                execute_sync_task(task)
+                
+        except Exception as e:
+            app.logger.error(f"Erreur dans le worker de la tâche {task_id}: {e}")
+            break
+    
+    app.logger.info(f"Worker pour la tâche {task_id} arrêté")
+
+
+def start_sync_threads():
+    """Démarre les threads de synchronisation pour toutes les tâches actives"""
+    global sync_threads
+    
+    sync_stop_event.clear()
+    
+    # Arrêter les threads existants
+    for thread in sync_threads.values():
+        if thread.is_alive():
+            thread.join(timeout=1)
+    sync_threads = {}
+    
+    # Charger les tâches
+    tasks = load_tasks()
+    
+    # Démarrer un thread pour chaque tâche active
+    for task in tasks:
+        if task.get('enabled', True):
+            thread = threading.Thread(
+                target=sync_worker,
+                args=(task,),
+                daemon=True,
+                name=f"SyncWorker-{task['id']}"
+            )
+            thread.start()
+            sync_threads[task['id']] = thread
+            app.logger.info(f"Thread de synchronisation démarré pour: {task['name']}")
+
+
+def stop_sync_threads():
+    """Arrête tous les threads de synchronisation"""
+    global sync_threads
+    sync_stop_event.set()
+    
+    for thread in sync_threads.values():
+        if thread.is_alive():
+            thread.join(timeout=2)
+    sync_threads = {}
+    app.logger.info("Tous les threads de synchronisation arrêtés")
+
+
 # Routes
 @app.route('/')
 def index():
     """Page d'accueil - tableau de bord"""
     servers = load_servers()
-    return render_template('index.html', server_count=len(servers), app_name=APP_NAME)
+    tasks = load_tasks()
+    return render_template('index.html', server_count=len(servers), task_count=len(tasks), app_name=APP_NAME)
 
 
 @app.route('/add')
@@ -381,6 +573,143 @@ def api_servers():
     return jsonify(servers)
 
 
+# Routes pour les tâches de synchronisation
+@app.route('/tasks')
+def tasks_page():
+    """Page des tâches de synchronisation"""
+    tasks = load_tasks()
+    servers = load_servers()
+    # Masquer les mots de passe
+    for server in servers:
+        server['password'] = '********' if server.get('password') else ''
+    return render_template('tasks.html', tasks=tasks, servers=servers, app_name=APP_NAME)
+
+
+@app.route('/api/tasks', methods=['GET'])
+def api_tasks():
+    """API: Retourne la liste des tâches"""
+    tasks = load_tasks()
+    return jsonify(tasks)
+
+
+@app.route('/add_task', methods=['POST'])
+def add_task():
+    """Ajoute une nouvelle tâche de synchronisation"""
+    data = request.form.to_dict()
+    
+    # Générer un ID unique
+    import uuid
+    task_id = str(uuid.uuid4())
+    
+    task = {
+        'id': task_id,
+        'name': data.get('name', f"Tâche {datetime.now().strftime('%Y%m%d_%H%M%S')}"),
+        'server_id': data.get('server_id', ''),
+        'source_directory': data.get('source_directory', ''),
+        'target_directory': data.get('target_directory', ''),
+        'sync_interval': int(data.get('sync_interval', 60)),
+        'enabled': data.get('enabled') == 'true',
+        'created_at': datetime.now().isoformat(),
+        'last_run': None,
+        'last_result': None
+    }
+    
+    tasks = load_tasks()
+    tasks.append(task)
+    save_tasks(tasks)
+    
+    app.logger.info(f"Tâche de synchronisation ajoutée: {task['name']}")
+    
+    # Démarrer le thread pour cette nouvelle tâche
+    start_sync_threads()
+    
+    return redirect(url_for('tasks_page'))
+
+
+@app.route('/update_task/<task_id>', methods=['POST'])
+def update_task(task_id):
+    """Met à jour une tâche de synchronisation"""
+    data = request.form.to_dict()
+    
+    tasks = load_tasks()
+    task = next((t for t in tasks if t['id'] == task_id), None)
+    
+    if not task:
+        return jsonify({'success': False, 'message': 'Tâche non trouvée'}), 404
+    
+    # Mettre à jour les champs
+    task['name'] = data.get('name', task['name'])
+    task['server_id'] = data.get('server_id', task['server_id'])
+    task['source_directory'] = data.get('source_directory', task['source_directory'])
+    task['target_directory'] = data.get('target_directory', task['target_directory'])
+    task['sync_interval'] = int(data.get('sync_interval', task['sync_interval']))
+    task['enabled'] = data.get('enabled') == 'true'
+    
+    save_tasks(tasks)
+    
+    app.logger.info(f"Tâche mise à jour: {task['name']}")
+    
+    # Redémarrer les threads pour appliquer les changements
+    start_sync_threads()
+    
+    return jsonify({'success': True, 'message': 'Tâche mise à jour avec succès'})
+
+
+@app.route('/delete_task/<task_id>', methods=['POST'])
+def delete_task(task_id):
+    """Supprime une tâche de synchronisation"""
+    tasks = load_tasks()
+    tasks = [t for t in tasks if t['id'] != task_id]
+    save_tasks(tasks)
+    
+    # Arrêter le thread associé
+    if task_id in sync_threads:
+        sync_stop_event.set()
+        if sync_threads[task_id].is_alive():
+            sync_threads[task_id].join(timeout=1)
+        del sync_threads[task_id]
+        sync_stop_event.clear()
+    
+    app.logger.info(f"Tâche supprimée: {task_id}")
+    
+    return jsonify({'success': True, 'message': 'Tâche supprimée avec succès'})
+
+
+@app.route('/run_task/<task_id>', methods=['POST'])
+def run_task(task_id):
+    """Exécute immédiatement une tâche de synchronisation"""
+    tasks = load_tasks()
+    task = next((t for t in tasks if t['id'] == task_id), None)
+    
+    if not task:
+        return jsonify({'success': False, 'message': 'Tâche non trouvée'}), 404
+    
+    result = execute_sync_task(task)
+    
+    return jsonify(result)
+
+
+@app.route('/toggle_task/<task_id>', methods=['POST'])
+def toggle_task(task_id):
+    """Active ou désactive une tâche"""
+    tasks = load_tasks()
+    task = next((t for t in tasks if t['id'] == task_id), None)
+    
+    if not task:
+        return jsonify({'success': False, 'message': 'Tâche non trouvée'}), 404
+    
+    task['enabled'] = not task.get('enabled', True)
+    save_tasks(tasks)
+    
+    # Redémarrer les threads
+    start_sync_threads()
+    
+    action = "activée" if task['enabled'] else "désactivée"
+    app.logger.info(f"Tâche {action}: {task['name']}")
+    
+    return jsonify({'success': True, 'enabled': task['enabled'], 'message': f"Tâche {action}"})
+
+
 if __name__ == '__main__':
     # Parsing des arguments CLI
     parser = argparse.ArgumentParser(description='FTP Server Manager')
@@ -403,6 +732,15 @@ if __name__ == '__main__':
     app.logger.info(f"Chargé {len(servers)} configurations de serveurs FTP")
     for server in servers:
         app.logger.info(f"  - {server['name']}: {server['host']}")
+    
+    # Chargement des tâches de synchronisation
+    tasks = load_tasks()
+    app.logger.info(f"Chargé {len(tasks)} tâches de synchronisation")
+    for task in tasks:
+        app.logger.info(f"  - {task['name']}: {task['source_directory']} -> {task['target_directory']} (toutes les {task['sync_interval']}s)")
+    
+    # Démarrer les threads de synchronisation
+    start_sync_threads()
     
     # Lancement du serveur Flask
     app.run(host=args.host, port=args.port, debug=False)

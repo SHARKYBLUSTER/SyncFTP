@@ -8,6 +8,7 @@ __pycache__/
 
 # Flask/JSON data
 ftp_servers.json
+sync_tasks.json
 instance/
 
 # Logs
