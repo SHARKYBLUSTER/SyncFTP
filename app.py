@@ -136,9 +136,21 @@ def test_ftp_connection(server):
 # Routes
 @app.route('/')
 def index():
-    """Page principale"""
+    """Page principale - liste des serveurs"""
     servers = load_servers()
-    return render_template('index.html', servers=servers, app_name=APP_NAME)
+    return render_template('list.html', servers=servers, app_name=APP_NAME)
+
+
+@app.route('/add')
+def add_page():
+    """Page d'ajout d'un serveur FTP"""
+    return render_template('add.html', app_name=APP_NAME)
+
+
+@app.route('/list')
+def list_servers():
+    """Page de liste des serveurs (redirige vers /)"""
+    return redirect(url_for('index'))
 
 
 @app.route('/add_server', methods=['POST'])
