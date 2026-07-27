@@ -60,6 +60,32 @@ def setup_logging(verbose=False, silent=False):
     app.logger.setLevel(log_level)
 
 
+def apply_log_level_from_config():
+    """Applique le niveau de log basé sur la configuration actuelle"""
+    global file_handler, stream_handler
+    
+    config = load_config()
+    log_level_map = {
+        'DEBUG': logging.DEBUG,
+        'INFO': logging.INFO,
+        'WARNING': logging.WARNING,
+        'ERROR': logging.ERROR
+    }
+    
+    # Si debug_logging_enabled est vrai, forcer le niveau à DEBUG
+    debug_enabled = config.get('debug_logging_enabled', False)
+    if debug_enabled:
+        new_level = logging.DEBUG
+    else:
+        new_level = log_level_map.get(config.get('log_level', 'INFO'), logging.INFO)
+    
+    app.logger.setLevel(new_level)
+    if file_handler:
+        file_handler.setLevel(new_level)
+    if stream_handler:
+        stream_handler.setLevel(new_level)
+
+
 def get_logs():
     """Récupère le contenu du fichier de logs (du plus récent au plus ancien)"""
     if not os.path.exists(LOG_FILE):
@@ -762,21 +788,7 @@ def api_config():
         save_config(config)
         
         # Appliquer le nouveau niveau de log
-        log_level_map = {
-            'DEBUG': logging.DEBUG,
-            'INFO': logging.INFO,
-            'WARNING': logging.WARNING,
-            'ERROR': logging.ERROR
-        }
-        
-        # Si debug_logging_enabled est vrai, forcer le niveau à DEBUG
-        debug_enabled = config.get('debug_logging_enabled', False)
-        if debug_enabled:
-            new_level = logging.DEBUG
-        else:
-            new_level = log_level_map.get(config.get('log_level', 'INFO'), logging.INFO)
-        
-        app.logger.setLevel(new_level)
+        apply_log_level_from_config()
         
         # Nettoyer les logs si la rétention a changé
         cleanup_old_logs()
@@ -1183,6 +1195,10 @@ if __name__ == '__main__':
     
     # Configuration du logging
     setup_logging(verbose=args.verbose, silent=args.silent)
+    
+    # Appliquer la configuration de niveau de log depuis config.json
+    # (pour prendre en compte debug_logging_enabled au démarrage)
+    apply_log_level_from_config()
     
     # Message de démarrage
     mode = "silencieux" if args.silent else ("verbeux" if args.verbose else "normal")
