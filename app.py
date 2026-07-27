@@ -18,6 +18,7 @@ import argparse
 import logging
 import threading
 import time
+import signal
 from datetime import datetime, timedelta
 from flask import Flask, render_template, request, jsonify, redirect, url_for
 from ftp_tools import FTPConfig, FTPConnector
@@ -36,6 +37,9 @@ app = Flask(__name__)
 # Références globales pour les handlers de logging
 file_handler = None
 stream_handler = None
+
+# Variable globale pour l'arrêt
+shutdown_requested = False
 
 def setup_logging(verbose=False, silent=False):
     """Configure le niveau de logging"""
@@ -584,6 +588,7 @@ def stop_corrupted_check_thread():
     app.logger.info("Thread de vérification des fichiers corrompus arrêté")
 
 
+
 # Routes
 @app.route('/')
 def index():
@@ -698,6 +703,59 @@ def api_cleanup_logs():
     """API: Nettoie les logs anciens"""
     cleanup_old_logs()
     return jsonify({'success': True, 'message': 'Logs nettoyés'})
+
+
+@app.route('/api/shutdown', methods=['POST'])
+def api_shutdown():
+    """API: Arrête proprement le service"""
+    global shutdown_requested
+    
+    if shutdown_requested:
+        return jsonify({'success': False, 'message': 'Arrêt déjà en cours'}), 400
+    
+    shutdown_requested = True
+    app.logger.warning("Arrêt du service demandé via API")
+    
+    # Arrêter les threads de synchronisation
+    stop_sync_threads()
+    
+    # Arrêter le thread de vérification des fichiers corrompus
+    stop_corrupted_check_thread()
+    
+    # Fermer les handlers de logging
+    global file_handler, stream_handler
+    
+    if file_handler:
+        try:
+            file_handler.flush()
+            file_handler.close()
+            logging.getLogger().removeHandler(file_handler)
+        except:
+            pass
+    
+    if stream_handler:
+        try:
+            stream_handler.flush()
+            stream_handler.close()
+            logging.getLogger().removeHandler(stream_handler)
+        except:
+            pass
+    
+    # Essayer d'arrêter le serveur via werkzeug
+    try:
+        request.environ.get('werkzeug.server.shutdown')()
+        return jsonify({'success': True, 'message': 'Arrêt du service en cours...'}), 200
+    except:
+        # Si werkzeug.server.shutdown n'est pas disponible, utiliser os._exit
+        # Mais d'abord retourner une réponse
+        def delayed_shutdown():
+            import time
+            time.sleep(1)  # Donner le temps à la réponse de partir
+            app.logger.warning("Forçage de l'arrêt du service")
+            os._exit(0)
+        
+        threading.Thread(target=delayed_shutdown, daemon=True).start()
+        return jsonify({'success': True, 'message': 'Arrêt du service en cours...'}), 200
 
 
 @app.route('/add_server', methods=['POST'])
@@ -1020,6 +1078,11 @@ def api_sync_stats():
     })
 
 
+def run_flask_app():
+    """Lance le serveur Flask"""
+    app.run(host=args.host, port=args.port, debug=False)
+
+
 if __name__ == '__main__':
     # Parsing des arguments CLI
     parser = argparse.ArgumentParser(description='FTP Server Manager')
@@ -1056,4 +1119,4 @@ if __name__ == '__main__':
     start_corrupted_check_thread()
     
     # Lancement du serveur Flask
-    app.run(host=args.host, port=args.port, debug=False)
+    run_flask_app()

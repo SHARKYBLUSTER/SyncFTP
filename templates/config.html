@@ -96,6 +96,10 @@
             margin-bottom: 0;
         }
         
+        .btn-danger {
+            background: linear-gradient(135deg, #dc3545 0%, #c82333 100%);
+        }
+        
         .config-section h3 {
             color: #667eea;
             margin-bottom: 15px;
@@ -327,6 +331,7 @@
                 <div style="display: flex; gap: 15px; flex-wrap: wrap;">
                     <button class="btn" onclick="cleanupLogs()">🧹 Nettoyer les logs anciens</button>
                     <button class="btn btn-secondary" onclick="resetConfig()">🔄 Réinitialiser la configuration</button>
+                    <button class="btn btn-danger" onclick="shutdownServer()">⏹️ Éteindre le service</button>
                 </div>
             </div>
             
@@ -434,6 +439,28 @@
                 .catch(error => {
                     showStatus('Erreur: ' + error.message, 'error');
                 });
+            }
+        }
+        
+        // Éteindre le service
+        function shutdownServer() {
+            if (confirm('⚠️ Êtes-vous SÛR de vouloir éteindre le service ? Toutes les synchronisations en cours seront arrêtées.')) {
+                fetch('/api/shutdown', { method: 'POST' })
+                    .then(response => response.json())
+                    .then(data => {
+                        if (data.success) {
+                            showStatus(data.message, 'success');
+                            // Rediriger vers une page d'au revoir ou attendre l'arrêt
+                            setTimeout(() => {
+                                document.body.innerHTML = '<div style="text-align: center; margin-top: 50px; color: white;"><h2>⏹️ Service en cours d\'arrêt...</h2><p>Merci d\'avoir utilisé FTP Server Manager</p></div>';
+                            }, 1000);
+                        } else {
+                            showStatus('Erreur: ' + (data.message || 'Impossible d\'arrêter le service'), 'error');
+                        }
+                    })
+                    .catch(error => {
+                        showStatus('Erreur: ' + error.message, 'error');
+                    });
             }
         }
         
