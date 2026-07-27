@@ -83,7 +83,7 @@ class FTPConnector:
         """
         client = ftplib.FTP_TLS() if self.config.use_ssl else ftplib.FTP()
         actual_timeout = timeout if timeout is not None else self.config.timeout
-        client.settimeout(actual_timeout)
+        client.timeout = actual_timeout
         return client
     
     def connect(self) -> bool:
