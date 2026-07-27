@@ -16,6 +16,31 @@
 
 ## 🔍 Problèmes identifiés
 
+### 0. **Nouveau** Timeout sur les fichiers volumineux (PROBLÈME CRITIQUE ACTUEL)
+
+**Preuves dans les logs (28/07/2026):**
+```
+[2026-07-28 00:27:58,353] DEBUG: [PERF] Timeout sur IMG_1941.MOV, attente 1s avant reconnexion
+[2026-07-28 00:28:19,231] DEBUG: [PERF] Timeout sur IMG_1941.MOV, attente 2s avant reconnexion
+[2026-07-28 00:28:31,260] ERROR: [PERF] Échec de reconnexion FTP: Erreur FTP: timed out
+[2026-07-28 00:28:32,261] DEBUG: [PERF] Timeout sur IMG_1942.MOV, attente 1s avant reconnexion
+```
+
+**Analyse:**
+- Les fichiers petits (< 50 Mo) s'uploadent correctement à 6-7 fichiers/seconde
+- Les fichiers volumineux (MOV, gros JPEG > 50 Mo) **timeout systématiquement**
+- Le timeout de 10 secondes (implémenté en Phase 1) est **trop court** pour transférer un fichier de plusieurs dizaines de Mo
+- Résultat: cascades d'échecs de reconnexion et blocage de la synchronisation
+
+**Fichiers concernés:** `ftp_tools.py` - méthode `sync_directory_to_ftp` (upload)
+
+**Impact:**
+- TOUS les fichiers > 50 Mo échouent avec timeout
+- La synchronisation est bloquée sur ces fichiers
+- Les reconnexions répétées consomment du temps inutilement
+
+---
+
 ### 1. Reconnexions FTP extrêmement lentes (PROBLÈME CRITIQUE)
 
 **Preuves dans les logs:**
@@ -93,6 +118,45 @@ for root, dirs, files in os.walk(local_dir, onerror=handle_walk_error):
 ---
 
 ## 🎯 Solutions proposées
+
+---
+
+### Solution #0: Timeout dynamique pour les fichiers volumineux (IMPACT CRITIQUE - IMPLÉMENTÉ)
+
+**Fichier:** `ftp_tools.py`
+
+**Problème:** Le timeout de 10 secondes est trop court pour les fichiers > 50 Mo.
+
+**Solution implémentée:**
+1. **Ajout de seuils de taille** (ligne 71-73):
+```python
+self.LARGE_FILE_THRESHOLD = 50 * 1024 * 1024  # 50 Mo
+self.LARGE_FILE_TIMEOUT = 60  # 60 secondes
+```
+
+2. **Nouvelle méthode d'upload** (lignes 112-185): `_upload_single_file_with_timeout`
+   - Détecte si le fichier est "volumineux" (> 50 Mo)
+   - Pour les gros fichiers: crée une **nouvelle connexion FTP avec timeout étendu (60s)**
+   - Pour les petits fichiers: utilise la connexion existante avec timeout normal (10s)
+   - Gère les retries avec backoff exponentiel
+
+3. **Logs améliorés** pour tracer:
+   - `[PERF] Début upload: fichier.MOV (123.4 Mo) - GROS`
+   - `[PERF] Upload fichier volumineux (123.4 Mo), timeout: 60s`
+   - `[PERF] Timeout sur fichier.MOV (taille: Xo), attente Ys avant retry`
+
+4. **Intégration** dans `sync_directory_to_ftp` (ligne 840-851):
+   - Appelle la nouvelle méthode au lieu de l'upload direct
+   - Conserve toutes les statistiques et callbacks
+
+**Gain estimé:**
+- Résolution complète des timeouts sur les fichiers volumineux
+- Les fichiers > 50 Mo peuvent maintenant être uploadés
+- Réduction du temps perdu en reconnexions inutiles
+
+**Complexité:** ⭐⭐⭐ (Moyenne)
+
+**Statut:** ✅ IMPLÉMENTÉ le 28/07/2026
 
 ---
 
@@ -502,13 +566,14 @@ config = FTPConfig(
 
 ### Phase 1: Corrections rapides (1 jour) - Impact immédiat
 
-| # | Solution | Gain | Complexité | Fichiers à modifier |
-|---|----------|------|------------|-------------------|
-| 1 | Réduire timeout de reconnexion | -70-90% temps perdu | ⭐⭐ | `ftp_tools.py` (2 endroits) |
-| 6 | Forcer timeout=10 dans config | -50% reconnexions | ⭐ | `app.py` |
-| 3 | Gestion intelligente des erreurs | -30-50% reconnexions | ⭐⭐ | `ftp_tools.py` |
+| # | Solution | Gain | Complexité | Fichiers à modifier | Statut |
+|---|----------|------|------------|-------------------|--------|
+| 0 | Timeout dynamique pour gros fichiers | Résout blocage fichiers >50 Mo | ⭐⭐⭐ | `ftp_tools.py` | ✅ **IMPLÉMENTÉ** |
+| 1 | Réduire timeout de reconnexion | -70-90% temps perdu | ⭐⭐ | `ftp_tools.py` (2 endroits) | ✅ Implémenté |
+| 6 | Forcer timeout=10 dans config | -50% reconnexions | ⭐ | `app.py` | ✅ Implémenté |
+| 3 | Gestion intelligente des erreurs | -30-50% reconnexions | ⭐⭐ | `ftp_tools.py` | ✅ Implémenté |
 
-**Résultat attendu:** Réduction de 50-70% du temps total de synchronisation.
+**Résultat attendu:** Réduction de 50-70% du temps total de synchronisation + résolution du blocage sur les fichiers volumineux.
 
 ---
 
@@ -591,9 +656,11 @@ Avec les logs `[PERF]` maintenant activés, surveillez ces indicateurs après ch
 
 ## 📝 Historique des changements
 
+- **28/07/2026:** **Solution #0 IMPLÉMENTÉE** - Timeout dynamique pour les fichiers volumineux (> 50 Mo) avec timeout étendu à 60 secondes
 - **27/07/2026:** Analyse initiale basée sur app.log avec logs DEBUG activés
 - **27/07/2026:** Fix du bug de logging (apply_log_level_from_config) - déjà implémenté
 - **27/07/2026:** Documentation des optimisations de performance
+- **27/07/2026:** Phase 1 implémentée (timeout reconnexion, gestion erreurs)
 
 ---
 

@@ -9,6 +9,7 @@ Il peut être importé et utilisé par l'application principale SyncFTP.
 import ftplib
 import os
 import io
+import time
 import fnmatch
 from dataclasses import dataclass
 from typing import Optional, Tuple, List, Dict, Any
@@ -69,12 +70,21 @@ class FTPConnector:
     def __init__(self, config: FTPConfig):
         self.config = config
         self._ftp: Optional[ftplib.FTP] = None
+        # Seuil pour les gros fichiers (en octets) - 50 Mo
+        self.LARGE_FILE_THRESHOLD = 50 * 1024 * 1024
+        # Timeout étendu pour les gros fichiers (en secondes)
+        self.LARGE_FILE_TIMEOUT = 60  # 60 secondes pour les fichiers > 50 Mo
     
-    def _create_client(self) -> ftplib.FTP:
-        """Crée un client FTP ou FTP_TLS selon la configuration."""
-        if self.config.use_ssl:
-            return ftplib.FTP_TLS()
-        return ftplib.FTP()
+    def _create_client(self, timeout: Optional[int] = None) -> ftplib.FTP:
+        """Crée un client FTP ou FTP_TLS selon la configuration.
+        
+        Args:
+            timeout: Timeout en secondes. Si None, utilise config.timeout
+        """
+        client = ftplib.FTP_TLS() if self.config.use_ssl else ftplib.FTP()
+        actual_timeout = timeout if timeout is not None else self.config.timeout
+        client.settimeout(actual_timeout)
+        return client
     
     def connect(self) -> bool:
         """
@@ -99,6 +109,120 @@ class FTPConnector:
             raise FTPConnectionError(f"Erreur FTP: {e}")
         except Exception as e:
             raise FTPConnectionError(f"Erreur de connexion: {e}")
+    
+    def _upload_single_file_with_timeout(self, local_path: str, remote_path: str, remote_dir: str, 
+                                         file_size: int, logger=None) -> Tuple[bool, str]:
+        """Upload un fichier avec un timeout adapté à sa taille.
+        
+        Pour les fichiers > LARGE_FILE_THRESHOLD, utilise un timeout étendu.
+        
+        Args:
+            local_path: Chemin local du fichier
+            remote_path: Chemin distant pour l'upload
+            remote_dir: Répertoire distant de base
+            file_size: Taille du fichier en octets
+            logger: Logger pour les messages de debug
+            
+        Returns:
+            Tuple[bool, str]: (succès, message)
+        """
+        is_large_file = file_size > self.LARGE_FILE_THRESHOLD
+        upload_timeout = self.LARGE_FILE_TIMEOUT if is_large_file else self.config.timeout
+        
+        if is_large_file and logger:
+            file_size_mb = file_size / (1024 * 1024)
+            logger.debug(f"[PERF] Upload fichier volumineux ({file_size_mb:.1f} Mo), timeout: {upload_timeout}s - {remote_path}")
+        
+        for attempt in range(3):
+            temp_ftp = None
+            try:
+                # Créer le répertoire parent si nécessaire
+                file_dir = os.path.dirname(remote_path)
+                if file_dir:
+                    self._create_remote_directory(file_dir)
+                
+                # Pour les gros fichiers, créer une nouvelle connexion avec timeout étendu
+                if is_large_file:
+                    # Créer une nouvelle connexion avec timeout adapté
+                    temp_ftp = self._create_client(timeout=upload_timeout)
+                    temp_ftp.connect(
+                        host=self.config.host,
+                        port=self.config.port,
+                        timeout=upload_timeout
+                    )
+                    temp_ftp.login(user=self.config.username, passwd=self.config.password)
+                    
+                    # Naviguer vers le répertoire distant
+                    if remote_dir:
+                        try:
+                            temp_ftp.cwd(remote_dir)
+                        except Exception:
+                            pass
+                    
+                    # Upload avec la nouvelle connexion
+                    with open(local_path, 'rb') as f:
+                        temp_ftp.storbinary(f'STOR {remote_path}', f)
+                    
+                    return True, f"Fichier {remote_path} uploadé (timeout étendu: {upload_timeout}s)"
+                else:
+                    # Utiliser la connexion existante pour les petits fichiers
+                    with open(local_path, 'rb') as f:
+                        self._ftp.storbinary(f'STOR {remote_path}', f)
+                    return True, f"Fichier {remote_path} uploadé"
+                    
+            except ftplib.all_errors as e:
+                error_str = str(e).lower()
+                
+                # Fermer la connexion temporaire si elle existe
+                if temp_ftp is not None:
+                    try:
+                        temp_ftp.quit()
+                    except Exception:
+                        pass
+                
+                if attempt < 2:
+                    
+                    # Backoff exponentiel pour les timeouts
+                    if 'timeout' in error_str or 'timed out' in error_str:
+                        wait_time = 2 ** attempt
+                        if logger:
+                            logger.debug(f"[PERF] Timeout sur {remote_path} (taille: {file_size}o), attente {wait_time}s avant retry")
+                        time.sleep(wait_time)
+                    else:
+                        time.sleep(1)
+                        if logger:
+                            logger.debug(f"[PERF] Erreur FTP sur {remote_path}, attente 1s avant retry")
+                    
+                    # Pour les gros fichiers, pas besoin de reconnecter la connexion principale
+                    # car on crée une nouvelle connexion à chaque tentative
+                    # Pour les petits fichiers, reconnecter avec timeout court
+                    if not is_large_file:
+                        try:
+                            old_timeout = self.config.timeout
+                            self.config.timeout = 10
+                            reconnect_start = time.time()
+                            self.connect()
+                            if remote_dir:
+                                try:
+                                    self._ftp.cwd(remote_dir)
+                                except Exception:
+                                    pass
+                            self.config.timeout = old_timeout
+                            if logger:
+                                logger.debug(f"[PERF] Reconnexion FTP tentative {attempt + 1} terminée en {(time.time() - reconnect_start)*1000:.0f}ms")
+                        except Exception as reconnect_e:
+                            if logger:
+                                logger.error(f"[PERF] Échec de reconnexion FTP: {reconnect_e}")
+                            time.sleep(1)
+                else:
+                    return False, f"Échec après 3 tentatives: {remote_path} - {e}"
+            except Exception as e:
+                if attempt < 2:
+                    time.sleep(1)
+                else:
+                    return False, f"Erreur inattendue: {remote_path} - {e}"
+        
+        return False, f"Échec upload: {remote_path}"
     
     def test_connection(self) -> Tuple[bool, str]:
         """
@@ -712,64 +836,29 @@ class FTPConnector:
                     
                     # Upload le fichier avec retry (UNIQUEMENT s'il est dans files_to_upload)
                     if relative_path in files_to_upload:
-                        # Créer le répertoire parent si nécessaire
-                        file_dir = os.path.dirname(relative_path)
-                        if file_dir:
-                            self._create_remote_directory(file_dir)
-                        
                         # Enregistrer la taille du fichier pour le calcul de vitesse
                         file_size = os.path.getsize(local_file_path)
                         
-                        success = False
-                        for attempt in range(3):
-                            try:
-                                with open(local_file_path, 'rb') as f:
-                                    self._ftp.storbinary(f'STOR {relative_path}', f)
-                                success = True
-                                break
-                            except ftplib.all_errors as e:
-                                error_str = str(e).lower()
-                                
-                                if attempt < 2:
-                                    # Toujours reconnecter après une erreur FTP (y compris timeout)
-                                    # car la connexion peut être dans un état instable
-                                    try:
-                                        self._ftp.quit()
-                                    except Exception:
-                                        pass
-                                    
-                                    # Backoff exponentiel pour les timeouts, attente fixe pour les autres erreurs
-                                    if 'timeout' in error_str or 'timed out' in error_str:
-                                        wait_time = 2 ** attempt  # Backoff exponentiel: 1s, 2s
-                                        logger.debug(f"[PERF] Timeout sur {relative_path}, attente {wait_time}s avant reconnexion")
-                                        time.sleep(wait_time)
-                                    else:
-                                        # Pour les autres erreurs (421, 500, etc.), attente fixe
-                                        time.sleep(1)
-                                        logger.debug(f"[PERF] Erreur FTP sur {relative_path}, attente 1s avant reconnexion")
-                                    
-                                    try:
-                                        old_timeout = self.config.timeout
-                                        self.config.timeout = 10  # Timeout court pour les reconnexions (Phase 1)
-                                        reconnect_start = time.time()
-                                        self.connect()
-                                        # Retourner au répertoire de base
-                                        if remote_dir:
-                                            try:
-                                                self._ftp.cwd(remote_dir)
-                                            except Exception:
-                                                pass
-                                        self.config.timeout = old_timeout  # Restaurer le timeout original
-                                        logger.debug(f"[PERF] Reconnexion FTP tentative {attempt + 1} terminée en {(time.time() - reconnect_start)*1000:.0f}ms")
-                                    except Exception as reconnect_e:
-                                        logger.error(f"[PERF] Échec de reconnexion FTP: {reconnect_e}")
-                                        time.sleep(1)  # Attendre avant de réessayer avec la connexion existante (peut-être partiellement fonctionnelle)
-                                else:
-                                    stats['errors'] += 1
-                            except Exception as e:
-                                stats['errors'] += 1
-                                break
+                        # Log de début d'upload avec taille
+                        file_size_mb = file_size / (1024 * 1024)
+                        is_large = file_size > self.LARGE_FILE_THRESHOLD
+                        logger.debug(f"[PERF] Début upload: {relative_path} ({file_size_mb:.1f} Mo) - {'GROS' if is_large else 'petit'}")
                         
+                        # Utiliser la nouvelle méthode avec timeout adapté
+                        success, message = self._upload_single_file_with_timeout(
+                            local_file_path, 
+                            relative_path, 
+                            remote_dir,
+                            file_size,
+                            logger
+                        )
+                        
+                        if success:
+                            logger.info(message)
+                        else:
+                            stats['errors'] += 1
+                            logger.error(message)
+                            
                         if success:
                             stats['uploaded'] += 1
                             stats['uploaded_files'].append(relative_path)
