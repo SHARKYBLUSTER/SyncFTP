@@ -305,6 +305,15 @@
                             </small>
                         </div>
                         
+                        <div class="form-group">
+                            <label for="excludePatterns">Patterns de fichiers à exclure</label>
+                            <input type="text" id="excludePatterns" name="exclude_patterns" 
+                                   value="{{ config.exclude_patterns }}" placeholder="*.tmp,*.part,*.temp">
+                            <small style="display: block; margin-top: 5px; color: #666;">
+                                Patterns de fichiers à exclure de la synchronisation (séparés par des virgules). Exemples: *.tmp,*.part,Thumbs.db,desktop.ini
+                            </small>
+                        </div>
+                        
                         <div class="config-actions">
                             <button type="button" class="btn btn-success" onclick="saveConfig()">💾 Sauvegarder</button>
                         </div>
@@ -337,6 +346,7 @@
                     document.getElementById('refreshInterval').value = config.log_refresh_interval || 3;
                     document.getElementById('autoRefresh').value = config.auto_refresh !== false ? 'true' : 'false';
                     document.getElementById('corruptedCheckInterval').value = config.corrupted_files_check_interval || 300;
+                    document.getElementById('excludePatterns').value = config.exclude_patterns || '*.tmp,*.part,*.temp,*.~lk,*.lock,Thumbs.db,desktop.ini';
                 })
                 .catch(error => {
                     showStatus('Erreur lors du chargement de la configuration', 'error');
@@ -350,7 +360,8 @@
                 log_retention_days: parseInt(document.getElementById('logRetention').value) || 7,
                 log_refresh_interval: parseInt(document.getElementById('refreshInterval').value) || 3,
                 auto_refresh: document.getElementById('autoRefresh').value === 'true',
-                corrupted_files_check_interval: parseInt(document.getElementById('corruptedCheckInterval').value) || 300
+                corrupted_files_check_interval: parseInt(document.getElementById('corruptedCheckInterval').value) || 300,
+                exclude_patterns: document.getElementById('excludePatterns').value || '*.tmp,*.part,*.temp,*.~lk,*.lock,Thumbs.db,desktop.ini'
             };
             
             fetch('/api/config', {
@@ -400,7 +411,8 @@
                     log_retention_days: 7,
                     log_refresh_interval: 3,
                     auto_refresh: true,
-                    corrupted_files_check_interval: 300
+                    corrupted_files_check_interval: 300,
+                    exclude_patterns: '*.tmp,*.part,*.temp,*.~lk,*.lock,Thumbs.db,desktop.ini'
                 };
                 
                 fetch('/api/config', {

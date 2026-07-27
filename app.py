@@ -76,7 +76,8 @@ def load_config():
         'log_refresh_interval': 3,
         'log_level': 'INFO',
         'auto_refresh': True,
-        'corrupted_files_check_interval': 300  # 5 minutes en secondes
+        'corrupted_files_check_interval': 300,  # 5 minutes en secondes
+        'exclude_patterns': '*.tmp,*.part,*.temp,*.~lk,*.lock,Thumbs.db,desktop.ini'  # Patterns à exclure
     }
     if not os.path.exists(CONFIG_FILE):
         save_config(default_config)
@@ -84,9 +85,12 @@ def load_config():
     try:
         with open(CONFIG_FILE, 'r', encoding='utf-8') as f:
             config = json.load(f)
-        # Ajouter la valeur par défaut si elle n'existe pas
+        # Ajouter les valeurs par défaut si elles n'existent pas
         if 'corrupted_files_check_interval' not in config:
             config['corrupted_files_check_interval'] = 300
+            save_config(config)
+        if 'exclude_patterns' not in config:
+            config['exclude_patterns'] = '*.tmp,*.part,*.temp,*.~lk,*.lock,Thumbs.db,desktop.ini'
             save_config(config)
         return config
     except Exception as e:
@@ -357,10 +361,15 @@ def execute_sync_task(task):
             app.logger.info(f"Exécution de la tâche {task['id']}: {task['name']}")
             app.logger.info(f"Source: {task['source_directory']} -> Cible: {task['target_directory']}")
             
+            # Charger la configuration pour obtenir les patterns d'exclusion
+            config = load_config()
+            exclude_patterns = config.get('exclude_patterns', '')
+            
             success, message, stats = connector.sync_directory_to_ftp(
                 task['source_directory'],
                 task['target_directory'],
-                logger=app.logger
+                logger=app.logger,
+                exclude_patterns=exclude_patterns
             )
             
             result['success'] = success

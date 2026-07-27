@@ -9,6 +9,7 @@ Il peut être importé et utilisé par l'application principale SyncFTP.
 import ftplib
 import os
 import io
+import fnmatch
 from dataclasses import dataclass
 from typing import Optional, Tuple, List, Dict, Any
 
@@ -27,6 +28,30 @@ class FTPConfig:
 class FTPConnectionError(Exception):
     """Exception levée en cas d'échec de connexion FTP."""
     pass
+
+
+def should_exclude_file(filename: str, exclude_patterns: str) -> bool:
+    """
+    Vérifie si un fichier doit être exclu de la synchronisation.
+    
+    Args:
+        filename: Nom du fichier à vérifier
+        exclude_patterns: Chaîne de patterns séparés par des virgules (ex: "*.tmp,*.part,Thumbs.db")
+    
+    Returns:
+        bool: True si le fichier doit être exclu, False sinon
+    """
+    if not exclude_patterns:
+        return False
+    
+    patterns = [p.strip() for p in exclude_patterns.split(',') if p.strip()]
+    for pattern in patterns:
+        if fnmatch.fnmatch(filename, pattern):
+            return True
+        # También verificar si el patrón coincide con la parte final del nombre (para casos como .tmp)
+        if pattern.startswith('*') and filename.endswith(pattern[1:]):
+            return True
+    return False
 
 
 class FTPConnector:
@@ -540,7 +565,7 @@ class FTPConnector:
         except Exception as e:
             return False, f"Erreur lors de la suppression: {e}"
 
-    def sync_directory_to_ftp(self, local_dir: str, remote_dir: str, logger=None) -> Tuple[bool, str, Dict[str, Any]]:
+    def sync_directory_to_ftp(self, local_dir: str, remote_dir: str, logger=None, exclude_patterns: str = '') -> Tuple[bool, str, Dict[str, Any]]:
         """
         Synchronise un répertoire local vers un répertoire FTP.
         Upload les fichiers manquants et supprime les fichiers orphelins de la cible.
@@ -549,13 +574,15 @@ class FTPConnector:
             local_dir: Répertoire local source
             remote_dir: Répertoire FTP cible
             logger: Logger optionnel pour les logs
+            exclude_patterns: Patterns de fichiers à exclure (séparés par des virgules, ex: "*.tmp,*.part")
         
         Returns:
             Tuple[bool, str, Dict]: (succès, message, statistiques)
             Statistiques: {
                 'uploaded': int, 'deleted': int, 'skipped': int, 'errors': int,
                 'source_file_count': int, 'target_file_count': int,
-                'uploaded_files': List[str], 'deleted_files': List[str]
+                'uploaded_files': List[str], 'deleted_files': List[str],
+                'excluded': int, 'excluded_files': List[str]
             }
         """
         import time
@@ -567,8 +594,9 @@ class FTPConnector:
         
         stats = {
             'uploaded': 0, 'deleted': 0, 'skipped': 0, 'errors': 0,
+            'excluded': 0,
             'source_file_count': 0, 'target_file_count': 0,
-            'uploaded_files': [], 'deleted_files': []
+            'uploaded_files': [], 'deleted_files': [], 'excluded_files': []
         }
         
         try:
@@ -590,6 +618,20 @@ class FTPConnector:
             logger.info(f"Connexion au serveur FTP établie. Répertoire cible: {self._ftp.pwd()}")
             
             source_files = self._list_local_files(local_dir)
+            
+            # Filtrer les fichiers exclus
+            if exclude_patterns:
+                filtered_source_files = []
+                for filepath in source_files:
+                    filename = os.path.basename(filepath)
+                    if not should_exclude_file(filename, exclude_patterns):
+                        filtered_source_files.append(filepath)
+                    else:
+                        stats['excluded'] += 1
+                        stats['excluded_files'].append(filepath)
+                        logger.info(f"Fichier exclu de la synchronisation: {filepath}")
+                source_files = filtered_source_files
+            
             stats['source_file_count'] = len(source_files)
             logger.info(f"Nombre de fichiers dans la source: {stats['source_file_count']}")
             
