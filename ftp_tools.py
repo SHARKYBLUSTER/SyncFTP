@@ -586,28 +586,23 @@ class FTPConnector:
                 self._create_remote_directory(remote_dir)
                 self._ftp.cwd(remote_dir)
             
-            # Lister les fichiers source et cible avec leurs tailles
+            # Lister les fichiers source et cible
             logger.info(f"Connexion au serveur FTP établie. Répertoire cible: {self._ftp.pwd()}")
             
-            source_files_dict = self._get_local_files_with_sizes(local_dir)
-            stats['source_file_count'] = len(source_files_dict)
+            source_files = self._list_local_files(local_dir)
+            stats['source_file_count'] = len(source_files)
             logger.info(f"Nombre de fichiers dans la source: {stats['source_file_count']}")
             
-            remote_files_dict = self._list_remote_files_recursive(remote_dir)
-            stats['target_file_count'] = len(remote_files_dict)
+            remote_files = self._list_remote_files_recursive(remote_dir)
+            stats['target_file_count'] = len(remote_files)
             logger.info(f"Nombre de fichiers dans le FTP cible: {stats['target_file_count']}")
             
-            # Convertir les dictionnaires en sets de chemins pour comparaison
-            source_set = set(source_files_dict.keys())
-            remote_set = set(remote_files_dict.keys())
+            # Convertir en sets pour comparaison
+            source_set = set(source_files)
+            remote_set = set(remote_files.keys())
             
-            # Fichiers à uploader : présents dans source mais pas dans remote, OU taille différente
-            files_to_upload = set()
-            for file_path, local_size in source_files_dict.items():
-                remote_size = remote_files_dict.get(file_path)
-                # Si le fichier n'existe pas sur le FTP ou a une taille différente, il faut le recopier
-                if file_path not in remote_set or local_size != remote_size:
-                    files_to_upload.add(file_path)
+            # Fichiers à uploader : présents dans source mais pas dans remote
+            files_to_upload = source_set - remote_set
             
             # Fichiers à supprimer (présents dans remote mais pas dans source)
             files_to_delete = remote_set - source_set
@@ -817,3 +812,159 @@ class FTPConnector:
             return False, f"Erreur inattendue: {e}", files_list
         finally:
             self.disconnect()
+    
+    def check_and_delete_corrupted_files(self, tasks: List[Dict], servers: List[Dict], logger=None) -> Dict[str, Any]:
+        """
+        Vérifie et supprime les fichiers corrompus (taille différente) sur les serveurs FTP cibles.
+        Cette fonction se lance uniquement quand toutes les tâches de synchronisation sont terminées.
+        
+        Args:
+            tasks: Liste des tâches de synchronisation
+            servers: Liste des serveurs FTP
+            logger: Logger optionnel pour les logs
+        
+        Returns:
+            Dict: Statistiques des fichiers corrompus trouvés et supprimés
+        """
+        import logging
+        import os
+        
+        if logger is None:
+            logger = logging.getLogger(__name__)
+        
+        stats = {
+            'total_checked': 0,
+            'corrupted_found': 0,
+            'deleted': 0,
+            'errors': 0,
+            'details': []
+        }
+        
+        # Vérifier si toutes les tâches sont terminées (pas en cours d'exécution)
+        all_tasks_completed = all(
+            task.get('status') in ['completed', 'idle', 'failed'] 
+            for task in tasks
+        )
+        
+        if not all_tasks_completed:
+            logger.info("Vérification des fichiers corrompus reportée: des tâches de synchronisation sont en cours")
+            stats['message'] = "Des tâches de synchronisation sont encore en cours, vérification reportée"
+            return stats
+        
+        logger.info("Début de la vérification des fichiers corrompus...")
+        
+        # Pour chaque tâche activée, vérifier les fichiers corrompus
+        for task in tasks:
+            if not task.get('enabled', True):
+                continue
+            
+            try:
+                server_id = task.get('server_id')
+                source_dir = task.get('source_directory', '')
+                target_dir = task.get('target_directory', '')
+                
+                if not server_id or not source_dir or not target_dir:
+                    continue
+                
+                # Trouver le serveur correspondant
+                server = next((s for s in servers if s['id'] == server_id), None)
+                if not server:
+                    logger.warning(f"Serveur non trouvé pour la tâche {task.get('name', 'Inconnue')}")
+                    continue
+                
+                # Créer la configuration FTP
+                config = FTPConfig(
+                    host=server['host'],
+                    port=int(server.get('port', 21)),
+                    username=server.get('username', 'anonymous'),
+                    password=server.get('password', ''),
+                    use_ssl=server.get('use_ssl', False),
+                    timeout=int(server.get('timeout', 30))
+                )
+                
+                connector = FTPConnector(config)
+                
+                logger.info(f"Vérification des fichiers corrompus pour la tâche: {task.get('name', 'Inconnue')}")
+                logger.info(f"Source: {source_dir}, Cible: {target_dir}")
+                
+                # Se connecter
+                if not connector.connect():
+                    logger.error(f"Impossible de se connecter au serveur pour la tâche {task.get('name', 'Inconnue')}")
+                    stats['errors'] += 1
+                    continue
+                
+                # Naviguer vers le répertoire cible
+                try:
+                    connector._ftp.cwd(target_dir)
+                except ftplib.error_perm as e:
+                    logger.error(f"Impossible d'accéder au répertoire cible {target_dir}: {e}")
+                    connector.disconnect()
+                    stats['errors'] += 1
+                    continue
+                
+                # Lister les fichiers source avec leurs tailles
+                source_files_dict = connector._get_local_files_with_sizes(source_dir)
+                stats['total_checked'] += len(source_files_dict)
+                
+                # Lister les fichiers distants avec leurs tailles
+                remote_files_dict = connector._list_remote_files_recursive(target_dir)
+                
+                # Trouver les fichiers corrompus (présents dans les deux mais avec des tailles différentes)
+                corrupted_files = []
+                for file_path, local_size in source_files_dict.items():
+                    remote_size = remote_files_dict.get(file_path)
+                    if file_path in remote_files_dict and local_size != remote_size:
+                        corrupted_files.append(file_path)
+                
+                logger.info(f"Tâche {task.get('name', 'Inconnue')}: {len(corrupted_files)} fichiers corrompus trouvés")
+                stats['corrupted_found'] += len(corrupted_files)
+                
+                # Supprimer les fichiers corrompus
+                for file_path in corrupted_files:
+                    try:
+                        # Naviguer vers le répertoire du fichier
+                        file_dir = os.path.dirname(file_path)
+                        filename = os.path.basename(file_path)
+                        
+                        if file_dir:
+                            try:
+                                connector._ftp.cwd(file_dir)
+                            except ftplib.error_perm:
+                                # Retourner au répertoire de base
+                                try:
+                                    connector._ftp.cwd(target_dir)
+                                except Exception:
+                                    pass
+                                logger.error(f"Impossible d'accéder au répertoire pour suppression: {file_path}")
+                                stats['errors'] += 1
+                                continue
+                        
+                        # Supprimer le fichier
+                        connector._ftp.delete(filename)
+                        stats['deleted'] += 1
+                        stats['details'].append(file_path)
+                        logger.warning(f"Fichier corrompu supprimé du FTP: {file_path} (taille source: {source_files_dict[file_path]}, taille FTP: {remote_files_dict[file_path]})")
+                        
+                        # Retourner au répertoire de base
+                        try:
+                            connector._ftp.cwd(target_dir)
+                        except Exception:
+                            pass
+                            
+                    except ftplib.all_errors as e:
+                        stats['errors'] += 1
+                        logger.error(f"Erreur lors de la suppression du fichier corrompu {file_path}: {e}")
+                    except Exception as e:
+                        stats['errors'] += 1
+                        logger.error(f"Erreur inattendue lors de la suppression de {file_path}: {e}")
+                
+                connector.disconnect()
+                
+            except Exception as e:
+                logger.error(f"Erreur lors de la vérification pour la tâche {task.get('id', 'inconnue')}: {e}")
+                stats['errors'] += 1
+        
+        stats['message'] = f"Vérification terminée: {stats['corrupted_found']} fichiers corrompus trouvés, {stats['deleted']} supprimés, {stats['errors']} erreurs"
+        logger.info(stats['message'])
+        
+        return stats

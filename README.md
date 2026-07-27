@@ -155,6 +155,23 @@ La synchronisation fonctionne selon les règles suivantes (toujours dans le sens
 
 **Résultat** : Le répertoire FTP cible devient un **miroir exact** du répertoire source local.
 
+### Vérification Automatique des Fichiers Corrompus
+
+Une fonctionnalité supplémentaire vérifie périodiquement les fichiers corrompus (fichiers dont la taille diffère entre la source et la cible) et les supprime du serveur FTP cible. 
+
+- **Intervalle configurable** : Définissez la fréquence de vérification dans la page Configuration (par défaut: 300 secondes / 5 minutes)
+- **Exécution conditionnelle** : La vérification ne s'exécute **que quand toutes les tâches de synchronisation sont terminées**
+- **Logs détaillés** : Chaque suppression de fichier corrompu est journalisée avec un niveau **WARNING**
+- **Statistiques** : Nombre de fichiers vérifiés, corrompus trouvés et supprimés
+
+**Exemple de log** :
+```
+[2024-01-15 11:00:00] INFO: Début de la vérification des fichiers corrompus...
+[2024-01-15 11:00:01] INFO: Tâche Backup: 5 fichiers vérifiés, 2 fichiers corrompus trouvés
+[2024-01-15 11:00:02] WARNING: Fichier corrompu supprimé du FTP: documents/report.pdf (taille source: 1024, taille FTP: 512)
+[2024-01-15 11:00:03] INFO: Vérification terminée: 2 fichiers corrompus trouvés, 2 supprimés, 0 erreurs
+```
+
 #### Logs détaillés
 
 Lorsque la synchronisation s'exécute, les informations suivantes sont journalisées :
@@ -256,9 +273,18 @@ Lorsque la synchronisation s'exécute, les informations suivantes sont journalis
   "log_retention_days": 7,
   "log_refresh_interval": 3,
   "log_level": "INFO",
-  "auto_refresh": true
+  "auto_refresh": true,
+  "corrupted_files_check_interval": 300
 }
 ```
+
+| Paramètre | Type | Default | Description |
+|-----------|------|---------|-------------|
+| `log_retention_days` | number | 7 | Nombre de jours à conserver les logs |
+| `log_refresh_interval` | number | 3 | Intervalle de rafraîchissement des logs (secondes) |
+| `log_level` | string | "INFO" | Niveau de logging (DEBUG, INFO, WARNING, ERROR) |
+| `auto_refresh` | boolean | true | Active/désactive le rafraîchissement automatique |
+| `corrupted_files_check_interval` | number | 300 | Intervalle de vérification des fichiers corrompus (secondes) |
 
 ---
 

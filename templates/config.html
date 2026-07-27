@@ -296,6 +296,15 @@
                             </small>
                         </div>
                         
+                        <div class="form-group">
+                            <label for="corruptedCheckInterval">Intervalle de vérification des fichiers corrompus (secondes)</label>
+                            <input type="number" id="corruptedCheckInterval" name="corrupted_files_check_interval" 
+                                   value="{{ config.corrupted_files_check_interval }}" min="60" max="86400">
+                            <small style="display: block; margin-top: 5px; color: #666;">
+                                Intervalle entre chaque vérification des fichiers corrompus (ne s'exécute que quand toutes les tâches sont terminées)
+                            </small>
+                        </div>
+                        
                         <div class="config-actions">
                             <button type="button" class="btn btn-success" onclick="saveConfig()">💾 Sauvegarder</button>
                         </div>
@@ -327,6 +336,7 @@
                     document.getElementById('logRetention').value = config.log_retention_days || 7;
                     document.getElementById('refreshInterval').value = config.log_refresh_interval || 3;
                     document.getElementById('autoRefresh').value = config.auto_refresh !== false ? 'true' : 'false';
+                    document.getElementById('corruptedCheckInterval').value = config.corrupted_files_check_interval || 300;
                 })
                 .catch(error => {
                     showStatus('Erreur lors du chargement de la configuration', 'error');
@@ -339,7 +349,8 @@
                 log_level: document.getElementById('logLevel').value,
                 log_retention_days: parseInt(document.getElementById('logRetention').value) || 7,
                 log_refresh_interval: parseInt(document.getElementById('refreshInterval').value) || 3,
-                auto_refresh: document.getElementById('autoRefresh').value === 'true'
+                auto_refresh: document.getElementById('autoRefresh').value === 'true',
+                corrupted_files_check_interval: parseInt(document.getElementById('corruptedCheckInterval').value) || 300
             };
             
             fetch('/api/config', {
@@ -388,7 +399,8 @@
                     log_level: 'INFO',
                     log_retention_days: 7,
                     log_refresh_interval: 3,
-                    auto_refresh: true
+                    auto_refresh: true,
+                    corrupted_files_check_interval: 300
                 };
                 
                 fetch('/api/config', {

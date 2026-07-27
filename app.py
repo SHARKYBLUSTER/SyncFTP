@@ -75,14 +75,20 @@ def load_config():
         'log_retention_days': 7,
         'log_refresh_interval': 3,
         'log_level': 'INFO',
-        'auto_refresh': True
+        'auto_refresh': True,
+        'corrupted_files_check_interval': 300  # 5 minutes en secondes
     }
     if not os.path.exists(CONFIG_FILE):
         save_config(default_config)
         return default_config
     try:
         with open(CONFIG_FILE, 'r', encoding='utf-8') as f:
-            return json.load(f)
+            config = json.load(f)
+        # Ajouter la valeur par défaut si elle n'existe pas
+        if 'corrupted_files_check_interval' not in config:
+            config['corrupted_files_check_interval'] = 300
+            save_config(config)
+        return config
     except Exception as e:
         app.logger.error(f"Erreur lors du chargement de la config: {e}")
         return default_config
@@ -245,6 +251,11 @@ sync_tasks = []
 sync_threads = {}
 sync_stop_event = threading.Event()
 tasks_file_lock = threading.Lock()  # Verrou pour protéger l'accès au fichier tasks.json
+
+# Variables pour la vérification des fichiers corrompus
+corrupted_check_lock = threading.Lock()
+corrupted_check_thread = None
+corrupted_check_stop_event = threading.Event()
 
 
 def load_tasks():
@@ -471,6 +482,81 @@ def stop_sync_threads():
             thread.join(timeout=2)
     sync_threads = {}
     app.logger.info("Tous les threads de synchronisation arrêtés")
+
+
+def check_corrupted_files_worker():
+    """
+    Worker thread qui vérifie et supprime périodiquement les fichiers corrompus.
+    Ne s'exécute que quand toutes les tâches de synchronisation sont terminées.
+    """
+    global corrupted_check_thread
+    
+    app.logger.info("Démarrage du worker de vérification des fichiers corrompus")
+    
+    while not corrupted_check_stop_event.is_set():
+        try:
+            # Charger la configuration
+            config = load_config()
+            interval = config.get('corrupted_files_check_interval', 300)
+            
+            # Attendre l'intervalle
+            time.sleep(interval)
+            
+            # Vérifier si on doit arrêter
+            if corrupted_check_stop_event.is_set():
+                break
+            
+            # Charger les tâches et serveurs
+            tasks = load_tasks()
+            servers = load_servers()
+            
+            # Créer un connecteur FTP temporaire
+            from ftp_tools import FTPConnector
+            
+            # Exécuter la vérification
+            connector = FTPConnector(None)
+            result = connector.check_and_delete_corrupted_files(tasks, servers, logger=app.logger)
+            
+            if result.get('corrupted_found', 0) > 0:
+                app.logger.info(f"Vérification des fichiers corrompus: {result['message']}")
+            
+        except Exception as e:
+            app.logger.error(f"Erreur dans le worker de vérification des fichiers corrompus: {e}")
+            break
+    
+    app.logger.info("Worker de vérification des fichiers corrompus arrêté")
+
+
+def start_corrupted_check_thread():
+    """Démarre le thread de vérification des fichiers corrompus"""
+    global corrupted_check_thread
+    
+    corrupted_check_stop_event.clear()
+    
+    # Arrêter le thread existant s'il y en a un
+    if corrupted_check_thread and corrupted_check_thread.is_alive():
+        corrupted_check_stop_event.set()
+        corrupted_check_thread.join(timeout=2)
+    
+    # Démarrer un nouveau thread
+    corrupted_check_thread = threading.Thread(
+        target=check_corrupted_files_worker,
+        daemon=True,
+        name="CorruptedFilesCheckWorker"
+    )
+    corrupted_check_thread.start()
+    app.logger.info("Thread de vérification des fichiers corrompus démarré")
+
+
+def stop_corrupted_check_thread():
+    """Arrête le thread de vérification des fichiers corrompus"""
+    global corrupted_check_thread
+    corrupted_check_stop_event.set()
+    
+    if corrupted_check_thread and corrupted_check_thread.is_alive():
+        corrupted_check_thread.join(timeout=2)
+    corrupted_check_thread = None
+    app.logger.info("Thread de vérification des fichiers corrompus arrêté")
 
 
 # Routes
@@ -827,6 +913,9 @@ if __name__ == '__main__':
     
     # Démarrer les threads de synchronisation
     start_sync_threads()
+    
+    # Démarrer le thread de vérification des fichiers corrompus
+    start_corrupted_check_thread()
     
     # Lancement du serveur Flask
     app.run(host=args.host, port=args.port, debug=False)
