@@ -1,0 +1,573 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{{ app_name }}</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
+        }
+        
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+        
+        header {
+            background: white;
+            padding: 30px;
+            border-radius: 15px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.2);
+            margin-bottom: 30px;
+            text-align: center;
+        }
+        
+        h1 {
+            color: #667eea;
+            font-size: 2.5em;
+            margin-bottom: 10px;
+        }
+        
+        .subtitle {
+            color: #666;
+            font-size: 1.1em;
+        }
+        
+        .section {
+            background: white;
+            padding: 25px;
+            border-radius: 15px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.2);
+            margin-bottom: 30px;
+        }
+        
+        .section-title {
+            font-size: 1.5em;
+            color: #667eea;
+            margin-bottom: 20px;
+            padding-bottom: 10px;
+            border-bottom: 3px solid #667eea;
+        }
+        
+        .form-group {
+            margin-bottom: 20px;
+        }
+        
+        .form-group label {
+            display: block;
+            margin-bottom: 8px;
+            font-weight: 600;
+            color: #333;
+        }
+        
+        .form-group input[type="text"],
+        .form-group input[type="password"],
+        .form-group input[type="number"],
+        .form-group select {
+            width: 100%;
+            padding: 12px;
+            border: 2px solid #e0e0e0;
+            border-radius: 8px;
+            font-size: 16px;
+            transition: border-color 0.3s;
+        }
+        
+        .form-group input:focus,
+        .form-group select:focus {
+            outline: none;
+            border-color: #667eea;
+        }
+        
+        .form-row {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 20px;
+        }
+        
+        .checkbox-group {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        
+        .checkbox-group input[type="checkbox"] {
+            width: 20px;
+            height: 20px;
+            cursor: pointer;
+        }
+        
+        .btn {
+            display: inline-block;
+            padding: 12px 30px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border: none;
+            border-radius: 8px;
+            font-size: 16px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: transform 0.2s, box-shadow 0.2s;
+        }
+        
+        .btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(102, 126, 234, 0.4);
+        }
+        
+        .btn:active {
+            transform: translateY(0);
+        }
+        
+        .btn-secondary {
+            background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
+        }
+        
+        .btn-danger {
+            background: linear-gradient(135deg, #ff6b6b 0%, #ee5a52 100%);
+        }
+        
+        .servers-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(350px, 1fr));
+            gap: 20px;
+        }
+        
+        .server-card {
+            background: #f8f9fa;
+            padding: 20px;
+            border-radius: 10px;
+            border-left: 5px solid #667eea;
+            transition: transform 0.2s;
+        }
+        
+        .server-card:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 5px 15px rgba(0,0,0,0.1);
+        }
+        
+        .server-card h3 {
+            color: #667eea;
+            margin-bottom: 10px;
+            font-size: 1.3em;
+        }
+        
+        .server-info {
+            color: #666;
+            margin-bottom: 8px;
+            font-size: 0.95em;
+        }
+        
+        .server-info strong {
+            color: #333;
+        }
+        
+        .server-actions {
+            display: flex;
+            gap: 10px;
+            margin-top: 15px;
+        }
+        
+        .server-actions .btn {
+            padding: 8px 16px;
+            font-size: 14px;
+        }
+        
+        .test-results {
+            margin-top: 20px;
+            padding: 20px;
+            background: #f8f9fa;
+            border-radius: 10px;
+            display: none;
+        }
+        
+        .test-results.show {
+            display: block;
+        }
+        
+        .result-item {
+            padding: 10px;
+            margin-bottom: 10px;
+            border-radius: 5px;
+            border-left: 4px solid #667eea;
+        }
+        
+        .result-item.success {
+            background: #d4edda;
+            border-left-color: #28a745;
+        }
+        
+        .result-item.error {
+            background: #f8d7da;
+            border-left-color: #dc3545;
+        }
+        
+        .result-item .server-name {
+            font-weight: bold;
+            color: #333;
+            margin-bottom: 5px;
+        }
+        
+        .result-item .message {
+            color: #666;
+        }
+        
+        .result-item .details {
+            font-size: 0.9em;
+            color: #888;
+            margin-top: 5px;
+        }
+        
+        .modal {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0,0,0,0.5);
+            z-index: 1000;
+            align-items: center;
+            justify-content: center;
+        }
+        
+        .modal.show {
+            display: flex;
+        }
+        
+        .modal-content {
+            background: white;
+            padding: 30px;
+            border-radius: 15px;
+            width: 90%;
+            max-width: 500px;
+            max-height: 80vh;
+            overflow-y: auto;
+        }
+        
+        .modal-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+        }
+        
+        .modal-header h2 {
+            color: #667eea;
+            font-size: 1.5em;
+        }
+        
+        .close-btn {
+            background: none;
+            border: none;
+            font-size: 24px;
+            cursor: pointer;
+            color: #999;
+        }
+        
+        .close-btn:hover {
+            color: #333;
+        }
+        
+        .modal-body {
+            margin-bottom: 20px;
+        }
+        
+        .modal-footer {
+            display: flex;
+            justify-content: flex-end;
+            gap: 10px;
+        }
+        
+        .loading {
+            display: inline-block;
+            width: 20px;
+            height: 20px;
+            border: 3px solid rgba(255,255,255,.3);
+            border-radius: 50%;
+            border-top-color: white;
+            animation: spin 1s ease-in-out infinite;
+        }
+        
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+        
+        .empty-state {
+            text-align: center;
+            padding: 40px;
+            color: #999;
+        }
+        
+        .empty-state i {
+            font-size: 3em;
+            margin-bottom: 10px;
+        }
+        
+        @media (max-width: 768px) {
+            .form-row {
+                grid-template-columns: 1fr;
+            }
+            
+            .servers-grid {
+                grid-template-columns: 1fr;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>🚀 {{ app_name }}</h1>
+            <p class="subtitle">Gérez et testez vos connexions FTP facilement</p>
+        </header>
+        
+        <!-- Section: Ajouter un serveur -->
+        <div class="section">
+            <h2 class="section-title">➕ Ajouter un serveur FTP</h2>
+            <form id="addServerForm" action="/add_server" method="POST">
+                <div class="form-row">
+                    <div class="form-group">
+                        <label for="name">Nom du serveur *</label>
+                        <input type="text" id="name" name="name" required placeholder="Mon Serveur FTP">
+                    </div>
+                    <div class="form-group">
+                        <label for="host">Hôte *</label>
+                        <input type="text" id="host" name="host" required placeholder="ftp.example.com">
+                    </div>
+                </div>
+                <div class="form-row">
+                    <div class="form-group">
+                        <label for="port">Port</label>
+                        <input type="number" id="port" name="port" value="21" min="1" max="65535">
+                    </div>
+                    <div class="form-group">
+                        <label for="username">Utilisateur</label>
+                        <input type="text" id="username" name="username" value="anonymous">
+                    </div>
+                </div>
+                <div class="form-row">
+                    <div class="form-group">
+                        <label for="password">Mot de passe</label>
+                        <input type="password" id="password" name="password">
+                    </div>
+                    <div class="form-group">
+                        <label for="timeout">Timeout (secondes)</label>
+                        <input type="number" id="timeout" name="timeout" value="30" min="1">
+                    </div>
+                </div>
+                <div class="form-row">
+                    <div class="form-group">
+                        <div class="checkbox-group">
+                            <input type="checkbox" id="use_ssl" name="use_ssl" value="true">
+                            <label for="use_ssl" style="display: inline; cursor: pointer;">Utiliser SSL (FTPS)</label>
+                        </div>
+                    </div>
+                    <div class="form-group">
+                        <label for="test_directory">Répertoire à tester</label>
+                        <input type="text" id="test_directory" name="test_directory" placeholder="/chemin/vers/dossier">
+                    </div>
+                </div>
+                <button type="submit" class="btn">💾 ENREGISTRER FTP</button>
+            </form>
+        </div>
+        
+        <!-- Section: Liste des serveurs -->
+        <div class="section">
+            <h2 class="section-title">📋 Vos serveurs FTP</h2>
+            
+            {% if servers %}
+                <div class="servers-grid">
+                    {% for server in servers %}
+                        <div class="server-card" data-server-id="{{ server.id }}">
+                            <h3>{{ server.name }}</h3>
+                            <div class="server-info">
+                                <strong>Hôte:</strong> {{ server.host }}:{{ server.port }}
+                            </div>
+                            <div class="server-info">
+                                <strong>Utilisateur:</strong> {{ server.username }}
+                            </div>
+                            <div class="server-info">
+                                <strong>SSL:</strong> {% if server.use_ssl %}✅ Oui{% else %}❌ Non{% endif %}
+                            </div>
+                            {% if server.test_directory %}
+                                <div class="server-info">
+                                    <strong>Répertoire:</strong> {{ server.test_directory }}
+                                </div>
+                            {% endif %}
+                            <div class="server-actions">
+                                <button class="btn btn-secondary test-btn" data-server-id="{{ server.id }}">🔍 TESTER FTP</button>
+                                <form action="/delete_server/{{ server.id }}" method="POST" style="display: inline;">
+                                    <button type="submit" class="btn btn-danger" onclick="return confirm('Êtes-vous sûr de vouloir supprimer ce serveur ?')">🗑️ Supprimer</button>
+                                </form>
+                            </div>
+                        </div>
+                    {% endfor %}
+                </div>
+            {% else %}
+                <div class="empty-state">
+                    <p>➖ Aucun serveur FTP enregistré</p>
+                    <p style="font-size: 0.9em; color: #ccc;">Ajoutez un serveur en utilisant le formulaire ci-dessus</p>
+                </div>
+            {% endif %}
+        </div>
+        
+        <!-- Section: Résultats des tests -->
+        <div class="section">
+            <h2 class="section-title">🧪 Résultats des tests</h2>
+            <div id="testResults" class="test-results">
+                <p class="empty-state" style="text-align: center; color: #999;">
+                    Aucun test effectué pour l'instant
+                </p>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Modal de test -->
+    <div id="testModal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2>🔍 Tester la connexion FTP</h2>
+                <button class="close-btn" onclick="closeModal()">&times;</button>
+            </div>
+            <div class="modal-body">
+                <form id="testForm">
+                    <div class="form-group">
+                        <label for="serverSelect">Sélectionnez un serveur</label>
+                        <select id="serverSelect" name="server_id" required>
+                            <option value="">-- Choisir un serveur --</option>
+                            {% for server in servers %}
+                                <option value="{{ server.id }}">{{ server.name }} ({{ server.host }})</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                </form>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn" onclick="runTest()">
+                    <span id="testBtnText">TESTER FTP</span>
+                    <span id="testBtnLoading" class="loading" style="display: none;"></span>
+                </button>
+                <button type="button" class="btn btn-secondary" onclick="closeModal()">Annuler</button>
+            </div>
+        </div>
+    </div>
+    
+    <script>
+        // Gestion du modal
+        function openModal() {
+            document.getElementById('testModal').classList.add('show');
+        }
+        
+        function closeModal() {
+            document.getElementById('testModal').classList.remove('show');
+            document.getElementById('testBtnText').style.display = 'inline';
+            document.getElementById('testBtnLoading').style.display = 'none';
+        }
+        
+        // Gestion des boutons TESTER
+        document.querySelectorAll('.test-btn').forEach(btn => {
+            btn.addEventListener('click', function() {
+                const serverId = this.dataset.serverId;
+                document.getElementById('serverSelect').value = serverId;
+                openModal();
+            });
+        });
+        
+        // Exécution du test
+        function runTest() {
+            const serverId = document.getElementById('serverSelect').value;
+            if (!serverId) {
+                alert('Veuillez sélectionner un serveur');
+                return;
+            }
+            
+            // Afficher le loading
+            document.getElementById('testBtnText').style.display = 'none';
+            document.getElementById('testBtnLoading').style.display = 'inline';
+            
+            // Désactiver le bouton
+            const testBtn = document.querySelector('#testModal .btn');
+            testBtn.disabled = true;
+            
+            // Envoyer la requête
+            fetch('/test_server', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/x-www-form-urlencoded',
+                },
+                body: `server_id=${encodeURIComponent(serverId)}`
+            })
+            .then(response => response.json())
+            .then(data => {
+                closeModal();
+                displayTestResult(data);
+            })
+            .catch(error => {
+                closeModal();
+                displayTestResult({
+                    server_name: 'Inconnu',
+                    success: false,
+                    message: 'Erreur lors de la requête: ' + error.message
+                });
+            })
+            .finally(() => {
+                testBtn.disabled = false;
+            });
+        }
+        
+        // Affichage des résultats
+        function displayTestResult(result) {
+            const resultsDiv = document.getElementById('testResults');
+            resultsDiv.classList.add('show');
+            
+            const resultHtml = `
+                <div class="result-item ${result.success ? 'success' : 'error'}">
+                    <div class="server-name">${result.server_name}</div>
+                    <div class="message">${result.message}</div>
+                    ${result.test_directory ? `
+                        <div class="details">
+                            Répertoire testé: ${result.test_directory}<br>
+                            ${result.directory_success ? `
+                                <span style="color: #28a745;">✅ ${result.file_count} fichiers trouvés</span>
+                            ` : `
+                                <span style="color: #dc3545;">❌ ${result.directory_message}</span>
+                            `}
+                        </div>
+                    ` : ''}
+                    <div class="details">ID: ${result.server_id}</div>
+                </div>
+            `;
+            
+            // Si c'est le premier résultat, on écrase le message par défaut
+            if (resultsDiv.innerHTML.includes('Aucun test effectué')) {
+                resultsDiv.innerHTML = resultHtml;
+            } else {
+                resultsDiv.innerHTML = resultHtml + resultsDiv.innerHTML;
+            }
+        }
+        
+        // Fermer le modal en cliquant à l'extérieur
+        document.getElementById('testModal').addEventListener('click', function(e) {
+            if (e.target === this) {
+                closeModal();
+            }
+        });
+        
+        // Ajouter un bouton pour ouvrir le modal manuellement
+        // (au cas où on veut tester depuis la page)
+        function openTestModal() {
+            openModal();
+        }
+    </script>
+</body>
+</html>

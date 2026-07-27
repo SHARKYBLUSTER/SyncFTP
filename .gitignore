@@ -6,6 +6,10 @@ __pycache__/
 *.py[cod]
 *$py.class
 
+# Flask/JSON data
+ftp_servers.json
+instance/
+
 # IDE
 .idea/
 .vscode/
