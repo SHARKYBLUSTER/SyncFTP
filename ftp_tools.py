@@ -365,7 +365,7 @@ class FTPConnector:
             local_dir: Répertoire local à explorer
             
         Returns:
-            List[str]: Liste des chemins relatifs des fichiers
+            List[str]: Liste des chemins relatifs des fichiers (normalisés avec /)
         """
         files_list = []
         local_dir = local_dir.rstrip('/\\')
@@ -378,7 +378,9 @@ class FTPConnector:
                     if rel_path == '.':
                         files_list.append(filename)
                     else:
-                        files_list.append(os.path.join(rel_path, filename))
+                        # Normaliser le chemin avec des / pour la comparaison
+                        relative_path = os.path.join(rel_path, filename).replace('\\', '/')
+                        files_list.append(relative_path)
         
         return files_list
     
@@ -565,7 +567,7 @@ class FTPConnector:
         except Exception as e:
             return False, f"Erreur lors de la suppression: {e}"
 
-    def sync_directory_to_ftp(self, local_dir: str, remote_dir: str, logger=None, exclude_patterns: str = '') -> Tuple[bool, str, Dict[str, Any]]:
+    def sync_directory_to_ftp(self, local_dir: str, remote_dir: str, logger=None, exclude_patterns: str = '', progress_callback=None) -> Tuple[bool, str, Dict[str, Any]]:
         """
         Synchronise un répertoire local vers un répertoire FTP.
         Upload les fichiers manquants et supprime les fichiers orphelins de la cible.
@@ -575,6 +577,7 @@ class FTPConnector:
             remote_dir: Répertoire FTP cible
             logger: Logger optionnel pour les logs
             exclude_patterns: Patterns de fichiers à exclure (séparés par des virgules, ex: "*.tmp,*.part")
+            progress_callback: Fonction callback optionnelle appelée après chaque fichier uploadé avec les stats actuelles
         
         Returns:
             Tuple[bool, str, Dict]: (succès, message, statistiques)
@@ -748,6 +751,14 @@ class FTPConnector:
                                     remaining_time = stats['files_remaining'] / stats['average_speed_fps']
                                     estimated_end = datetime.now() + timedelta(seconds=remaining_time)
                                     stats['estimated_end_time'] = estimated_end.strftime('%Y-%m-%d %H:%M:%S')
+                            
+                            # Appeler le callback de progression si fourni
+                            if progress_callback:
+                                try:
+                                    import copy
+                                    progress_callback(copy.deepcopy(stats))
+                                except Exception:
+                                    pass
                             
                             logger.info(f"Fichier écrit sur le FTP: {relative_path}")
                     else:
