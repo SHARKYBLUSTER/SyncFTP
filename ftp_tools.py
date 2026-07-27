@@ -356,37 +356,64 @@ class FTPConnector:
                         files_list.append(os.path.join(rel_path, filename))
         
         return files_list
-
-    def _list_remote_files_recursive(self, remote_dir: str = "") -> List[str]:
+    
+    def _get_local_files_with_sizes(self, local_dir: str) -> Dict[str, int]:
         """
-        Liste tous les fichiers dans un répertoire FTP de manière récursive.
+        Liste tous les fichiers dans un répertoire local avec leurs tailles.
+        
+        Args:
+            local_dir: Répertoire local à explorer
+            
+        Returns:
+            Dict[str, int]: Dictionnaire {chemin_relatif: taille_en_octets}
+        """
+        files_dict = {}
+        local_dir = local_dir.rstrip('/\\')
+        
+        for root, dirs, files in os.walk(local_dir):
+            rel_path = os.path.relpath(root, local_dir)
+            for filename in files:
+                local_file_path = os.path.join(root, filename)
+                if os.path.isfile(local_file_path):
+                    # Normaliser le chemin avec des / pour la comparaison
+                    if rel_path == '.':
+                        relative_path = filename
+                    else:
+                        relative_path = os.path.join(rel_path, filename).replace('\\', '/')
+                    files_dict[relative_path] = os.path.getsize(local_file_path)
+        
+        return files_dict
+
+    def _list_remote_files_recursive(self, remote_dir: str = "") -> Dict[str, int]:
+        """
+        Liste tous les fichiers dans un répertoire FTP de manière récursive avec leurs tailles.
         
         Args:
             remote_dir: Répertoire FTP à explorer
             
         Returns:
-            List[str]: Liste des chemins relatifs des fichiers
+            Dict[str, int]: Dictionnaire {chemin_relatif: taille_en_octets}
         """
-        files_list = []
+        files_dict = {}
         
         if not self.is_connected():
             try:
                 self.connect()
             except Exception:
-                return files_list
+                return files_dict
         
         # Sauvegarder le répertoire courant
         try:
             original_dir = self._ftp.pwd()
         except Exception:
-            return files_list
+            return files_dict
         
         # Naviguer vers le répertoire de départ
         if remote_dir:
             try:
                 self._ftp.cwd(remote_dir)
             except ftplib.error_perm as e:
-                return files_list
+                return files_dict
         
         try:
             # Fonction récursive pour explorer
@@ -414,41 +441,54 @@ class FTPConnector:
                         # Analyser la ligne LIST ou MLSD
                         # Format LIST: "-rw-r--r-- 1 user group size date time filename"
                         # Format MLSD: "Type=file;Size=123;Modify=date; filename"
-                        if line_stripped.startswith('-') or 'Type=file' in line_stripped or line_stripped.startswith('d') or 'Type=dir' in line_stripped:
-                            # Extraire le nom du fichier/répertoire
-                            # Pour LIST format
+                        file_size = 0
+                        item_name = ""
+                        is_dir = line_stripped.startswith('d') or 'Type=dir' in line_stripped
+                        is_file = line_stripped.startswith('-') or 'Type=file' in line_stripped
+                        
+                        # Extraire le nom et la taille
+                        if line_stripped.startswith('-') or line_stripped.startswith('d'):
+                            # Format LIST standard
                             parts = line_stripped.split()
-                            if len(parts) >= 9 and (line_stripped.startswith('-') or line_stripped.startswith('d')):
+                            if len(parts) >= 9:
                                 item_name = ' '.join(parts[8:])
-                            elif '; ' in line_stripped:  # Format MLSD
-                                # Extraire après le dernier "; "
-                                item_name = line_stripped.split('; ')[-1].strip()
-                            elif line_stripped.startswith('d') or line_stripped.startswith('-'):
-                                # Format LIST simplifié
-                                item_name = parts[-1] if parts else line_stripped
+                                if is_file and len(parts) >= 5:
+                                    try:
+                                        file_size = int(parts[4])
+                                    except (ValueError, IndexError):
+                                        file_size = 0
+                        elif '; ' in line_stripped:  # Format MLSD
+                            # Extraire la taille
+                            for part in line_stripped.split(';'):
+                                part = part.strip()
+                                if part.startswith('Size='):
+                                    try:
+                                        file_size = int(part.split('=')[1])
+                                    except (ValueError, IndexError):
+                                        file_size = 0
+                            # Extraire le nom (dernière partie après "; ")
+                            item_name = line_stripped.split('; ')[-1].strip()
+                        
+                        if not item_name:
+                            continue
+                        
+                        if is_dir and item_name not in ('.', '..'):
+                            # C'est un répertoire, explorer récursivement
+                            try:
+                                self._ftp.cwd(item_name)
+                                explore_directory(current_path + '/' + item_name if current_path else item_name)
+                                self._ftp.cwd('..')
+                            except ftplib.error_perm:
+                                # Ignorer les répertoires inaccessibles
+                                pass
+                        elif is_file:
+                            # C'est un fichier - enregistrer avec sa taille
+                            if current_path:
+                                full_path = current_path + '/' + item_name
                             else:
-                                continue
-                            
-                            # Vérifier si c'est un répertoire ou un fichier
-                            is_dir = line_stripped.startswith('d') or 'Type=dir' in line_stripped
-                            is_file = line_stripped.startswith('-') or 'Type=file' in line_stripped
-                            
-                            if is_dir and item_name not in ('.', '..'):
-                                # C'est un répertoire, explorer récursivement
-                                try:
-                                    self._ftp.cwd(item_name)
-                                    explore_directory(current_path + '/' + item_name if current_path else item_name)
-                                    self._ftp.cwd('..')
-                                except ftplib.error_perm:
-                                    # Ignorer les répertoires inaccessibles
-                                    pass
-                            elif is_file:
-                                # C'est un fichier
-                                if current_path:
-                                    files_list.append(current_path + '/' + item_name)
-                                else:
-                                    files_list.append(item_name)
-                            
+                                full_path = item_name
+                            files_dict[full_path] = file_size
+                
                 except Exception:
                     pass
             
@@ -464,7 +504,7 @@ class FTPConnector:
                 except Exception:
                     pass
         
-        return files_list
+        return files_dict
 
     def _delete_remote_file(self, remote_path: str) -> Tuple[bool, str]:
         """
@@ -546,23 +586,29 @@ class FTPConnector:
                 self._create_remote_directory(remote_dir)
                 self._ftp.cwd(remote_dir)
             
-            # Lister les fichiers source et cible
+            # Lister les fichiers source et cible avec leurs tailles
             logger.info(f"Connexion au serveur FTP établie. Répertoire cible: {self._ftp.pwd()}")
             
-            source_files = self._list_local_files(local_dir)
-            stats['source_file_count'] = len(source_files)
+            source_files_dict = self._get_local_files_with_sizes(local_dir)
+            stats['source_file_count'] = len(source_files_dict)
             logger.info(f"Nombre de fichiers dans la source: {stats['source_file_count']}")
             
-            remote_files = self._list_remote_files_recursive()
-            stats['target_file_count'] = len(remote_files)
+            remote_files_dict = self._list_remote_files_recursive(remote_dir)
+            stats['target_file_count'] = len(remote_files_dict)
             logger.info(f"Nombre de fichiers dans le FTP cible: {stats['target_file_count']}")
             
-            # Convertir les listes en sets pour comparaison
-            source_set = set(source_files)
-            remote_set = set(remote_files)
+            # Convertir les dictionnaires en sets de chemins pour comparaison
+            source_set = set(source_files_dict.keys())
+            remote_set = set(remote_files_dict.keys())
             
-            # Fichiers à uploader (présents dans source mais pas dans remote)
-            files_to_upload = source_set - remote_set
+            # Fichiers à uploader : présents dans source mais pas dans remote, OU taille différente
+            files_to_upload = set()
+            for file_path, local_size in source_files_dict.items():
+                remote_size = remote_files_dict.get(file_path)
+                # Si le fichier n'existe pas sur le FTP ou a une taille différente, il faut le recopier
+                if file_path not in remote_set or local_size != remote_size:
+                    files_to_upload.add(file_path)
+            
             # Fichiers à supprimer (présents dans remote mais pas dans source)
             files_to_delete = remote_set - source_set
             
@@ -606,11 +652,11 @@ class FTPConnector:
                     if not os.path.isfile(local_file_path):
                         continue
                     
-                    # Chemin relatif du fichier
+                    # Chemin relatif du fichier (normalisé avec /)
                     if rel_path == '.':
                         relative_path = filename
                     else:
-                        relative_path = os.path.join(rel_path, filename)
+                        relative_path = os.path.join(rel_path, filename).replace('\\', '/')
                     
                     # Upload le fichier avec retry (UNIQUEMENT s'il est dans files_to_upload)
                     if relative_path in files_to_upload:
