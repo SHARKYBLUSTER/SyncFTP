@@ -429,7 +429,7 @@ def execute_sync_task(task):
                 username=server.get('username', 'anonymous'),
                 password=server.get('password', ''),
                 use_ssl=server.get('use_ssl', False),
-                timeout=int(server.get('timeout', 30))
+                timeout=10  # Forcer timeout court pour améliorer les performances (Phase 1)
             )
             
             connector = FTPConnector(config)

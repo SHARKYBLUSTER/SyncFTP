@@ -22,7 +22,7 @@ class FTPConfig:
     username: str = "anonymous"
     password: str = ""
     use_ssl: bool = False
-    timeout: int = 30
+    timeout: int = 10  # Réduit de 30 à 10 pour améliorer les performances (Phase 1)
 
 
 class FTPConnectionError(Exception):
@@ -728,6 +728,17 @@ class FTPConnector:
                                 success = True
                                 break
                             except ftplib.all_errors as e:
+                                error_str = str(e).lower()
+                                
+                                # Ne pas reconnecter pour les timeouts - simplement réessayer
+                                if 'timeout' in error_str or 'timed out' in error_str:
+                                    if attempt < 2:
+                                        wait_time = 2 ** attempt  # Backoff exponentiel: 2s, 4s
+                                        logger.debug(f"[PERF] Timeout sur {relative_path}, attente {wait_time}s avant retry")
+                                        time.sleep(wait_time)
+                                        continue  # Réessayer sans reconnexion
+                                
+                                # Pour les autres erreurs (421, 500, etc.), reconnecter
                                 if attempt < 2:
                                     time.sleep(1)
                                     try:
@@ -735,6 +746,8 @@ class FTPConnector:
                                     except Exception:
                                         pass
                                     try:
+                                        old_timeout = self.config.timeout
+                                        self.config.timeout = 10  # Timeout court pour les reconnexions (Phase 1)
                                         reconnect_start = time.time()
                                         self.connect()
                                         # Retourner au répertoire de base
@@ -743,6 +756,7 @@ class FTPConnector:
                                                 self._ftp.cwd(remote_dir)
                                             except Exception:
                                                 pass
+                                        self.config.timeout = old_timeout  # Restaurer le timeout original
                                         logger.debug(f"[PERF] Reconnexion FTP tentative {attempt + 1} terminée en {(time.time() - reconnect_start)*1000:.0f}ms")
                                     except Exception:
                                         pass
