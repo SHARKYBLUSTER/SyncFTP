@@ -100,8 +100,7 @@ class FTPConnector:
             self._ftp = self._create_client()
             self._ftp.connect(
                 host=self.config.host,
-                port=self.config.port,
-                timeout=self.config.timeout
+                port=self.config.port
             )
             self._ftp.login(user=self.config.username, passwd=self.config.password)
             return True
@@ -147,8 +146,7 @@ class FTPConnector:
                     temp_ftp = self._create_client(timeout=upload_timeout)
                     temp_ftp.connect(
                         host=self.config.host,
-                        port=self.config.port,
-                        timeout=upload_timeout
+                        port=self.config.port
                     )
                     temp_ftp.login(user=self.config.username, passwd=self.config.password)
                     
