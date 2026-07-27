@@ -920,37 +920,13 @@ class FTPConnector:
                 stats['corrupted_found'] += len(corrupted_files)
                 
                 # Supprimer les fichiers corrompus
+                # On reste dans target_dir et on supprime directement avec le chemin relatif
                 for file_path in corrupted_files:
                     try:
-                        # Naviguer vers le répertoire du fichier
-                        file_dir = os.path.dirname(file_path)
-                        filename = os.path.basename(file_path)
-                        
-                        if file_dir:
-                            try:
-                                connector._ftp.cwd(file_dir)
-                            except ftplib.error_perm:
-                                # Retourner au répertoire de base
-                                try:
-                                    connector._ftp.cwd(target_dir)
-                                except Exception:
-                                    pass
-                                logger.error(f"Impossible d'accéder au répertoire pour suppression: {file_path}")
-                                stats['errors'] += 1
-                                continue
-                        
-                        # Supprimer le fichier
-                        connector._ftp.delete(filename)
+                        connector._ftp.delete(file_path)
                         stats['deleted'] += 1
                         stats['details'].append(file_path)
                         logger.warning(f"Fichier corrompu supprimé du FTP: {file_path} (taille source: {source_files_dict[file_path]}, taille FTP: {remote_files_dict[file_path]})")
-                        
-                        # Retourner au répertoire de base
-                        try:
-                            connector._ftp.cwd(target_dir)
-                        except Exception:
-                            pass
-                            
                     except ftplib.all_errors as e:
                         stats['errors'] += 1
                         logger.error(f"Erreur lors de la suppression du fichier corrompu {file_path}: {e}")

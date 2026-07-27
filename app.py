@@ -510,12 +510,9 @@ def check_corrupted_files_worker():
             tasks = load_tasks()
             servers = load_servers()
             
-            # Créer un connecteur FTP temporaire
+            # Exécuter la vérification (la fonction crée ses propres connecteurs)
             from ftp_tools import FTPConnector
-            
-            # Exécuter la vérification
-            connector = FTPConnector(None)
-            result = connector.check_and_delete_corrupted_files(tasks, servers, logger=app.logger)
+            result = FTPConnector(None).check_and_delete_corrupted_files(tasks, servers, logger=app.logger)
             
             if result.get('corrupted_found', 0) > 0:
                 app.logger.info(f"Vérification des fichiers corrompus: {result['message']}")
