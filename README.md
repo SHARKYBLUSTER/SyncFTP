@@ -23,7 +23,7 @@ SyncFTP est une application web légère qui permet de gérer plusieurs serveurs
 - ✅ Activation/Désactivation des tâches
 - ✅ Statistiques d'exécution (fichiers uploadés, supprimés, erreurs, etc.)
 - ✅ **Suppression automatique des fichiers orphelins** (présents sur FTP mais pas dans la source)
-- ✅ **Synchronisation bidirectionnelle** : la cible FTP devient un miroir exact de la source locale
+- ✅ **Synchronisation unidirectionnelle** : la cible FTP devient un miroir exact de la source locale
 
 ### Interface Utilisateur
 - ✅ Tableau de bord avec statistiques (nombre de serveurs et tâches)
@@ -145,13 +145,15 @@ L'application sera accessible à l'adresse : `http://localhost:5000`
 - **En arrière-plan** : Les tâches activées s'exécutent selon leur fréquence configurée
 - **Logs** : Toutes les opérations sont journalisées dans `app.log` et visibles dans l'interface
 
-### Synchronisation Bidirectionnelle
+### Synchronisation Unidirectionnelle (Miroir)
 
-La synchronisation fonctionne selon les règles suivantes :
+La synchronisation fonctionne selon les règles suivantes (toujours dans le sens **Source → Cible**) :
 
 - **⬆️ Upload** : Les fichiers présents dans le **répertoire source local** mais **absents du répertoire FTP cible** sont **uploadés** vers le serveur FTP
 - **⬇️ Suppression** : Les fichiers présents dans le **répertoire FTP cible** mais **absents du répertoire source local** sont **supprimés** du serveur FTP
 - **➖ Inchangé** : Les fichiers présents dans les deux répertoires ne sont pas modifiés
+
+**Résultat** : Le répertoire FTP cible devient un **miroir exact** du répertoire source local.
 
 #### Logs détaillés
 
