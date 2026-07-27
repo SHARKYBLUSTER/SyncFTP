@@ -730,21 +730,24 @@ class FTPConnector:
                             except ftplib.all_errors as e:
                                 error_str = str(e).lower()
                                 
-                                # Ne pas reconnecter pour les timeouts - simplement réessayer
-                                if 'timeout' in error_str or 'timed out' in error_str:
-                                    if attempt < 2:
-                                        wait_time = 2 ** attempt  # Backoff exponentiel: 2s, 4s
-                                        logger.debug(f"[PERF] Timeout sur {relative_path}, attente {wait_time}s avant retry")
-                                        time.sleep(wait_time)
-                                        continue  # Réessayer sans reconnexion
-                                
-                                # Pour les autres erreurs (421, 500, etc.), reconnecter
                                 if attempt < 2:
-                                    time.sleep(1)
+                                    # Toujours reconnecter après une erreur FTP (y compris timeout)
+                                    # car la connexion peut être dans un état instable
                                     try:
                                         self._ftp.quit()
                                     except Exception:
                                         pass
+                                    
+                                    # Backoff exponentiel pour les timeouts, attente fixe pour les autres erreurs
+                                    if 'timeout' in error_str or 'timed out' in error_str:
+                                        wait_time = 2 ** attempt  # Backoff exponentiel: 1s, 2s
+                                        logger.debug(f"[PERF] Timeout sur {relative_path}, attente {wait_time}s avant reconnexion")
+                                        time.sleep(wait_time)
+                                    else:
+                                        # Pour les autres erreurs (421, 500, etc.), attente fixe
+                                        time.sleep(1)
+                                        logger.debug(f"[PERF] Erreur FTP sur {relative_path}, attente 1s avant reconnexion")
+                                    
                                     try:
                                         old_timeout = self.config.timeout
                                         self.config.timeout = 10  # Timeout court pour les reconnexions (Phase 1)
@@ -758,8 +761,9 @@ class FTPConnector:
                                                 pass
                                         self.config.timeout = old_timeout  # Restaurer le timeout original
                                         logger.debug(f"[PERF] Reconnexion FTP tentative {attempt + 1} terminée en {(time.time() - reconnect_start)*1000:.0f}ms")
-                                    except Exception:
-                                        pass
+                                    except Exception as reconnect_e:
+                                        logger.error(f"[PERF] Échec de reconnexion FTP: {reconnect_e}")
+                                        time.sleep(1)  # Attendre avant de réessayer avec la connexion existante (peut-être partiellement fonctionnelle)
                                 else:
                                     stats['errors'] += 1
                             except Exception as e:
