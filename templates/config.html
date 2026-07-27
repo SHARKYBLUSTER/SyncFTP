@@ -285,6 +285,33 @@
                         </div>
                         
                         <div class="form-group">
+                            <label for="smallFileTimeout">Timeout petits fichiers (secondes)</label>
+                            <input type="number" id="smallFileTimeout" name="small_file_timeout" 
+                                   value="{{ config.small_file_timeout }}" min="1" max="300">
+                            <small style="display: block; margin-top: 5px; color: #666;">
+                                Timeout pour les fichiers ≤ seuil (défaut: 10s)
+                            </small>
+                        </div>
+                        
+                        <div class="form-group">
+                            <label for="largeFileTimeout">Timeout gros fichiers (secondes)</label>
+                            <input type="number" id="largeFileTimeout" name="large_file_timeout" 
+                                   value="{{ config.large_file_timeout }}" min="10" max="600">
+                            <small style="display: block; margin-top: 5px; color: #666;">
+                                Timeout pour les fichiers > seuil (défaut: 60s)
+                            </small>
+                        </div>
+                        
+                        <div class="form-group">
+                            <label for="largeFileThreshold">Seuil fichiers volumineux (Mo)</label>
+                            <input type="number" id="largeFileThreshold" name="large_file_threshold_mb" 
+                                   value="{{ config.large_file_threshold_mb }}" min="1" max="1000">
+                            <small style="display: block; margin-top: 5px; color: #666;">
+                                Fichiers supérieurs à ce seuil utiliseront le timeout étendu (défaut: 50 Mo)
+                            </small>
+                        </div>
+                        
+                        <div class="form-group">
                             <label for="logRetention">Période de rétention (jours)</label>
                             <input type="number" id="logRetention" name="log_retention_days" 
                                    value="{{ config.log_retention_days }}" min="1" max="365">
@@ -377,6 +404,9 @@
                     document.getElementById('excludePatterns').value = config.exclude_patterns || '*.tmp,*.part,*.temp,*.~lk,*.lock,Thumbs.db,desktop.ini';
                     document.getElementById('debugLogging').value = config.debug_logging_enabled ? 'true' : 'false';
                     document.getElementById('taskSaveThrottle').value = config.task_save_throttle || 10;
+                    document.getElementById('smallFileTimeout').value = config.small_file_timeout || 10;
+                    document.getElementById('largeFileTimeout').value = config.large_file_timeout || 60;
+                    document.getElementById('largeFileThreshold').value = config.large_file_threshold_mb || 50;
                 })
                 .catch(error => {
                     showStatus('Erreur lors du chargement de la configuration', 'error');
@@ -393,7 +423,10 @@
                 corrupted_files_check_interval: parseInt(document.getElementById('corruptedCheckInterval').value) || 300,
                 exclude_patterns: document.getElementById('excludePatterns').value || '*.tmp,*.part,*.temp,*.~lk,*.lock,Thumbs.db,desktop.ini',
                 debug_logging_enabled: document.getElementById('debugLogging').value === 'true',
-                task_save_throttle: parseInt(document.getElementById('taskSaveThrottle').value) || 10
+                task_save_throttle: parseInt(document.getElementById('taskSaveThrottle').value) || 10,
+                small_file_timeout: parseInt(document.getElementById('smallFileTimeout').value) || 10,
+                large_file_timeout: parseInt(document.getElementById('largeFileTimeout').value) || 60,
+                large_file_threshold_mb: parseInt(document.getElementById('largeFileThreshold').value) || 50
             };
             
             fetch('/api/config', {
@@ -446,7 +479,10 @@
                     corrupted_files_check_interval: 300,
                     exclude_patterns: '*.tmp,*.part,*.temp,*.~lk,*.lock,Thumbs.db,desktop.ini',
                     debug_logging_enabled: false,
-                    task_save_throttle: 10
+                    task_save_throttle: 10,
+                    small_file_timeout: 10,
+                    large_file_timeout: 60,
+                    large_file_threshold_mb: 50
                 };
                 
                 fetch('/api/config', {

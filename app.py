@@ -109,7 +109,10 @@ def load_config():
         'corrupted_files_check_interval': 300,  # 5 minutes en secondes
         'exclude_patterns': '*.tmp,*.part,*.temp,*.~lk,*.lock,Thumbs.db,desktop.ini',  # Patterns à exclure
         'debug_logging_enabled': False,  # Active les logs DEBUG de performance
-        'task_save_throttle': 10  # Nombre de fichiers entre chaque sauvegarde pendant la sync
+        'task_save_throttle': 10,  # Nombre de fichiers entre chaque sauvegarde pendant la sync
+        'small_file_timeout': 10,  # Timeout en secondes pour les petits fichiers
+        'large_file_timeout': 60,  # Timeout en secondes pour les gros fichiers (> threshold)
+        'large_file_threshold_mb': 50  # Seuil en Mo pour les gros fichiers
     }
     if not os.path.exists(CONFIG_FILE):
         save_config(default_config)
@@ -129,6 +132,15 @@ def load_config():
             save_config(config)
         if 'task_save_throttle' not in config:
             config['task_save_throttle'] = 10
+            save_config(config)
+        if 'small_file_timeout' not in config:
+            config['small_file_timeout'] = 10
+            save_config(config)
+        if 'large_file_timeout' not in config:
+            config['large_file_timeout'] = 60
+            save_config(config)
+        if 'large_file_threshold_mb' not in config:
+            config['large_file_threshold_mb'] = 50
             save_config(config)
         return config
     except Exception as e:
@@ -422,6 +434,13 @@ def execute_sync_task(task):
                     save_tasks(tasks)
                 return result
             
+            # Charger la configuration globale pour les timeouts
+            sync_config = load_config()
+            small_file_timeout = sync_config.get('small_file_timeout', 10)
+            large_file_timeout = sync_config.get('large_file_timeout', 60)
+            large_file_threshold_mb = sync_config.get('large_file_threshold_mb', 50)
+            large_file_threshold = large_file_threshold_mb * 1024 * 1024
+            
             # Créer la configuration FTP
             config = FTPConfig(
                 host=server['host'],
@@ -429,13 +448,14 @@ def execute_sync_task(task):
                 username=server.get('username', 'anonymous'),
                 password=server.get('password', ''),
                 use_ssl=server.get('use_ssl', False),
-                timeout=10  # Forcer timeout court pour améliorer les performances (Phase 1)
+                timeout=small_file_timeout,
+                large_file_threshold=large_file_threshold,
+                large_file_timeout=large_file_timeout
             )
             
             connector = FTPConnector(config)
             
             # Charger la configuration pour le throttling et le debug
-            sync_config = load_config()
             throttle = sync_config.get('task_save_throttle', 10)
             debug_enabled = sync_config.get('debug_logging_enabled', False)
             

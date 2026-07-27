@@ -24,6 +24,8 @@ class FTPConfig:
     password: str = ""
     use_ssl: bool = False
     timeout: int = 10  # Réduit de 30 à 10 pour améliorer les performances (Phase 1)
+    large_file_threshold: int = 50 * 1024 * 1024  # 50 Mo - seuil pour les gros fichiers
+    large_file_timeout: int = 60  # 60 secondes - timeout pour les fichiers > seuil
 
 
 class FTPConnectionError(Exception):
@@ -70,10 +72,10 @@ class FTPConnector:
     def __init__(self, config: FTPConfig):
         self.config = config
         self._ftp: Optional[ftplib.FTP] = None
-        # Seuil pour les gros fichiers (en octets) - 50 Mo
-        self.LARGE_FILE_THRESHOLD = 50 * 1024 * 1024
-        # Timeout étendu pour les gros fichiers (en secondes)
-        self.LARGE_FILE_TIMEOUT = 60  # 60 secondes pour les fichiers > 50 Mo
+        # Seuil pour les gros fichiers (en octets) - configurable
+        self.LARGE_FILE_THRESHOLD = config.large_file_threshold
+        # Timeout étendu pour les gros fichiers (en secondes) - configurable
+        self.LARGE_FILE_TIMEOUT = config.large_file_timeout
     
     def _create_client(self, timeout: Optional[int] = None) -> ftplib.FTP:
         """Crée un client FTP ou FTP_TLS selon la configuration.
