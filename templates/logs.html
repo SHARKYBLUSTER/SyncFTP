@@ -154,6 +154,21 @@
             background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
         }
         
+        .btn-filter {
+            background: linear-gradient(135deg, #e0e0e0 0%, #b0b0b0 100%);
+            color: #333;
+        }
+        
+        .btn-filter.active {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+        }
+        
+        .btn-filter:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(0,0,0,0.2);
+        }
+        
         .status-indicator {
             display: inline-block;
             width: 10px;
@@ -225,6 +240,7 @@
                 <a href="/add" class="nav-btn">➕ AJOUTER SERVEUR FTP</a>
                 <a href="/list" class="nav-btn">📋 LISTE DES SERVEURS</a>
                 <a href="/logs" class="nav-btn">📜 LOGS</a>
+                <a href="/config" class="nav-btn">⚙️ CONFIGURATION</a>
             </div>
         </div>
         
@@ -234,6 +250,18 @@
                 <h2 class="section-title" style="margin-bottom: 0;">📜 Journal des logs</h2>
                 <span class="status-indicator" id="connectionStatus"></span>
                 <span id="statusText">Connecté</span>
+            </div>
+            
+            <!-- Filtres de logs -->
+            <div class="filter-bar" style="margin-bottom: 20px;">
+                <h3 style="margin-bottom: 10px; color: #667eea;">Filtres :</h3>
+                <div style="display: flex; gap: 10px; flex-wrap: wrap;">
+                    <button class="btn btn-filter active" data-filter="ALL" onclick="setFilter(this)">📜 TOUS</button>
+                    <button class="btn btn-filter" data-filter="INFO" onclick="setFilter(this)">ℹ️ INFO</button>
+                    <button class="btn btn-filter" data-filter="WARNING" onclick="setFilter(this)">⚠️ WARNING</button>
+                    <button class="btn btn-filter" data-filter="ERROR" onclick="setFilter(this)">❌ ERROR</button>
+                    <button class="btn btn-filter" data-filter="DEBUG" onclick="setFilter(this)">🐛 DEBUG</button>
+                </div>
             </div>
             
             <div class="logs-card">
@@ -258,10 +286,11 @@
     <script>
         let autoRefreshInterval = null;
         let autoRefreshActive = false;
+        let currentFilter = 'ALL';
         
         // Fonction pour charger les logs
         function loadLogs() {
-            fetch('/api/logs')
+            fetch(`/api/logs?type=${currentFilter}`)
                 .then(response => response.json())
                 .then(data => {
                     const logsContainer = document.getElementById('logsContainer');
@@ -278,7 +307,7 @@
                         
                         logsContainer.innerHTML = formattedLogs;
                     } else {
-                        logsContainer.innerHTML = '<p class="empty-state">Aucun log disponible</p>';
+                        logsContainer.innerHTML = `<p class="empty-state">Aucun log disponible pour le filtre <strong>${currentFilter}</strong></p>`;
                     }
                     
                     // Faire défiler vers le bas
@@ -288,6 +317,23 @@
                     document.getElementById('logsContainer').innerHTML = 
                         `<p class="empty-state" style="color: #dc3545;">Erreur lors du chargement des logs: ${error.message}</p>`;
                 });
+        }
+        
+        // Définir le filtre
+        function setFilter(button) {
+            // Retirer la classe active de tous les boutons
+            document.querySelectorAll('.btn-filter').forEach(btn => {
+                btn.classList.remove('active');
+            });
+            
+            // Ajouter la classe active au bouton cliqué
+            button.classList.add('active');
+            
+            // Mettre à jour le filtre
+            currentFilter = button.dataset.filter;
+            
+            // Recharger les logs avec le nouveau filtre
+            loadLogs();
         }
         
         // Rafraîchir les logs
@@ -324,6 +370,14 @@
             }
         }
         
+        // Mettre à jour l'intervalle de rafraîchissement
+        function updateRefreshInterval(intervalMs) {
+            if (autoRefreshActive && autoRefreshInterval) {
+                clearInterval(autoRefreshInterval);
+                autoRefreshInterval = setInterval(loadLogs, intervalMs);
+            }
+        }
+        
         // Basculer l'auto-rafraîchissement
         function toggleAutoRefresh() {
             const autoRefreshBtnText = document.getElementById('autoRefreshBtnText');
@@ -336,19 +390,44 @@
                 document.getElementById('connectionStatus').classList.add('disconnected');
                 document.getElementById('statusText').textContent = 'Auto-rafraîchissement désactivé';
             } else {
-                autoRefreshInterval = setInterval(loadLogs, 3000);
-                autoRefreshActive = true;
-                autoRefreshBtnText.textContent = '↻ ACTIVER AUTO-RAFRAÎCH';
-                document.getElementById('connectionStatus').classList.remove('disconnected');
-                document.getElementById('statusText').textContent = 'Auto-rafraîchissement activé (3s)';
+                // Charger la configuration pour obtenir l'intervalle
+                fetch('/api/config')
+                    .then(response => response.json())
+                    .then(config => {
+                        const interval = (config.log_refresh_interval || 3) * 1000;
+                        autoRefreshInterval = setInterval(loadLogs, interval);
+                        autoRefreshActive = true;
+                        autoRefreshBtnText.textContent = '↻ ACTIVER AUTO-RAFRAÎCH';
+                        document.getElementById('connectionStatus').classList.remove('disconnected');
+                        document.getElementById('statusText').textContent = `Auto-rafraîchissement activé (${config.log_refresh_interval || 3}s)`;
+                    })
+                    .catch(() => {
+                        // Valeur par défaut
+                        autoRefreshInterval = setInterval(loadLogs, 3000);
+                        autoRefreshActive = true;
+                        autoRefreshBtnText.textContent = '↻ ACTIVER AUTO-RAFRAÎCH';
+                        document.getElementById('connectionStatus').classList.remove('disconnected');
+                        document.getElementById('statusText').textContent = 'Auto-rafraîchissement activé (3s)';
+                    });
             }
         }
         
         // Charger les logs au démarrage
         document.addEventListener('DOMContentLoaded', function() {
             loadLogs();
-            // Activer l'auto-rafraîchissement par défaut
-            toggleAutoRefresh();
+            
+            // Vérifier si l'auto-rafraîchissement est activé dans la config
+            fetch('/api/config')
+                .then(response => response.json())
+                .then(config => {
+                    if (config.auto_refresh !== false) {
+                        toggleAutoRefresh();
+                    }
+                })
+                .catch(() => {
+                    // Par défaut, activer l'auto-rafraîchissement
+                    toggleAutoRefresh();
+                });
         });
         
         // Mettre à jour l'indicateur de connexion

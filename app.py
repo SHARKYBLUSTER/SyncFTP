@@ -16,7 +16,7 @@ import os
 import json
 import argparse
 import logging
-from datetime import datetime
+from datetime import datetime, timedelta
 from flask import Flask, render_template, request, jsonify, redirect, url_for
 from ftp_tools import FTPConfig, FTPConnector
 
@@ -24,6 +24,7 @@ from ftp_tools import FTPConfig, FTPConnector
 APP_NAME = "FTP Server Manager"
 DATA_FILE = "ftp_servers.json"
 LOG_FILE = "app.log"
+CONFIG_FILE = "config.json"
 LOG_FORMAT = "[%(asctime)s] %(levelname)s: %(message)s"
 
 # Initialisation de l'app Flask
@@ -55,6 +56,81 @@ def get_logs():
             return f.read()
     except Exception as e:
         return f"Erreur lors de la lecture des logs: {e}"
+
+
+def load_config():
+    """Charge la configuration depuis le fichier JSON"""
+    default_config = {
+        'log_retention_days': 7,
+        'log_refresh_interval': 3,
+        'log_level': 'INFO',
+        'auto_refresh': True
+    }
+    if not os.path.exists(CONFIG_FILE):
+        save_config(default_config)
+        return default_config
+    try:
+        with open(CONFIG_FILE, 'r', encoding='utf-8') as f:
+            return json.load(f)
+    except Exception as e:
+        app.logger.error(f"Erreur lors du chargement de la config: {e}")
+        return default_config
+
+
+def save_config(config):
+    """Sauvegarde la configuration dans le fichier JSON"""
+    try:
+        with open(CONFIG_FILE, 'w', encoding='utf-8') as f:
+            json.dump(config, f, indent=2, ensure_ascii=False)
+        app.logger.info("Configuration sauvegardée")
+    except Exception as e:
+        app.logger.error(f"Erreur lors de la sauvegarde de la config: {e}")
+
+
+def cleanup_old_logs():
+    """Nettoie les logs anciens selon la période de rétention"""
+    config = load_config()
+    retention_days = config.get('log_retention_days', 7)
+    
+    if not os.path.exists(LOG_FILE):
+        return
+    
+    try:
+        cutoff_date = datetime.now() - timedelta(days=retention_days)
+        
+        with open(LOG_FILE, 'r', encoding='utf-8') as f:
+            lines = f.readlines()
+        
+        new_lines = []
+        for line in lines:
+            try:
+                # Extraire la date du log [2024-01-15 10:30:45]
+                date_str = line.split(']')[0].strip('[')
+                log_date = datetime.strptime(date_str, '%Y-%m-%d %H:%M:%S')
+                if log_date >= cutoff_date:
+                    new_lines.append(line)
+            except:
+                new_lines.append(line)
+        
+        with open(LOG_FILE, 'w', encoding='utf-8') as f:
+            f.writelines(new_lines)
+        
+        app.logger.info(f"Nettoyage des logs: conservés {len(new_lines)} lignes sur {len(lines)}")
+    except Exception as e:
+        app.logger.error(f"Erreur lors du nettoyage des logs: {e}")
+
+
+def filter_logs(logs, log_type=None):
+    """Filtre les logs par type"""
+    if not log_type or log_type == 'ALL':
+        return logs
+    
+    filtered_lines = []
+    for line in logs.split('\n'):
+        if f'] {log_type}:' in line:
+            filtered_lines.append(line)
+    
+    return '\n'.join(filtered_lines)
 
 
 def load_servers():
@@ -175,9 +251,18 @@ def logs_page():
     return render_template('logs.html', app_name=APP_NAME)
 
 
+@app.route('/config')
+def config_page():
+    """Page de configuration"""
+    config = load_config()
+    return render_template('config.html', config=config, app_name=APP_NAME)
+
+
 @app.route('/api/logs', methods=['GET', 'DELETE'])
 def api_logs():
     """API: Retourne ou efface le contenu des logs"""
+    log_type = request.args.get('type', 'ALL')
+    
     if request.method == 'DELETE':
         try:
             if os.path.exists(LOG_FILE):
@@ -190,7 +275,41 @@ def api_logs():
             return jsonify({'success': False, 'message': str(e)}), 500
     else:
         logs = get_logs()
-        return jsonify({'logs': logs})
+        filtered_logs = filter_logs(logs, log_type)
+        return jsonify({'logs': filtered_logs})
+
+
+@app.route('/api/config', methods=['GET', 'POST'])
+def api_config():
+    """API: Récupère ou sauvegarde la configuration"""
+    if request.method == 'POST':
+        config = request.json
+        save_config(config)
+        
+        # Appliquer le nouveau niveau de log
+        log_level_map = {
+            'DEBUG': logging.DEBUG,
+            'INFO': logging.INFO,
+            'WARNING': logging.WARNING,
+            'ERROR': logging.ERROR
+        }
+        new_level = log_level_map.get(config.get('log_level', 'INFO'), logging.INFO)
+        app.logger.setLevel(new_level)
+        
+        # Nettoyer les logs si la rétention a changé
+        cleanup_old_logs()
+        
+        return jsonify({'success': True, 'message': 'Configuration sauvegardée'})
+    else:
+        config = load_config()
+        return jsonify(config)
+
+
+@app.route('/api/cleanup_logs', methods=['POST'])
+def api_cleanup_logs():
+    """API: Nettoie les logs anciens"""
+    cleanup_old_logs()
+    return jsonify({'success': True, 'message': 'Logs nettoyés'})
 
 
 @app.route('/add_server', methods=['POST'])

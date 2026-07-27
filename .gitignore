@@ -13,6 +13,9 @@ instance/
 # Logs
 app.log
 
+# Configuration
+config.json
+
 # IDE
 .idea/
 .vscode/
