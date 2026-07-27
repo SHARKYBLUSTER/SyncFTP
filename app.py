@@ -888,6 +888,134 @@ def toggle_task(task_id):
     return jsonify({'success': True, 'enabled': task['enabled'], 'message': f"Tâche {action}"})
 
 
+@app.route('/api/sync_stats', methods=['GET'])
+def api_sync_stats():
+    """API: Retourne les statistiques de synchronisation en cours pour toutes les tâches"""
+    tasks = load_tasks()
+    
+    # Trouver les tâches en cours
+    active_syncs = []
+    for task in tasks:
+        if task.get('status') == 'running' and task.get('last_result'):
+            # Si la tâche est en cours et a un résultat partiel
+            result = task.get('last_result', {})
+            stats = result.get('stats', {})
+            
+            sync_info = {
+                'task_id': task['id'],
+                'task_name': task['name'],
+                'server_id': task.get('server_id', ''),
+                'source_directory': task.get('source_directory', ''),
+                'target_directory': task.get('target_directory', ''),
+                'status': task.get('status', 'idle'),
+                'source_file_count': stats.get('source_file_count', 0),
+                'target_file_count': stats.get('target_file_count', 0),
+                'files_uploaded': stats.get('uploaded', 0),
+                'files_remaining': stats.get('files_remaining', 0),
+                'total_files_to_process': stats.get('total_files_to_process', 0),
+                'average_speed_bps': stats.get('average_speed_bps', 0),
+                'average_speed_fps': stats.get('average_speed_fps', 0),
+                'average_speed_mbps': round(stats.get('average_speed_bps', 0) / (1024 * 1024), 2) if stats.get('average_speed_bps', 0) > 0 else 0,
+                'total_bytes_transferred': stats.get('total_bytes_transferred', 0),
+                'total_mb_transferred': round(stats.get('total_bytes_transferred', 0) / (1024 * 1024), 2),
+                'duration_seconds': stats.get('duration_seconds', 0),
+                'estimated_end_time': stats.get('estimated_end_time', ''),
+                'start_time': stats.get('start_time', ''),
+                'errors': stats.get('errors', 0),
+                'is_active': True
+            }
+            active_syncs.append(sync_info)
+        elif task.get('status') == 'running':
+            # Tâche en cours mais sans stats encore
+            active_syncs.append({
+                'task_id': task['id'],
+                'task_name': task['name'],
+                'status': 'running',
+                'source_file_count': 0,
+                'target_file_count': 0,
+                'files_uploaded': 0,
+                'files_remaining': 0,
+                'average_speed_bps': 0,
+                'average_speed_fps': 0,
+                'average_speed_mbps': 0,
+                'total_bytes_transferred': 0,
+                'total_mb_transferred': 0,
+                'duration_seconds': 0,
+                'estimated_end_time': None,
+                'start_time': task.get('running_since', ''),
+                'errors': 0,
+                'is_active': True
+            })
+    
+    # Si aucune tâche en cours, retourner les stats de la dernière synchronisation
+    if not active_syncs:
+        for task in tasks:
+            if task.get('last_result'):
+                result = task.get('last_result', {})
+                stats = result.get('stats', {})
+                
+                # Vérifier si la tâche a été exécutée récemment (dans la dernière heure)
+                last_run = task.get('last_run', '')
+                if last_run:
+                    from datetime import datetime, timedelta
+                    last_run_dt = datetime.fromisoformat(last_run.replace('Z', '+00:00'))
+                    if datetime.now() - last_run_dt < timedelta(hours=1):
+                        active_syncs.append({
+                            'task_id': task['id'],
+                            'task_name': task['name'],
+                            'server_id': task.get('server_id', ''),
+                            'source_directory': task.get('source_directory', ''),
+                            'target_directory': task.get('target_directory', ''),
+                            'status': 'completed',
+                            'source_file_count': stats.get('source_file_count', 0),
+                            'target_file_count': stats.get('target_file_count', 0),
+                            'files_uploaded': stats.get('uploaded', 0),
+                            'files_remaining': 0,
+                            'total_files_to_process': stats.get('total_files_to_process', 0),
+                            'average_speed_bps': stats.get('average_speed_bps', 0),
+                            'average_speed_fps': stats.get('average_speed_fps', 0),
+                            'average_speed_mbps': round(stats.get('average_speed_bps', 0) / (1024 * 1024), 2) if stats.get('average_speed_bps', 0) > 0 else 0,
+                            'total_bytes_transferred': stats.get('total_bytes_transferred', 0),
+                            'total_mb_transferred': round(stats.get('total_bytes_transferred', 0) / (1024 * 1024), 2),
+                            'duration_seconds': stats.get('duration_seconds', 0),
+                            'estimated_end_time': None,
+                            'start_time': stats.get('start_time', ''),
+                            'end_time': stats.get('end_time', ''),
+                            'errors': stats.get('errors', 0),
+                            'is_active': False
+                        })
+                        break
+    
+    # Calculer les statistiques globales si plusieurs tâches en cours
+    global_stats = {
+        'total_source_files': sum(s.get('source_file_count', 0) for s in active_syncs),
+        'total_target_files': sum(s.get('target_file_count', 0) for s in active_syncs),
+        'total_files_uploaded': sum(s.get('files_uploaded', 0) for s in active_syncs),
+        'total_files_remaining': sum(s.get('files_remaining', 0) for s in active_syncs),
+        'total_bytes_transferred': sum(s.get('total_bytes_transferred', 0) for s in active_syncs),
+        'total_mb_transferred': round(sum(s.get('total_bytes_transferred', 0) for s in active_syncs) / (1024 * 1024), 2),
+        'average_speed_bps': sum(s.get('average_speed_bps', 0) for s in active_syncs),
+        'average_speed_mbps': round(sum(s.get('average_speed_bps', 0) for s in active_syncs) / (1024 * 1024), 2),
+        'active_syncs_count': len(active_syncs),
+        'has_active_sync': len(active_syncs) > 0
+    }
+    
+    # Si vitesse moyenne > 0 et fichiers restants > 0, calculer l'heure estimée de fin globale
+    if global_stats['average_speed_bps'] > 0 and global_stats['total_files_remaining'] > 0:
+        avg_fps = global_stats['average_speed_bps'] / (1024 * 1024)  # Convertir en fichiers/seconde (approximation)
+        if avg_fps > 0:
+            remaining_time = global_stats['total_files_remaining'] / (global_stats['average_speed_bps'] / (1024 * 1024))
+            from datetime import datetime, timedelta
+            estimated_end = datetime.now() + timedelta(seconds=remaining_time)
+            global_stats['estimated_end_time'] = estimated_end.strftime('%Y-%m-%d %H:%M:%S')
+    
+    return jsonify({
+        'success': True,
+        'active_syncs': active_syncs,
+        'global_stats': global_stats
+    })
+
+
 if __name__ == '__main__':
     # Parsing des arguments CLI
     parser = argparse.ArgumentParser(description='FTP Server Manager')

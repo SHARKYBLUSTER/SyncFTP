@@ -137,6 +137,42 @@
             margin: 0 auto 20px;
         }
         
+        /* Sync stats styles */
+        .sync-stats-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(400px, 1fr));
+            gap: 20px;
+        }
+        
+        .sync-card {
+            color: white;
+            min-height: 200px;
+        }
+        
+        .sync-info {
+            display: grid;
+            grid-template-columns: 1fr;
+            gap: 8px;
+            margin-top: 10px;
+        }
+        
+        .sync-stat {
+            display: flex;
+            justify-content: space-between;
+            padding: 5px 10px;
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 5px;
+            font-size: 0.9em;
+        }
+        
+        .sync-stat strong {
+            color: rgba(255, 255, 255, 0.8);
+        }
+        
+        .sync-stat span {
+            font-weight: bold;
+        }
+        
         @media (max-width: 768px) {
             .stats-grid {
                 grid-template-columns: 1fr;
@@ -197,6 +233,101 @@
                 </div>
             </div>
         </div>
+        
+        <!-- Section Synchronisation en cours -->
+        <div class="section">
+            <h2 class="section-title">🔄 Synchronisation en cours</h2>
+            <div id="syncStatsContainer">
+                <div class="sync-stats-grid" id="syncStatsGrid">
+                    <div class="stat-card sync-card" id="syncCard">
+                        <div class="icon">📦</div>
+                        <div class="sync-info">
+                            <div class="sync-stat">
+                                <strong>Source:</strong> <span id="sourceFileCount">0</span> fichiers
+                            </div>
+                            <div class="sync-stat">
+                                <strong>Cible:</strong> <span id="targetFileCount">0</span> fichiers
+                            </div>
+                            <div class="sync-stat">
+                                <strong>Restants:</strong> <span id="filesRemaining">0</span> fichiers
+                            </div>
+                            <div class="sync-stat">
+                                <strong>Vitesse:</strong> <span id="averageSpeed">0</span> Mo/s
+                            </div>
+                            <div class="sync-stat">
+                                <strong>Fin estimée:</strong> <span id="estimatedEndTime">--:--:--</span>
+                            </div>
+                            <div class="sync-stat">
+                                <strong>Transférés:</strong> <span id="totalMBTransferred">0</span> Mo
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div id="activeSyncsList" style="margin-top: 20px;"></div>
+            </div>
+        </div>
     </div>
+    
+    <script>
+        // Rafraîchir les statistiques de synchronisation
+        function refreshSyncStats() {
+            fetch('/api/sync_stats')
+                .then(response => response.json())
+                .then(data => {
+                    if (data.success) {
+                        const globalStats = data.global_stats;
+                        const activeSyncs = data.active_syncs || [];
+                        
+                        // Mettre à jour la carte principale
+                        document.getElementById('sourceFileCount').textContent = globalStats.total_source_files || 0;
+                        document.getElementById('targetFileCount').textContent = globalStats.total_target_files || 0;
+                        document.getElementById('filesRemaining').textContent = globalStats.total_files_remaining || 0;
+                        document.getElementById('averageSpeed').textContent = globalStats.average_speed_mbps || 0;
+                        document.getElementById('totalMBTransferred').textContent = globalStats.total_mb_transferred || 0;
+                        document.getElementById('estimatedEndTime').textContent = globalStats.estimated_end_time || '--:--:--';
+                        
+                        // Mettre à jour la liste des synchronisations actives
+                        const activeSyncsList = document.getElementById('activeSyncsList');
+                        if (activeSyncs.length > 0) {
+                            let html = '<div class="section" style="margin-top: 20px;"><h3 style="color: #667eea; margin-bottom: 10px;">Tâches actives:</h3>';
+                            activeSyncs.forEach(sync => {
+                                html += `
+                                    <div class="stat-card" style="background: #f8f9fa; color: #333; margin-bottom: 10px;">
+                                        <strong>${sync.task_name || 'Inconnu'}</strong><br>
+                                        <small>Source: ${sync.source_directory || 'N/A'}</small><br>
+                                        <small>Uploadés: ${sync.files_uploaded || 0} | Restants: ${sync.files_remaining || 0}</small><br>
+                                        <small>Vitesse: ${sync.average_speed_mbps || 0} Mo/s</small><br>
+                                        <small>Fin: ${sync.estimated_end_time || '--:--:--'}</small>
+                                    </div>
+                                `;
+                            });
+                            html += '</div>';
+                            activeSyncsList.innerHTML = html;
+                        } else {
+                            activeSyncsList.innerHTML = '<p style="text-align: center; color: #666;">Aucune synchronisation en cours</p>';
+                        }
+                        
+                        // Changer la couleur de la carte selon l'état
+                        const syncCard = document.getElementById('syncCard');
+                        if (globalStats.has_active_sync) {
+                            syncCard.style.background = 'linear-gradient(135deg, #28a745 0%, #218838 100%)';
+                        } else {
+                            syncCard.style.background = 'linear-gradient(135deg, #6c757d 0%, #495057 100%)';
+                        }
+                    }
+                })
+                .catch(error => {
+                    console.error('Erreur lors du rafraîchissement des stats:', error);
+                });
+        }
+        
+        // Rafraîchir toutes les 3 secondes
+        setInterval(refreshSyncStats, 3000);
+        
+        // Rafraîchir au chargement de la page
+        document.addEventListener('DOMContentLoaded', function() {
+            refreshSyncStats();
+        });
+    </script>
 </body>
 </html>

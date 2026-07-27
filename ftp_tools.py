@@ -582,11 +582,16 @@ class FTPConnector:
                 'uploaded': int, 'deleted': int, 'skipped': int, 'errors': int,
                 'source_file_count': int, 'target_file_count': int,
                 'uploaded_files': List[str], 'deleted_files': List[str],
-                'excluded': int, 'excluded_files': List[str]
+                'excluded': int, 'excluded_files': List[str],
+                'start_time': str, 'end_time': str, 'duration_seconds': float,
+                'total_bytes_transferred': int, 'average_speed_bps': float,
+                'average_speed_fps': float, 'estimated_end_time': str,
+                'files_remaining': int, 'total_files_to_process': int
             }
         """
         import time
         import logging
+        from datetime import datetime, timedelta
         
         # Utiliser le logger fourni ou un logger par défaut
         if logger is None:
@@ -596,7 +601,16 @@ class FTPConnector:
             'uploaded': 0, 'deleted': 0, 'skipped': 0, 'errors': 0,
             'excluded': 0,
             'source_file_count': 0, 'target_file_count': 0,
-            'uploaded_files': [], 'deleted_files': [], 'excluded_files': []
+            'uploaded_files': [], 'deleted_files': [], 'excluded_files': [],
+            'start_time': datetime.now().isoformat(),
+            'end_time': None,
+            'duration_seconds': 0,
+            'total_bytes_transferred': 0,
+            'average_speed_bps': 0,
+            'average_speed_fps': 0,
+            'estimated_end_time': None,
+            'files_remaining': 0,
+            'total_files_to_process': 0
         }
         
         try:
@@ -649,6 +663,13 @@ class FTPConnector:
             # Fichiers à supprimer (présents dans remote mais pas dans source)
             files_to_delete = remote_set - source_set
             
+            # Calculer le nombre total de fichiers à traiter
+            stats['total_files_to_process'] = len(files_to_upload)
+            stats['files_remaining'] = stats['total_files_to_process']
+            
+            # Temps de début du transfert
+            transfer_start_time = time.time()
+            
             # D'abord, uploader tous les fichiers de la source (comme avant)
             def handle_walk_error(error):
                 logger.warning(f"Accès refusé à un fichier/dossier lors du parcours: {error}")
@@ -677,6 +698,9 @@ class FTPConnector:
                         file_dir = os.path.dirname(relative_path)
                         if file_dir:
                             self._create_remote_directory(file_dir)
+                        
+                        # Enregistrer la taille du fichier pour le calcul de vitesse
+                        file_size = os.path.getsize(local_file_path)
                         
                         success = False
                         for attempt in range(3):
@@ -711,6 +735,20 @@ class FTPConnector:
                         if success:
                             stats['uploaded'] += 1
                             stats['uploaded_files'].append(relative_path)
+                            stats['total_bytes_transferred'] += file_size
+                            stats['files_remaining'] = stats['total_files_to_process'] - stats['uploaded']
+                            
+                            # Calculer la vitesse moyenne et l'heure estimée
+                            current_time = time.time()
+                            elapsed_time = current_time - transfer_start_time
+                            if elapsed_time > 0:
+                                stats['average_speed_bps'] = stats['total_bytes_transferred'] / elapsed_time
+                                stats['average_speed_fps'] = stats['uploaded'] / elapsed_time
+                                if stats['average_speed_fps'] > 0 and stats['files_remaining'] > 0:
+                                    remaining_time = stats['files_remaining'] / stats['average_speed_fps']
+                                    estimated_end = datetime.now() + timedelta(seconds=remaining_time)
+                                    stats['estimated_end_time'] = estimated_end.strftime('%Y-%m-%d %H:%M:%S')
+                            
                             logger.info(f"Fichier écrit sur le FTP: {relative_path}")
                     else:
                         stats['skipped'] += 1
@@ -736,6 +774,14 @@ class FTPConnector:
                 except Exception as e:
                     stats['errors'] += 1
                     logger.error(f"Erreur inattendue lors de la suppression de {relative_path}: {e}")
+            
+            # Calculer la durée totale et la vitesse finale
+            stats['end_time'] = datetime.now().isoformat()
+            stats['duration_seconds'] = time.time() - transfer_start_time
+            
+            if stats['duration_seconds'] > 0:
+                stats['average_speed_bps'] = stats['total_bytes_transferred'] / stats['duration_seconds']
+                stats['average_speed_fps'] = stats['uploaded'] / stats['duration_seconds']
             
             success = stats['errors'] == 0
             message = (f"Synchronisation terminée: {stats['uploaded']} fichiers uploadés, "
