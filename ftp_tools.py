@@ -608,36 +608,12 @@ class FTPConnector:
             files_to_delete = remote_set - source_set
             
             # D'abord, uploader tous les fichiers de la source (comme avant)
-            for root, dirs, files in os.walk(local_dir):
+            def handle_walk_error(error):
+                logger.warning(f"Accès refusé à un fichier/dossier lors du parcours: {error}")
+            
+            for root, dirs, files in os.walk(local_dir, onerror=handle_walk_error):
                 # Calculer le chemin relatif
                 rel_path = os.path.relpath(root, local_dir)
-                
-                # Naviguer vers le répertoire distant correspondant
-                if rel_path != '.':
-                    # Normaliser le chemin pour FTP (remplacer les backslashes)
-                    rel_path_normalized = rel_path.replace('\\', '/')
-                    
-                    try:
-                        self._ftp.cwd(rel_path_normalized)
-                    except ftplib.error_perm:
-                        # Retourner au répertoire de base et naviguer étape par étape
-                        try:
-                            self._ftp.cwd(remote_dir)
-                        except Exception:
-                            pass
-                        
-                        # Créer et naviguer vers le répertoire étape par étape
-                        parts = [p for p in rel_path_normalized.split('/') if p]
-                        for part in parts:
-                            try:
-                                self._ftp.cwd(part)
-                            except ftplib.error_perm:
-                                try:
-                                    self._ftp.mkd(part)
-                                    self._ftp.cwd(part)
-                                except ftplib.error_perm:
-                                    # Si on ne peut pas créer, essayer de continuer
-                                    pass
                 
                 # Traiter chaque fichier
                 for filename in files:
@@ -655,11 +631,16 @@ class FTPConnector:
                     
                     # Upload le fichier avec retry (UNIQUEMENT s'il est dans files_to_upload)
                     if relative_path in files_to_upload:
+                        # Créer le répertoire parent si nécessaire
+                        file_dir = os.path.dirname(relative_path)
+                        if file_dir:
+                            self._create_remote_directory(file_dir)
+                        
                         success = False
                         for attempt in range(3):
                             try:
                                 with open(local_file_path, 'rb') as f:
-                                    self._ftp.storbinary(f'STOR {filename}', f)
+                                    self._ftp.storbinary(f'STOR {relative_path}', f)
                                 success = True
                                 break
                             except ftplib.all_errors as e:
@@ -671,22 +652,12 @@ class FTPConnector:
                                         pass
                                     try:
                                         self.connect()
-                                        # Naviguer à nouveau vers le répertoire de base
+                                        # Retourner au répertoire de base
                                         if remote_dir:
-                                            self._ftp.cwd(remote_dir)
-                                        # Naviguer vers rel_path étape par étape
-                                        if rel_path != '.':
-                                            rel_path_normalized = rel_path.replace('\\', '/')
-                                            parts = [p for p in rel_path_normalized.split('/') if p]
-                                            for part in parts:
-                                                try:
-                                                    self._ftp.cwd(part)
-                                                except ftplib.error_perm:
-                                                    try:
-                                                        self._ftp.mkd(part)
-                                                        self._ftp.cwd(part)
-                                                    except ftplib.error_perm:
-                                                        pass
+                                            try:
+                                                self._ftp.cwd(remote_dir)
+                                            except Exception:
+                                                pass
                                     except Exception:
                                         pass
                                 else:
@@ -711,32 +682,12 @@ class FTPConnector:
             # Ensuite, supprimer les fichiers orphelins
             for relative_path in sorted(files_to_delete):
                 try:
-                    # Extraire le répertoire et le nom de fichier
-                    file_dir = os.path.dirname(relative_path)
-                    filename = os.path.basename(relative_path)
-                    
-                    # Naviguer vers le répertoire distant
-                    if file_dir:
-                        try:
-                            self._ftp.cwd(file_dir)
-                        except ftplib.error_perm:
-                            # Ne pas supprimer si on ne peut pas accéder au répertoire
-                            stats['errors'] += 1
-                            logger.error(f"Impossible d'accéder au répertoire pour suppression: {relative_path}")
-                            continue
-                    
-                    # Supprimer le fichier
-                    self._ftp.delete(filename)
+                    # Supprimer directement avec le chemin relatif complet
+                    self._ftp.delete(relative_path)
                     stats['deleted'] += 1
                     stats['deleted_files'].append(relative_path)
                     logger.warning(f"Fichier supprimé du FTP: {relative_path}")
-                    
-                    # Retourner au répertoire de base
-                    try:
-                        self._ftp.cwd(remote_dir)
-                    except Exception:
-                        pass
-                        
+
                 except ftplib.all_errors as e:
                     stats['errors'] += 1
                     logger.error(f"Erreur lors de la suppression de {relative_path}: {e}")
