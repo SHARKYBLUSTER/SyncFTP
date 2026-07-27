@@ -21,7 +21,9 @@ SyncFTP est une application web légère qui permet de gérer plusieurs serveurs
 - ✅ **La première synchronisation démarre automatiquement à la création de la tâche**
 - ✅ Exécution manuelle immédiate des tâches
 - ✅ Activation/Désactivation des tâches
-- ✅ Statistiques d'exécution (fichiers uploadés, erreurs, etc.)
+- ✅ Statistiques d'exécution (fichiers uploadés, supprimés, erreurs, etc.)
+- ✅ **Suppression automatique des fichiers orphelins** (présents sur FTP mais pas dans la source)
+- ✅ **Synchronisation bidirectionnelle** : la cible FTP devient un miroir exact de la source locale
 
 ### Interface Utilisateur
 - ✅ Tableau de bord avec statistiques (nombre de serveurs et tâches)
@@ -142,6 +144,37 @@ L'application sera accessible à l'adresse : `http://localhost:5000`
 - **À la création** : La première synchronisation démarre automatiquement
 - **En arrière-plan** : Les tâches activées s'exécutent selon leur fréquence configurée
 - **Logs** : Toutes les opérations sont journalisées dans `app.log` et visibles dans l'interface
+
+### Synchronisation Bidirectionnelle
+
+La synchronisation fonctionne selon les règles suivantes :
+
+- **⬆️ Upload** : Les fichiers présents dans le **répertoire source local** mais **absents du répertoire FTP cible** sont **uploadés** vers le serveur FTP
+- **⬇️ Suppression** : Les fichiers présents dans le **répertoire FTP cible** mais **absents du répertoire source local** sont **supprimés** du serveur FTP
+- **➖ Inchangé** : Les fichiers présents dans les deux répertoires ne sont pas modifiés
+
+#### Logs détaillés
+
+Lorsque la synchronisation s'exécute, les informations suivantes sont journalisées :
+
+- **INFO** : `Connexion au serveur FTP établie. Répertoire cible: [chemin]`
+- **INFO** : `Nombre de fichiers dans la source: X`
+- **INFO** : `Nombre de fichiers dans le FTP cible: Y`
+- **INFO** : `Fichier écrit sur le FTP: [nom_du_fichier]` (pour chaque fichier uploadé)
+- **WARNING** : `Fichier supprimé du FTP: [nom_du_fichier]` (pour chaque fichier supprimé)
+- **INFO** : `Synchronisation terminée: X fichiers uploadés, Y fichiers supprimés, Z erreurs`
+
+#### Exemple
+
+```
+[2024-01-15 10:30:45] INFO: Connexion au serveur FTP établie. Répertoire cible: /Freebox/Backup
+[2024-01-15 10:30:45] INFO: Nombre de fichiers dans la source: 15
+[2024-01-15 10:30:46] INFO: Nombre de fichiers dans le FTP cible: 12
+[2024-01-15 10:30:47] INFO: Fichier écrit sur le FTP: photos/new_photo.jpg
+[2024-01-15 10:30:48] INFO: Fichier écrit sur le FTP: documents/report.pdf
+[2024-01-15 10:30:49] WARNING: Fichier supprimé du FTP: old_file.txt
+[2024-01-15 10:30:50] INFO: Synchronisation terminée: 2 fichiers uploadés, 1 fichiers supprimés, 0 erreurs
+```
 
 ---
 
