@@ -259,6 +259,29 @@
                                 <option value="WARNING" {% if config.log_level == 'WARNING' %}selected{% endif %}>⚠️ WARNING (Avertissements et erreurs)</option>
                                 <option value="ERROR" {% if config.log_level == 'ERROR' %}selected{% endif %}>❌ ERROR (Uniquement les erreurs)</option>
                             </select>
+                            <small style="display: block; margin-top: 5px; color: #666;">
+                                Note: Pour voir les logs DEBUG de performance, activez aussi l'option ci-dessous
+                            </small>
+                        </div>
+                        
+                        <div class="form-group">
+                            <label for="debugLogging">Logs de performance DEBUG activés</label>
+                            <select id="debugLogging" name="debug_logging_enabled">
+                                <option value="true" {% if config.debug_logging_enabled %}selected{% endif %}>✅ Oui</option>
+                                <option value="false" {% if not config.debug_logging_enabled %}selected{% endif %}>❌ Non</option>
+                            </select>
+                            <small style="display: block; margin-top: 5px; color: #666;">
+                                Active les logs détaillés de performance pour le débogage des lenteurs
+                            </small>
+                        </div>
+                        
+                        <div class="form-group">
+                            <label for="taskSaveThrottle">Sauvegarder après N fichiers</label>
+                            <input type="number" id="taskSaveThrottle" name="task_save_throttle" 
+                                   value="{{ config.task_save_throttle }}" min="1" max="100">
+                            <small style="display: block; margin-top: 5px; color: #666;">
+                                Nombre de fichiers entre chaque sauvegarde pendant la synchronisation (pour optimiser les performances)
+                            </small>
                         </div>
                         
                         <div class="form-group">
@@ -352,6 +375,8 @@
                     document.getElementById('autoRefresh').value = config.auto_refresh !== false ? 'true' : 'false';
                     document.getElementById('corruptedCheckInterval').value = config.corrupted_files_check_interval || 300;
                     document.getElementById('excludePatterns').value = config.exclude_patterns || '*.tmp,*.part,*.temp,*.~lk,*.lock,Thumbs.db,desktop.ini';
+                    document.getElementById('debugLogging').value = config.debug_logging_enabled ? 'true' : 'false';
+                    document.getElementById('taskSaveThrottle').value = config.task_save_throttle || 10;
                 })
                 .catch(error => {
                     showStatus('Erreur lors du chargement de la configuration', 'error');
@@ -366,7 +391,9 @@
                 log_refresh_interval: parseInt(document.getElementById('refreshInterval').value) || 3,
                 auto_refresh: document.getElementById('autoRefresh').value === 'true',
                 corrupted_files_check_interval: parseInt(document.getElementById('corruptedCheckInterval').value) || 300,
-                exclude_patterns: document.getElementById('excludePatterns').value || '*.tmp,*.part,*.temp,*.~lk,*.lock,Thumbs.db,desktop.ini'
+                exclude_patterns: document.getElementById('excludePatterns').value || '*.tmp,*.part,*.temp,*.~lk,*.lock,Thumbs.db,desktop.ini',
+                debug_logging_enabled: document.getElementById('debugLogging').value === 'true',
+                task_save_throttle: parseInt(document.getElementById('taskSaveThrottle').value) || 10
             };
             
             fetch('/api/config', {
@@ -417,7 +444,9 @@
                     log_refresh_interval: 3,
                     auto_refresh: true,
                     corrupted_files_check_interval: 300,
-                    exclude_patterns: '*.tmp,*.part,*.temp,*.~lk,*.lock,Thumbs.db,desktop.ini'
+                    exclude_patterns: '*.tmp,*.part,*.temp,*.~lk,*.lock,Thumbs.db,desktop.ini',
+                    debug_logging_enabled: false,
+                    task_save_throttle: 10
                 };
                 
                 fetch('/api/config', {

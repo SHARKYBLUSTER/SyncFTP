@@ -617,8 +617,13 @@ class FTPConnector:
         }
         
         try:
+            # Timestamp pour mesurer les performances
+            phase_start = time.time()
+            
             if not self.is_connected():
+                connect_start = time.time()
                 self.connect()
+                logger.debug(f"[PERF] Connexion FTP établie en {(time.time() - connect_start)*1000:.0f}ms")
             
             # Normaliser les chemins
             local_dir = local_dir.rstrip('/\\')
@@ -633,8 +638,12 @@ class FTPConnector:
             
             # Lister les fichiers source et cible
             logger.info(f"Connexion au serveur FTP établie. Répertoire cible: {self._ftp.pwd()}")
+            logger.debug(f"[PERF] Phase de connexion terminée en {(time.time() - phase_start)*1000:.0f}ms")
             
+            # Mesurer le temps de listage local
+            list_local_start = time.time()
             source_files = self._list_local_files(local_dir)
+            logger.debug(f"[PERF] Listage local terminé: {len(source_files)} fichiers trouvés en {(time.time() - list_local_start)*1000:.0f}ms")
             
             # Filtrer les fichiers exclus
             if exclude_patterns:
@@ -652,9 +661,12 @@ class FTPConnector:
             stats['source_file_count'] = len(source_files)
             logger.info(f"Nombre de fichiers dans la source: {stats['source_file_count']}")
             
+            # Mesurer le temps de listage distant
+            list_remote_start = time.time()
             remote_files = self._list_remote_files_recursive(remote_dir)
             stats['target_file_count'] = len(remote_files)
             logger.info(f"Nombre de fichiers dans le FTP cible: {stats['target_file_count']}")
+            logger.debug(f"[PERF] Listage FTP terminé: {len(remote_files)} fichiers trouvés en {(time.time() - list_remote_start)*1000:.0f}ms")
             
             # Convertir en sets pour comparaison
             source_set = set(source_files)
@@ -676,6 +688,9 @@ class FTPConnector:
             # D'abord, uploader tous les fichiers de la source (comme avant)
             def handle_walk_error(error):
                 logger.warning(f"Accès refusé à un fichier/dossier lors du parcours: {error}")
+            
+            upload_phase_start = time.time()
+            logger.debug(f"[PERF] Début phase d'upload, {len(files_to_upload)} fichiers à uploader")
             
             for root, dirs, files in os.walk(local_dir, onerror=handle_walk_error):
                 # Calculer le chemin relatif
@@ -720,6 +735,7 @@ class FTPConnector:
                                     except Exception:
                                         pass
                                     try:
+                                        reconnect_start = time.time()
                                         self.connect()
                                         # Retourner au répertoire de base
                                         if remote_dir:
@@ -727,6 +743,7 @@ class FTPConnector:
                                                 self._ftp.cwd(remote_dir)
                                             except Exception:
                                                 pass
+                                        logger.debug(f"[PERF] Reconnexion FTP tentative {attempt + 1} terminée en {(time.time() - reconnect_start)*1000:.0f}ms")
                                     except Exception:
                                         pass
                                 else:
@@ -764,6 +781,10 @@ class FTPConnector:
                     else:
                         stats['skipped'] += 1
             
+            # Fin de la phase d'upload
+            upload_phase_duration = time.time() - upload_phase_start
+            logger.debug(f"[PERF] Phase d'upload terminée en {upload_phase_duration:.2f}s, {stats['uploaded']} fichiers uploadés")
+            
             # Retourner au répertoire de base pour la suppression
             try:
                 self._ftp.cwd(remote_dir)
@@ -771,6 +792,9 @@ class FTPConnector:
                 pass
             
             # Ensuite, supprimer les fichiers orphelins
+            delete_phase_start = time.time()
+            logger.debug(f"[PERF] Début phase de suppression, {len(files_to_delete)} fichiers à supprimer")
+            
             for relative_path in sorted(files_to_delete):
                 try:
                     # Supprimer directement avec le chemin relatif complet
@@ -786,6 +810,10 @@ class FTPConnector:
                     stats['errors'] += 1
                     logger.error(f"Erreur inattendue lors de la suppression de {relative_path}: {e}")
             
+            # Fin de la phase de suppression
+            delete_phase_duration = time.time() - delete_phase_start
+            logger.debug(f"[PERF] Phase de suppression terminée en {delete_phase_duration:.2f}s, {stats['deleted']} fichiers supprimés")
+            
             # Calculer la durée totale et la vitesse finale
             stats['end_time'] = datetime.now().isoformat()
             stats['duration_seconds'] = time.time() - transfer_start_time
@@ -799,6 +827,7 @@ class FTPConnector:
                       f"{stats['deleted']} fichiers supprimés, {stats['errors']} erreurs")
             
             logger.info(message)
+            logger.debug(f"[PERF] Synchronisation complète terminée en {stats['duration_seconds']:.2f}s")
             
             return success, message, stats
             

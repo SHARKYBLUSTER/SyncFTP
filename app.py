@@ -81,7 +81,9 @@ def load_config():
         'log_level': 'INFO',
         'auto_refresh': True,
         'corrupted_files_check_interval': 300,  # 5 minutes en secondes
-        'exclude_patterns': '*.tmp,*.part,*.temp,*.~lk,*.lock,Thumbs.db,desktop.ini'  # Patterns à exclure
+        'exclude_patterns': '*.tmp,*.part,*.temp,*.~lk,*.lock,Thumbs.db,desktop.ini',  # Patterns à exclure
+        'debug_logging_enabled': False,  # Active les logs DEBUG de performance
+        'task_save_throttle': 10  # Nombre de fichiers entre chaque sauvegarde pendant la sync
     }
     if not os.path.exists(CONFIG_FILE):
         save_config(default_config)
@@ -95,6 +97,12 @@ def load_config():
             save_config(config)
         if 'exclude_patterns' not in config:
             config['exclude_patterns'] = '*.tmp,*.part,*.temp,*.~lk,*.lock,Thumbs.db,desktop.ini'
+            save_config(config)
+        if 'debug_logging_enabled' not in config:
+            config['debug_logging_enabled'] = False
+            save_config(config)
+        if 'task_save_throttle' not in config:
+            config['task_save_throttle'] = 10
             save_config(config)
         return config
     except Exception as e:
@@ -110,6 +118,41 @@ def save_config(config):
         app.logger.info("Configuration sauvegardée")
     except Exception as e:
         app.logger.error(f"Erreur lors de la sauvegarde de la config: {e}")
+
+
+def is_debug_logging_enabled():
+    """Vérifie si le debug logging est activé dans la configuration"""
+    try:
+        config = load_config()
+        return config.get('debug_logging_enabled', False)
+    except Exception:
+        return False
+
+
+def debug_log(message):
+    """
+    Log un message en mode DEBUG si le debug logging est activé.
+    Utilise le logger de l'application avec un préfixe [PERF] pour les logs de performance.
+    """
+    if is_debug_logging_enabled():
+        app.logger.debug(f"[PERF] {message}")
+
+
+def should_save_tasks():
+    """
+    Vérifie si on doit sauvegarder les tâches en fonction du throttle configuré.
+    Utilise un compteur thread-safe pour limiter la fréquence des sauvegardes.
+    """
+    global task_save_counter
+    config = load_config()
+    throttle = config.get('task_save_throttle', 10)
+    
+    with task_save_counter_lock:
+        task_save_counter += 1
+        if task_save_counter >= throttle:
+            task_save_counter = 0
+            return True
+        return False
 
 
 def cleanup_old_logs():
@@ -265,6 +308,10 @@ corrupted_check_lock = threading.Lock()
 corrupted_check_thread = None
 corrupted_check_stop_event = threading.Event()
 
+# Variable globale pour le throttling des sauvegardes de tâches
+task_save_counter = 0
+task_save_counter_lock = threading.Lock()
+
 
 def load_tasks():
     """Charge la liste des tâches de synchronisation depuis le fichier JSON"""
@@ -361,6 +408,11 @@ def execute_sync_task(task):
             
             connector = FTPConnector(config)
             
+            # Charger la configuration pour le throttling et le debug
+            sync_config = load_config()
+            throttle = sync_config.get('task_save_throttle', 10)
+            debug_enabled = sync_config.get('debug_logging_enabled', False)
+            
             # Créer un callback de progression pour mettre à jour les stats en temps réel
             def progress_callback(current_stats):
                 # Mettre à jour les stats de la tâche en cours
@@ -377,10 +429,25 @@ def execute_sync_task(task):
                             }
                             t['status'] = 'running'
                             break
-                    save_tasks(tasks)
+                    
+                    # Log de performance si activé
+                    if debug_enabled:
+                        uploaded = current_stats.get('uploaded', 0)
+                        total = current_stats.get('total_files_to_process', 0)
+                        if total > 0:
+                            percentage = (uploaded / total) * 100
+                            elapsed = current_stats.get('duration_seconds', 0)
+                            speed = current_stats.get('average_speed_fps', 0)
+                            debug_log(f"Tâche {task['id']}: Progression {uploaded}/{total} ({percentage:.1f}%), "
+                                    f"vitesse: {speed:.2f} fichiers/s, temps écoulé: {elapsed:.1f}s")
+                    
+                    # Sauvegarder uniquement si le throttle le permet
+                    if should_save_tasks():
+                        save_tasks(tasks)
             
             # Exécuter la synchronisation
             app.logger.info(f"Exécution de la tâche {task['id']}: {task['name']}")
+            debug_log(f"Démarrage synchronisation: {task['source_directory']} -> {task['target_directory']}")
             app.logger.info(f"Source: {task['source_directory']} -> Cible: {task['target_directory']}")
             
             # Charger la configuration pour obtenir les patterns d'exclusion
@@ -401,8 +468,12 @@ def execute_sync_task(task):
             
             if success:
                 app.logger.info(f"Tâche {task['id']} terminée avec succès: {stats.get('uploaded', 0)} fichiers synchronisés")
+                debug_log(f"Tâche {task['id']} terminée: {stats.get('uploaded', 0)} uploadés, "
+                         f"{stats.get('deleted', 0)} supprimés, durée: {stats.get('duration_seconds', 0):.2f}s, "
+                         f"vitesse moyenne: {stats.get('average_speed_fps', 0):.2f} fichiers/s")
             else:
                 app.logger.error(f"Échec de la tâche {task['id']}: {message}")
+                debug_log(f"Échec tâche {task['id']}: {message}")
             
             # Mettre à jour le dernier statut de la tâche
             tasks = load_tasks()
@@ -447,25 +518,36 @@ def sync_worker(task):
     interval = task.get('sync_interval', 60)  # en secondes
     
     app.logger.info(f"Démarrage du worker pour la tâche {task_id} (intervalle: {interval}s)")
+    debug_log(f"Worker démarré pour tâche {task_id}, intervalle: {interval}s")
     
     # Exécuter immédiatement la première synchronisation
     if not sync_stop_event.is_set():
+        debug_log(f"Premier lancer immédiat pour tâche {task_id}")
         execute_sync_task(task)
     
     # Boucle principale
+    iteration_count = 0
     while not sync_stop_event.is_set():
         try:
+            iteration_count += 1
+            start_wait = time.time()
+            
             # Attendre l'intervalle
             time.sleep(interval)
+            
+            wait_duration = time.time() - start_wait
+            debug_log(f"Tâche {task_id}: Attente terminée, durée réelle: {wait_duration:.2f}s (attendu: {interval}s)")
             
             # Vérifier si la tâche existe toujours
             tasks = load_tasks()
             task_exists = any(t['id'] == task_id for t in tasks)
             if not task_exists:
+                debug_log(f"Tâche {task_id} supprimée, arrêt du worker")
                 break
             
             # Exécuter la synchronisation
             if not sync_stop_event.is_set():
+                debug_log(f"Lancement synchronisation itération {iteration_count} pour tâche {task_id}")
                 execute_sync_task(task)
                 
         except Exception as e:
@@ -686,7 +768,14 @@ def api_config():
             'WARNING': logging.WARNING,
             'ERROR': logging.ERROR
         }
-        new_level = log_level_map.get(config.get('log_level', 'INFO'), logging.INFO)
+        
+        # Si debug_logging_enabled est vrai, forcer le niveau à DEBUG
+        debug_enabled = config.get('debug_logging_enabled', False)
+        if debug_enabled:
+            new_level = logging.DEBUG
+        else:
+            new_level = log_level_map.get(config.get('log_level', 'INFO'), logging.INFO)
+        
         app.logger.setLevel(new_level)
         
         # Nettoyer les logs si la rétention a changé
