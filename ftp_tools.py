@@ -364,70 +364,100 @@ class FTPConnector:
         """
         files_list = []
         
-        try:
-            if not self.is_connected():
+        if not self.is_connected():
+            try:
                 self.connect()
-            
-            # Sauvegarder le répertoire courant
+            except Exception:
+                return files_list
+        
+        # Sauvegarder le répertoire courant
+        try:
             original_dir = self._ftp.pwd()
-            
-            # Naviguer vers le répertoire de départ
-            if remote_dir:
-                try:
-                    self._ftp.cwd(remote_dir)
-                except ftplib.error_perm as e:
-                    return files_list
-            
+        except Exception:
+            return files_list
+        
+        # Naviguer vers le répertoire de départ
+        if remote_dir:
+            try:
+                self._ftp.cwd(remote_dir)
+            except ftplib.error_perm as e:
+                return files_list
+        
+        try:
             # Fonction récursive pour explorer
             def explore_directory(current_path=""):
                 try:
                     file_list = []
-                    self._ftp.retrlines('LIST', lambda x: file_list.append(
-                        x.decode('utf-8', errors='ignore') if isinstance(x, bytes) else x
-                    ))
+                    try:
+                        self._ftp.retrlines('LIST', lambda x: file_list.append(
+                            x.decode('utf-8', errors='ignore') if isinstance(x, bytes) else x
+                        ))
+                    except ftplib.all_errors:
+                        # Essayer avec MLSD si LIST échoue
+                        try:
+                            self._ftp.retrlines('MLSD', lambda x: file_list.append(
+                                x.decode('utf-8', errors='ignore') if isinstance(x, bytes) else x
+                            ))
+                        except:
+                            pass
                     
                     for line in file_list:
                         line_stripped = line.strip()
                         if not line_stripped:
                             continue
                         
-                        # Analyser la ligne LIST
-                        parts = line_stripped.split()
-                        if len(parts) < 9:
-                            continue
-                        
-                        # Extraire le nom (dernière colonne)
-                        item_name = ' '.join(parts[8:])
-                        
-                        if line_stripped.startswith('d'):
-                            # C'est un répertoire, explorer récursivement
-                            try:
-                                self._ftp.cwd(item_name)
-                                explore_directory(current_path + '/' + item_name if current_path else item_name)
-                                self._ftp.cwd('..')
-                            except ftplib.error_perm:
-                                # Ignorer les répertoires inaccessible
-                                pass
-                        elif line_stripped.startswith('-'):
-                            # C'est un fichier
-                            if current_path:
-                                files_list.append(current_path + '/' + item_name)
+                        # Analyser la ligne LIST ou MLSD
+                        # Format LIST: "-rw-r--r-- 1 user group size date time filename"
+                        # Format MLSD: "Type=file;Size=123;Modify=date; filename"
+                        if line_stripped.startswith('-') or 'Type=file' in line_stripped or line_stripped.startswith('d') or 'Type=dir' in line_stripped:
+                            # Extraire le nom du fichier/répertoire
+                            # Pour LIST format
+                            parts = line_stripped.split()
+                            if len(parts) >= 9 and (line_stripped.startswith('-') or line_stripped.startswith('d')):
+                                item_name = ' '.join(parts[8:])
+                            elif '; ' in line_stripped:  # Format MLSD
+                                # Extraire après le dernier "; "
+                                item_name = line_stripped.split('; ')[-1].strip()
+                            elif line_stripped.startswith('d') or line_stripped.startswith('-'):
+                                # Format LIST simplifié
+                                item_name = parts[-1] if parts else line_stripped
                             else:
-                                files_list.append(item_name)
+                                continue
+                            
+                            # Vérifier si c'est un répertoire ou un fichier
+                            is_dir = line_stripped.startswith('d') or 'Type=dir' in line_stripped
+                            is_file = line_stripped.startswith('-') or 'Type=file' in line_stripped
+                            
+                            if is_dir and item_name not in ('.', '..'):
+                                # C'est un répertoire, explorer récursivement
+                                try:
+                                    self._ftp.cwd(item_name)
+                                    explore_directory(current_path + '/' + item_name if current_path else item_name)
+                                    self._ftp.cwd('..')
+                                except ftplib.error_perm:
+                                    # Ignorer les répertoires inaccessibles
+                                    pass
+                            elif is_file:
+                                # C'est un fichier
+                                if current_path:
+                                    files_list.append(current_path + '/' + item_name)
+                                else:
+                                    files_list.append(item_name)
                             
                 except Exception:
                     pass
             
             explore_directory()
             
-            # Retourner au répertoire original
+        finally:
+            # Toujours retourner au répertoire original
             try:
                 self._ftp.cwd(original_dir)
             except Exception:
-                pass
-                
-        except Exception:
-            pass
+                try:
+                    self._ftp.cwd('/')
+                except Exception:
+                    pass
         
         return files_list
 
@@ -504,11 +534,10 @@ class FTPConnector:
             local_dir = local_dir.rstrip('/\\')
             remote_dir = remote_dir.rstrip('/')
             
-            # Changer de répertoire distant
+            # Se connecter au répertoire distant (créer si nécessaire)
             try:
                 self._ftp.cwd(remote_dir)
             except ftplib.error_perm:
-                # Créer le répertoire s'il n'existe pas
                 self._create_remote_directory(remote_dir)
                 self._ftp.cwd(remote_dir)
             
@@ -532,66 +561,78 @@ class FTPConnector:
             # Fichiers à supprimer (présents dans remote mais pas dans source)
             files_to_delete = remote_set - source_set
             
-            # Upload des fichiers manquants
-            for relative_path in sorted(files_to_upload):
-                local_file_path = os.path.join(local_dir, relative_path)
+            # D'abord, uploader tous les fichiers de la source (comme avant)
+            for root, dirs, files in os.walk(local_dir):
+                # Calculer le chemin relatif
+                rel_path = os.path.relpath(root, local_dir)
                 
-                try:
-                    # Extraire le répertoire et le nom de fichier
-                    file_dir = os.path.dirname(relative_path)
-                    filename = os.path.basename(relative_path)
-                    
-                    # Naviguer vers le répertoire distant
-                    if file_dir:
-                        try:
-                            self._ftp.cwd(file_dir)
-                        except ftplib.error_perm:
-                            self._create_remote_directory(file_dir)
-                            self._ftp.cwd(file_dir)
-                    
-                    # Upload le fichier avec retry
-                    success = False
-                    for attempt in range(3):
-                        try:
-                            with open(local_file_path, 'rb') as f:
-                                self._ftp.storbinary(f'STOR {filename}', f)
-                            success = True
-                            break
-                        except ftplib.all_errors as e:
-                            if attempt < 2:
-                                time.sleep(1)
-                                try:
-                                    self._ftp.quit()
-                                except Exception:
-                                    pass
-                                try:
-                                    self.connect()
-                                    # Naviguer à nouveau
-                                    if remote_dir:
-                                        self._ftp.cwd(remote_dir)
-                                    if file_dir:
-                                        self._ftp.cwd(file_dir)
-                                except Exception:
-                                    pass
-                    
-                    if success:
-                        stats['uploaded'] += 1
-                        stats['uploaded_files'].append(relative_path)
-                        logger.info(f"Fichier écrit sur le FTP: {relative_path}")
-                    else:
-                        stats['errors'] += 1
-                        
-                    # Retourner au répertoire de base
+                # Naviguer vers le répertoire distant correspondant
+                if rel_path != '.':
                     try:
-                        self._ftp.cwd(remote_dir)
-                    except Exception:
-                        pass
+                        self._ftp.cwd(rel_path)
+                    except ftplib.error_perm:
+                        self._create_remote_directory(rel_path)
+                        self._ftp.cwd(rel_path)
+                
+                # Traiter chaque fichier
+                for filename in files:
+                    local_file_path = os.path.join(root, filename)
+                    
+                    # Skip directories (already handled by os.walk)
+                    if not os.path.isfile(local_file_path):
+                        continue
+                    
+                    # Chemin relatif du fichier
+                    if rel_path == '.':
+                        relative_path = filename
+                    else:
+                        relative_path = os.path.join(rel_path, filename)
+                    
+                    # Upload le fichier avec retry (UNIQUEMENT s'il est dans files_to_upload)
+                    if relative_path in files_to_upload:
+                        success = False
+                        for attempt in range(3):
+                            try:
+                                with open(local_file_path, 'rb') as f:
+                                    self._ftp.storbinary(f'STOR {filename}', f)
+                                success = True
+                                break
+                            except ftplib.all_errors as e:
+                                if attempt < 2:
+                                    time.sleep(1)
+                                    try:
+                                        self._ftp.quit()
+                                    except Exception:
+                                        pass
+                                    try:
+                                        self.connect()
+                                        # Naviguer à nouveau
+                                        if remote_dir:
+                                            self._ftp.cwd(remote_dir)
+                                        if rel_path != '.':
+                                            self._ftp.cwd(rel_path)
+                                    except Exception:
+                                        pass
+                                else:
+                                    stats['errors'] += 1
+                            except Exception as e:
+                                stats['errors'] += 1
+                                break
                         
-                except Exception as e:
-                    stats['errors'] += 1
-                    logger.error(f"Erreur lors de l'upload de {relative_path}: {e}")
+                        if success:
+                            stats['uploaded'] += 1
+                            stats['uploaded_files'].append(relative_path)
+                            logger.info(f"Fichier écrit sur le FTP: {relative_path}")
+                    else:
+                        stats['skipped'] += 1
             
-            # Suppression des fichiers orphelins
+            # Retourner au répertoire de base pour la suppression
+            try:
+                self._ftp.cwd(remote_dir)
+            except Exception:
+                pass
+            
+            # Ensuite, supprimer les fichiers orphelins
             for relative_path in sorted(files_to_delete):
                 try:
                     # Extraire le répertoire et le nom de fichier
@@ -604,6 +645,8 @@ class FTPConnector:
                             self._ftp.cwd(file_dir)
                         except ftplib.error_perm:
                             # Ne pas supprimer si on ne peut pas accéder au répertoire
+                            stats['errors'] += 1
+                            logger.error(f"Impossible d'accéder au répertoire pour suppression: {relative_path}")
                             continue
                     
                     # Supprimer le fichier
