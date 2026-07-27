@@ -229,6 +229,17 @@
             color: #721c24;
         }
         
+        .status-badge.running {
+            background: #fff3cd;
+            color: #856404;
+            animation: pulse 1s infinite;
+        }
+        
+        @keyframes pulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.7; }
+        }
+        
         /* Modal */
         .modal {
             display: none;
@@ -459,9 +470,14 @@
                         <div class="task-card" data-task-id="{{ task.id }}">
                             <div class="task-header">
                                 <h3>{{ task.name }}</h3>
-                                <span class="status-badge {% if task.get('enabled', True) %}enabled{% else %}disabled{% endif %}">
-                                    {% if task.get('enabled', True) %}ACTIF{% else %}INACTIF{% endif %}
-                                </span>
+                                <div style="display: flex; gap: 10px; align-items: center;">
+                                    {% if task.get('status') == 'running' %}
+                                        <span class="status-badge running">🔄 EN COURS</span>
+                                    {% endif %}
+                                    <span class="status-badge {% if task.get('enabled', True) %}enabled{% else %}disabled{% endif %}">
+                                        {% if task.get('enabled', True) %}ACTIF{% else %}INACTIF{% endif %}
+                                    </span>
+                                </div>
                             </div>
                             <div class="task-info">
                                 <div class="info-item">
@@ -486,6 +502,18 @@
                                 {% if task.last_run %}
                                     <div class="info-item">
                                         <strong>Dernière exécution:</strong> <span>{{ task.last_run[:19] }}</span>
+                                    </div>
+                                {% endif %}
+                                {% if task.get('status') %}
+                                    <div class="info-item">
+                                        <strong>Statut:</strong> 
+                                        <span>
+                                            {% if task.status == 'running' %}🔄 En cours
+                                            {% elif task.status == 'completed' %}✅ Terminé
+                                            {% elif task.status == 'failed' %}❌ Échec
+                                            {% elif task.status == 'idle' %}⏸️ En attente
+                                            {% else %}{{ task.status }}{% endif %}
+                                        </span>
                                     </div>
                                 {% endif %}
                             </div>

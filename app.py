@@ -244,28 +244,38 @@ sync_lock = threading.Lock()
 sync_tasks = []
 sync_threads = {}
 sync_stop_event = threading.Event()
+tasks_file_lock = threading.Lock()  # Verrou pour protéger l'accès au fichier tasks.json
 
 
 def load_tasks():
     """Charge la liste des tâches de synchronisation depuis le fichier JSON"""
-    if not os.path.exists(TASKS_FILE):
-        return []
-    try:
-        with open(TASKS_FILE, 'r', encoding='utf-8') as f:
-            return json.load(f)
-    except Exception as e:
-        app.logger.error(f"Erreur lors du chargement des tâches: {e}")
-        return []
+    with tasks_file_lock:
+        if not os.path.exists(TASKS_FILE):
+            return []
+        try:
+            with open(TASKS_FILE, 'r', encoding='utf-8') as f:
+                tasks = json.load(f)
+            
+            # S'assurer que toutes les tâches ont un champ status
+            for task in tasks:
+                if 'status' not in task:
+                    task['status'] = 'idle'
+            
+            return tasks
+        except Exception as e:
+            app.logger.error(f"Erreur lors du chargement des tâches: {e}")
+            return []
 
 
 def save_tasks(tasks):
     """Sauvegarde la liste des tâches de synchronisation dans le fichier JSON"""
-    try:
-        with open(TASKS_FILE, 'w', encoding='utf-8') as f:
-            json.dump(tasks, f, indent=2, ensure_ascii=False)
-        app.logger.info(f"Tâches sauvegardées ({len(tasks)} tâches)")
-    except Exception as e:
-        app.logger.error(f"Erreur lors de la sauvegarde des tâches: {e}")
+    with tasks_file_lock:
+        try:
+            with open(TASKS_FILE, 'w', encoding='utf-8') as f:
+                json.dump(tasks, f, indent=2, ensure_ascii=False)
+            app.logger.info(f"Tâches sauvegardées ({len(tasks)} tâches)")
+        except Exception as e:
+            app.logger.error(f"Erreur lors de la sauvegarde des tâches: {e}")
 
 
 def get_server_by_id(server_id):
@@ -292,57 +302,93 @@ def execute_sync_task(task):
         'timestamp': datetime.now().isoformat()
     }
     
-    try:
-        # Récupérer le serveur
-        server = get_server_by_id(task['server_id'])
-        if not server:
-            result['message'] = f"Serveur non trouvé: {task['server_id']}"
-            app.logger.error(result['message'])
-            return result
-        
-        # Créer la configuration FTP
-        config = FTPConfig(
-            host=server['host'],
-            port=int(server.get('port', 21)),
-            username=server.get('username', 'anonymous'),
-            password=server.get('password', ''),
-            use_ssl=server.get('use_ssl', False),
-            timeout=int(server.get('timeout', 30))
-        )
-        
-        connector = FTPConnector(config)
-        
-        # Exécuter la synchronisation
-        app.logger.info(f"Exécution de la tâche {task['id']}: {task['name']}")
-        app.logger.info(f"Source: {task['source_directory']} -> Cible: {task['target_directory']}")
-        
-        success, message, stats = connector.sync_directory_to_ftp(
-            task['source_directory'],
-            task['target_directory'],
-            logger=app.logger
-        )
-        
-        result['success'] = success
-        result['message'] = message
-        result['stats'] = stats
-        
-        if success:
-            app.logger.info(f"Tâche {task['id']} terminée avec succès: {stats.get('uploaded', 0)} fichiers synchronisés")
-        else:
-            app.logger.error(f"Échec de la tâche {task['id']}: {message}")
-        
-        # Mettre à jour le dernier statut de la tâche
-        tasks = load_tasks()
-        for t in tasks:
-            if t['id'] == task['id']:
-                t['last_run'] = datetime.now().isoformat()
-                t['last_result'] = result
-                break
-        save_tasks(tasks)
-        
-    except Exception as e:
-        result['message'] = f"Erreur: {e}"
-        app.logger.error(f"Erreur lors de l'exécution de la tâche {task['id']}: {e}")
+    # Acquérir le verrou global pour éviter les conflits
+    with sync_lock:
+        try:
+            # Marquer la tâche comme en cours
+            tasks = load_tasks()
+            task_index = None
+            for i, t in enumerate(tasks):
+                if t['id'] == task['id']:
+                    t['status'] = 'running'
+                    t['running_since'] = datetime.now().isoformat()
+                    task_index = i
+                    break
+            
+            if task_index is not None:
+                save_tasks(tasks)
+                app.logger.info(f"Tâche {task['id']} démarrée: {task['name']}")
+            
+            # Récupérer le serveur
+            server = get_server_by_id(task['server_id'])
+            if not server:
+                result['message'] = f"Serveur non trouvé: {task['server_id']}"
+                app.logger.error(result['message'])
+                # Réinitialiser le statut
+                if task_index is not None:
+                    tasks[task_index]['status'] = 'failed'
+                    save_tasks(tasks)
+                return result
+            
+            # Créer la configuration FTP
+            config = FTPConfig(
+                host=server['host'],
+                port=int(server.get('port', 21)),
+                username=server.get('username', 'anonymous'),
+                password=server.get('password', ''),
+                use_ssl=server.get('use_ssl', False),
+                timeout=int(server.get('timeout', 30))
+            )
+            
+            connector = FTPConnector(config)
+            
+            # Exécuter la synchronisation
+            app.logger.info(f"Exécution de la tâche {task['id']}: {task['name']}")
+            app.logger.info(f"Source: {task['source_directory']} -> Cible: {task['target_directory']}")
+            
+            success, message, stats = connector.sync_directory_to_ftp(
+                task['source_directory'],
+                task['target_directory'],
+                logger=app.logger
+            )
+            
+            result['success'] = success
+            result['message'] = message
+            result['stats'] = stats
+            
+            if success:
+                app.logger.info(f"Tâche {task['id']} terminée avec succès: {stats.get('uploaded', 0)} fichiers synchronisés")
+            else:
+                app.logger.error(f"Échec de la tâche {task['id']}: {message}")
+            
+            # Mettre à jour le dernier statut de la tâche
+            tasks = load_tasks()
+            for t in tasks:
+                if t['id'] == task['id']:
+                    t['status'] = 'completed' if success else 'failed'
+                    t['last_run'] = datetime.now().isoformat()
+                    t['last_result'] = result
+                    # Nettoyer le champ running_since
+                    t.pop('running_since', None)
+                    break
+            save_tasks(tasks)
+            
+        except Exception as e:
+            result['message'] = f"Erreur: {e}"
+            app.logger.error(f"Erreur lors de l'exécution de la tâche {task['id']}: {e}")
+            
+            # Réinitialiser le statut en cas d'erreur
+            try:
+                tasks = load_tasks()
+                for t in tasks:
+                    if t['id'] == task['id']:
+                        t['status'] = 'failed'
+                        t['last_run'] = datetime.now().isoformat()
+                        t.pop('running_since', None)
+                        break
+                save_tasks(tasks)
+            except Exception:
+                pass
     
     return result
 
@@ -650,7 +696,8 @@ def add_task():
         'enabled': data.get('enabled') == 'true',
         'created_at': datetime.now().isoformat(),
         'last_run': None,
-        'last_result': None
+        'last_result': None,
+        'status': 'idle'  # Statut par défaut: idle, running, completed, failed
     }
     
     tasks = load_tasks()

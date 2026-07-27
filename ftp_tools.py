@@ -270,6 +270,11 @@ class FTPConnector:
                         self._ftp.mkd(part)
                         self._ftp.cwd(part)
                     except ftplib.error_perm as e:
+                        # Retourner au répertoire original avant de retourner False
+                        try:
+                            self._ftp.cwd(current_dir)
+                        except Exception:
+                            pass
                         return False
             
             # Retourner au répertoire original
@@ -568,11 +573,30 @@ class FTPConnector:
                 
                 # Naviguer vers le répertoire distant correspondant
                 if rel_path != '.':
+                    # Normaliser le chemin pour FTP (remplacer les backslashes)
+                    rel_path_normalized = rel_path.replace('\\', '/')
+                    
                     try:
-                        self._ftp.cwd(rel_path)
+                        self._ftp.cwd(rel_path_normalized)
                     except ftplib.error_perm:
-                        self._create_remote_directory(rel_path)
-                        self._ftp.cwd(rel_path)
+                        # Retourner au répertoire de base et naviguer étape par étape
+                        try:
+                            self._ftp.cwd(remote_dir)
+                        except Exception:
+                            pass
+                        
+                        # Créer et naviguer vers le répertoire étape par étape
+                        parts = [p for p in rel_path_normalized.split('/') if p]
+                        for part in parts:
+                            try:
+                                self._ftp.cwd(part)
+                            except ftplib.error_perm:
+                                try:
+                                    self._ftp.mkd(part)
+                                    self._ftp.cwd(part)
+                                except ftplib.error_perm:
+                                    # Si on ne peut pas créer, essayer de continuer
+                                    pass
                 
                 # Traiter chaque fichier
                 for filename in files:
@@ -606,11 +630,22 @@ class FTPConnector:
                                         pass
                                     try:
                                         self.connect()
-                                        # Naviguer à nouveau
+                                        # Naviguer à nouveau vers le répertoire de base
                                         if remote_dir:
                                             self._ftp.cwd(remote_dir)
+                                        # Naviguer vers rel_path étape par étape
                                         if rel_path != '.':
-                                            self._ftp.cwd(rel_path)
+                                            rel_path_normalized = rel_path.replace('\\', '/')
+                                            parts = [p for p in rel_path_normalized.split('/') if p]
+                                            for part in parts:
+                                                try:
+                                                    self._ftp.cwd(part)
+                                                except ftplib.error_perm:
+                                                    try:
+                                                        self._ftp.mkd(part)
+                                                        self._ftp.cwd(part)
+                                                    except ftplib.error_perm:
+                                                        pass
                                     except Exception:
                                         pass
                                 else:
