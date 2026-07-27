@@ -33,30 +33,38 @@ LOG_FORMAT = "[%(asctime)s] %(levelname)s: %(message)s"
 # Initialisation de l'app Flask
 app = Flask(__name__)
 
-# Configuration du logging
+# Références globales pour les handlers de logging
+file_handler = None
+stream_handler = None
+
 def setup_logging(verbose=False, silent=False):
     """Configure le niveau de logging"""
+    global file_handler, stream_handler
+    
     log_level = logging.ERROR if silent else (logging.DEBUG if verbose else logging.INFO)
     
-    # Configurer le logging pour écrire dans un fichier
+    # Créer les handlers
+    file_handler = logging.FileHandler(LOG_FILE, mode='a', encoding='utf-8')
+    stream_handler = logging.StreamHandler()
+    
+    # Configurer le logging
     logging.basicConfig(
         level=log_level,
         format=LOG_FORMAT,
-        handlers=[
-            logging.FileHandler(LOG_FILE, mode='a', encoding='utf-8'),
-            logging.StreamHandler()
-        ]
+        handlers=[file_handler, stream_handler]
     )
     app.logger.setLevel(log_level)
 
 
 def get_logs():
-    """Récupère le contenu du fichier de logs"""
+    """Récupère le contenu du fichier de logs (du plus récent au plus ancien)"""
     if not os.path.exists(LOG_FILE):
         return "Aucun log disponible"
     try:
         with open(LOG_FILE, 'r', encoding='utf-8') as f:
-            return f.read()
+            lines = f.readlines()
+        # Inverser l'ordre pour afficher du plus récent au plus ancien
+        return ''.join(reversed(lines))
     except Exception as e:
         return f"Erreur lors de la lecture des logs: {e}"
 
@@ -130,6 +138,9 @@ def filter_logs(logs, log_type=None):
     
     filtered_lines = []
     for line in logs.split('\n'):
+        # Exclure les logs des requêtes API 200 du filtre INFO
+        if log_type == 'INFO' and ('" 200 ' in line or '" 200-' in line):
+            continue
         if f'] {log_type}:' in line:
             filtered_lines.append(line)
     
@@ -451,6 +462,21 @@ def config_page():
     return render_template('config.html', config=config, app_name=APP_NAME)
 
 
+def recreate_file_handler():
+    """Recrée le FileHandler pour le fichier de logs"""
+    global file_handler
+    if file_handler:
+        # Flusher et fermer l'ancien handler
+        file_handler.flush()
+        file_handler.close()
+        # Retirer de la liste des handlers
+        logging.getLogger().removeHandler(file_handler)
+    # Créer un nouveau handler avec le même format
+    file_handler = logging.FileHandler(LOG_FILE, mode='a', encoding='utf-8')
+    file_handler.setFormatter(logging.Formatter(LOG_FORMAT))
+    logging.getLogger().addHandler(file_handler)
+
+
 @app.route('/api/logs', methods=['GET', 'DELETE'])
 def api_logs():
     """API: Retourne ou efface le contenu des logs"""
@@ -459,12 +485,24 @@ def api_logs():
     if request.method == 'DELETE':
         try:
             if os.path.exists(LOG_FILE):
+                # Fermer le handler avant de supprimer
+                if file_handler:
+                    file_handler.flush()
+                    file_handler.close()
+                    logging.getLogger().removeHandler(file_handler)
+                
                 os.remove(LOG_FILE)
-                app.logger.info("Fichier de logs effacé")
+                
+                # Recréer le handler
+                recreate_file_handler()
+                
+                app.logger.warning("Fichier de logs effacé")
                 return jsonify({'success': True, 'message': 'Logs effacés avec succès'})
             else:
                 return jsonify({'success': True, 'message': 'Aucun fichier de logs à effacer'})
         except Exception as e:
+            # Recréer le handler en cas d'erreur
+            recreate_file_handler()
             return jsonify({'success': False, 'message': str(e)}), 500
     else:
         logs = get_logs()
