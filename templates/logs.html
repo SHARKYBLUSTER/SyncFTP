@@ -1,0 +1,364 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{{ app_name }} - Logs</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
+        }
+        
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+        
+        header {
+            background: white;
+            padding: 30px;
+            border-radius: 15px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.2);
+            margin-bottom: 30px;
+            text-align: center;
+        }
+        
+        h1 {
+            color: #667eea;
+            font-size: 2.5em;
+            margin-bottom: 10px;
+        }
+        
+        .subtitle {
+            color: #666;
+            font-size: 1.1em;
+        }
+        
+        .section {
+            background: white;
+            padding: 25px;
+            border-radius: 15px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.2);
+            margin-bottom: 30px;
+        }
+        
+        .section-title {
+            font-size: 1.5em;
+            color: #667eea;
+            margin-bottom: 20px;
+            padding-bottom: 10px;
+            border-bottom: 3px solid #667eea;
+        }
+        
+        /* Menu de navigation */
+        .nav-menu {
+            display: flex;
+            gap: 15px;
+            margin-bottom: 25px;
+            justify-content: center;
+            flex-wrap: wrap;
+        }
+        
+        .nav-btn {
+            display: inline-block;
+            padding: 15px 30px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border: none;
+            border-radius: 8px;
+            font-size: 16px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: transform 0.2s, box-shadow 0.2s;
+            text-decoration: none;
+        }
+        
+        .nav-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(102, 126, 234, 0.4);
+        }
+        
+        /* Carte des logs */
+        .logs-card {
+            background: #f8f9fa;
+            border-radius: 10px;
+            padding: 20px;
+            max-height: 600px;
+            overflow-y: auto;
+            border-left: 5px solid #667eea;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+        
+        .logs-content {
+            font-family: 'Consolas', 'Monaco', 'Courier New', monospace;
+            font-size: 13px;
+            line-height: 1.5;
+            color: #333;
+            white-space: pre-wrap;
+            word-wrap: break-word;
+        }
+        
+        .logs-content .log-info {
+            color: #28a745;
+        }
+        
+        .logs-content .log-error {
+            color: #dc3545;
+            font-weight: bold;
+        }
+        
+        .logs-content .log-warning {
+            color: #ffc107;
+        }
+        
+        .logs-content .log-debug {
+            color: #6c757d;
+        }
+        
+        /* Contrôles */
+        .logs-controls {
+            display: flex;
+            gap: 15px;
+            margin-bottom: 20px;
+            justify-content: flex-end;
+        }
+        
+        .btn {
+            display: inline-block;
+            padding: 8px 16px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border: none;
+            border-radius: 8px;
+            font-size: 14px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: transform 0.2s, box-shadow 0.2s;
+        }
+        
+        .btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(102, 126, 234, 0.4);
+        }
+        
+        .btn-secondary {
+            background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
+        }
+        
+        .status-indicator {
+            display: inline-block;
+            width: 10px;
+            height: 10px;
+            border-radius: 50%;
+            background: #28a745;
+            margin-right: 8px;
+            animation: pulse 2s infinite;
+        }
+        
+        .status-indicator.disconnected {
+            background: #dc3545;
+            animation: none;
+        }
+        
+        @keyframes pulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.5; }
+        }
+        
+        .loading {
+            display: inline-block;
+            width: 20px;
+            height: 20px;
+            border: 3px solid rgba(255,255,255,.3);
+            border-radius: 50%;
+            border-top-color: white;
+            animation: spin 1s ease-in-out infinite;
+        }
+        
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+        
+        .empty-state {
+            text-align: center;
+            padding: 40px;
+            color: #999;
+        }
+        
+        @media (max-width: 768px) {
+            .nav-menu {
+                flex-direction: column;
+                align-items: center;
+            }
+            
+            .nav-btn {
+                width: 80%;
+                margin-bottom: 10px;
+            }
+            
+            .logs-card {
+                max-height: 400px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>🚀 {{ app_name }}</h1>
+            <p class="subtitle">Gérez et testez vos connexions FTP facilement</p>
+        </header>
+        
+        <!-- Menu de navigation -->
+        <div class="section">
+            <div class="nav-menu">
+                <a href="/" class="nav-btn">🏠 TABLEAU DE BORD</a>
+                <a href="/add" class="nav-btn">➕ AJOUTER SERVEUR FTP</a>
+                <a href="/list" class="nav-btn">📋 LISTE DES SERVEURS</a>
+                <a href="/logs" class="nav-btn">📜 LOGS</a>
+            </div>
+        </div>
+        
+        <!-- Section: Logs -->
+        <div class="section">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
+                <h2 class="section-title" style="margin-bottom: 0;">📜 Journal des logs</h2>
+                <span class="status-indicator" id="connectionStatus"></span>
+                <span id="statusText">Connecté</span>
+            </div>
+            
+            <div class="logs-card">
+                <div class="logs-content" id="logsContainer">
+                    <p class="empty-state">Chargement des logs en cours...</p>
+                </div>
+            </div>
+            
+            <div class="logs-controls">
+                <button class="btn" onclick="refreshLogs()">
+                    <span id="refreshBtnText">↻ RAFRAÎCHIR</span>
+                    <span id="refreshBtnLoading" class="loading" style="display: none;"></span>
+                </button>
+                <button class="btn btn-secondary" onclick="clearLogs()">🗑️ EFFACER LES LOGS</button>
+                <button class="btn btn-secondary" onclick="toggleAutoRefresh()">
+                    <span id="autoRefreshBtnText">⏸️ ARRÊTER AUTO-RAFRAÎCH</span>
+                </button>
+            </div>
+        </div>
+    </div>
+    
+    <script>
+        let autoRefreshInterval = null;
+        let autoRefreshActive = false;
+        
+        // Fonction pour charger les logs
+        function loadLogs() {
+            fetch('/api/logs')
+                .then(response => response.json())
+                .then(data => {
+                    const logsContainer = document.getElementById('logsContainer');
+                    
+                    if (data.logs && data.logs.trim() !== '') {
+                        // Formater les logs avec des couleurs selon le niveau
+                        let formattedLogs = data.logs;
+                        
+                        // Remplacer les niveaux de log par des spans avec classe
+                        formattedLogs = formattedLogs.replace(/\[(\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2})\] (INFO):/g, '[ $1 ] <span class="log-info">INFO:</span>');
+                        formattedLogs = formattedLogs.replace(/\[(\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2})\] (ERROR):/g, '[ $1 ] <span class="log-error">ERROR:</span>');
+                        formattedLogs = formattedLogs.replace(/\[(\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2})\] (WARNING):/g, '[ $1 ] <span class="log-warning">WARNING:</span>');
+                        formattedLogs = formattedLogs.replace(/\[(\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2})\] (DEBUG):/g, '[ $1 ] <span class="log-debug">DEBUG:</span>');
+                        
+                        logsContainer.innerHTML = formattedLogs;
+                    } else {
+                        logsContainer.innerHTML = '<p class="empty-state">Aucun log disponible</p>';
+                    }
+                    
+                    // Faire défiler vers le bas
+                    logsContainer.scrollTop = logsContainer.scrollHeight;
+                })
+                .catch(error => {
+                    document.getElementById('logsContainer').innerHTML = 
+                        `<p class="empty-state" style="color: #dc3545;">Erreur lors du chargement des logs: ${error.message}</p>`;
+                });
+        }
+        
+        // Rafraîchir les logs
+        function refreshLogs() {
+            const refreshBtnText = document.getElementById('refreshBtnText');
+            const refreshBtnLoading = document.getElementById('refreshBtnLoading');
+            
+            refreshBtnText.style.display = 'none';
+            refreshBtnLoading.style.display = 'inline';
+            
+            loadLogs();
+            
+            setTimeout(() => {
+                refreshBtnText.style.display = 'inline';
+                refreshBtnLoading.style.display = 'none';
+            }, 500);
+        }
+        
+        // Effacer les logs
+        function clearLogs() {
+            if (confirm('Êtes-vous sûr de vouloir effacer le fichier de logs ?')) {
+                fetch('/api/logs', { method: 'DELETE' })
+                    .then(response => response.json())
+                    .then(data => {
+                        if (data.success) {
+                            document.getElementById('logsContainer').innerHTML = '<p class="empty-state">Logs effacés</p>';
+                        } else {
+                            alert('Erreur: ' + data.message);
+                        }
+                    })
+                    .catch(error => {
+                        alert('Erreur: ' + error.message);
+                    });
+            }
+        }
+        
+        // Basculer l'auto-rafraîchissement
+        function toggleAutoRefresh() {
+            const autoRefreshBtnText = document.getElementById('autoRefreshBtnText');
+            
+            if (autoRefreshActive) {
+                clearInterval(autoRefreshInterval);
+                autoRefreshInterval = null;
+                autoRefreshActive = false;
+                autoRefreshBtnText.textContent = '⏸️ ARRÊTER AUTO-RAFRAÎCH';
+                document.getElementById('connectionStatus').classList.add('disconnected');
+                document.getElementById('statusText').textContent = 'Auto-rafraîchissement désactivé';
+            } else {
+                autoRefreshInterval = setInterval(loadLogs, 3000);
+                autoRefreshActive = true;
+                autoRefreshBtnText.textContent = '↻ ACTIVER AUTO-RAFRAÎCH';
+                document.getElementById('connectionStatus').classList.remove('disconnected');
+                document.getElementById('statusText').textContent = 'Auto-rafraîchissement activé (3s)';
+            }
+        }
+        
+        // Charger les logs au démarrage
+        document.addEventListener('DOMContentLoaded', function() {
+            loadLogs();
+            // Activer l'auto-rafraîchissement par défaut
+            toggleAutoRefresh();
+        });
+        
+        // Mettre à jour l'indicateur de connexion
+        setInterval(() => {
+            if (autoRefreshActive) {
+                document.getElementById('connectionStatus').classList.remove('disconnected');
+            } else {
+                document.getElementById('connectionStatus').classList.add('disconnected');
+            }
+        }, 1000);
+    </script>
+</body>
+</html>

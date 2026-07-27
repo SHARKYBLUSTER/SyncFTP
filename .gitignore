@@ -10,6 +10,9 @@ __pycache__/
 ftp_servers.json
 instance/
 
+# Logs
+app.log
+
 # IDE
 .idea/
 .vscode/

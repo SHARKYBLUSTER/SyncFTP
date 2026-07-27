@@ -23,6 +23,7 @@ from ftp_tools import FTPConfig, FTPConnector
 # Configuration
 APP_NAME = "FTP Server Manager"
 DATA_FILE = "ftp_servers.json"
+LOG_FILE = "app.log"
 LOG_FORMAT = "[%(asctime)s] %(levelname)s: %(message)s"
 
 # Initialisation de l'app Flask
@@ -31,15 +32,29 @@ app = Flask(__name__)
 # Configuration du logging
 def setup_logging(verbose=False, silent=False):
     """Configure le niveau de logging"""
-    if silent:
-        logging.basicConfig(level=logging.ERROR, format=LOG_FORMAT)
-        app.logger.setLevel(logging.ERROR)
-    elif verbose:
-        logging.basicConfig(level=logging.DEBUG, format=LOG_FORMAT)
-        app.logger.setLevel(logging.DEBUG)
-    else:
-        logging.basicConfig(level=logging.INFO, format=LOG_FORMAT)
-        app.logger.setLevel(logging.INFO)
+    log_level = logging.ERROR if silent else (logging.DEBUG if verbose else logging.INFO)
+    
+    # Configurer le logging pour écrire dans un fichier
+    logging.basicConfig(
+        level=log_level,
+        format=LOG_FORMAT,
+        handlers=[
+            logging.FileHandler(LOG_FILE, mode='a', encoding='utf-8'),
+            logging.StreamHandler()
+        ]
+    )
+    app.logger.setLevel(log_level)
+
+
+def get_logs():
+    """Récupère le contenu du fichier de logs"""
+    if not os.path.exists(LOG_FILE):
+        return "Aucun log disponible"
+    try:
+        with open(LOG_FILE, 'r', encoding='utf-8') as f:
+            return f.read()
+    except Exception as e:
+        return f"Erreur lors de la lecture des logs: {e}"
 
 
 def load_servers():
@@ -152,6 +167,30 @@ def list_servers():
     """Page de liste des serveurs"""
     servers = load_servers()
     return render_template('list.html', servers=servers, app_name=APP_NAME)
+
+
+@app.route('/logs')
+def logs_page():
+    """Page d'affichage des logs"""
+    return render_template('logs.html', app_name=APP_NAME)
+
+
+@app.route('/api/logs', methods=['GET', 'DELETE'])
+def api_logs():
+    """API: Retourne ou efface le contenu des logs"""
+    if request.method == 'DELETE':
+        try:
+            if os.path.exists(LOG_FILE):
+                os.remove(LOG_FILE)
+                app.logger.info("Fichier de logs effacé")
+                return jsonify({'success': True, 'message': 'Logs effacés avec succès'})
+            else:
+                return jsonify({'success': True, 'message': 'Aucun fichier de logs à effacer'})
+        except Exception as e:
+            return jsonify({'success': False, 'message': str(e)}), 500
+    else:
+        logs = get_logs()
+        return jsonify({'logs': logs})
 
 
 @app.route('/add_server', methods=['POST'])
