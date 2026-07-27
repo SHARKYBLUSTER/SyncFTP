@@ -136,9 +136,9 @@ def test_ftp_connection(server):
 # Routes
 @app.route('/')
 def index():
-    """Page principale - liste des serveurs"""
+    """Page d'accueil - tableau de bord"""
     servers = load_servers()
-    return render_template('list.html', servers=servers, app_name=APP_NAME)
+    return render_template('index.html', server_count=len(servers), app_name=APP_NAME)
 
 
 @app.route('/add')
@@ -149,8 +149,9 @@ def add_page():
 
 @app.route('/list')
 def list_servers():
-    """Page de liste des serveurs (redirige vers /)"""
-    return redirect(url_for('index'))
+    """Page de liste des serveurs"""
+    servers = load_servers()
+    return render_template('list.html', servers=servers, app_name=APP_NAME)
 
 
 @app.route('/add_server', methods=['POST'])
