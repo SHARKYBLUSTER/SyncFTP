@@ -600,18 +600,32 @@ class FTPConnector:
                         
                         # Extraire le nom et la taille
                         if line_stripped.startswith('-') or line_stripped.startswith('d'):
-                            # Format LIST standard - approche robuste
-                            parts = line_stripped.split()
-                            if len(parts) >= 9:
-                                # Le nom du fichier est tout ce qui vient après les 8 premiers champs
-                                # (permissions, count, user, group, size, month, day, time/year)
-                                # Utiliser split() qui gère déjà les espaces multiples
-                                item_name = ' '.join(parts[8:])
-                                if is_file and len(parts) >= 5:
+                            # Format LIST standard - approche robuste qui préserve les espaces multiples
+                            # Utiliser regex pour matcher les 8 premiers champs et extraire le nom
+                            # Pattern pour matcher: perms count user group size month day time/year
+                            # Le nom du fichier est tout ce qui vient après
+                            list_pattern = r'^([\-dlrwxsStT]+)\s+(\d+)\s+(\S+)\s+(\S+)\s+(\d+)\s+(\S+)\s+(\S+)\s+(\S+)\s+(.*?)$'
+                            match = re.match(list_pattern, line_stripped)
+                            if match:
+                                item_name = match.group(9)  # Tout ce qui vient après les 8 premiers champs
+                                if is_file:
                                     try:
-                                        file_size = int(parts[4])
+                                        file_size = int(match.group(5))  # Le groupe 5 est la taille
                                     except (ValueError, IndexError):
                                         file_size = 0
+                            else:
+                                # Fallback: utiliser l'ancienne méthode si le pattern ne match pas
+                                parts = line_stripped.split()
+                                if len(parts) >= 9:
+                                    item_name = ' '.join(parts[8:])
+                                    if is_file and len(parts) >= 5:
+                                        try:
+                                            file_size = int(parts[4])
+                                        except (ValueError, IndexError):
+                                            file_size = 0
+                                else:
+                                    item_name = ""
+                                    file_size = 0
                         elif '; ' in line_stripped:  # Format MLSD
                             # Extraire la taille avec regex pour plus de robustesse
                             size_match = re.search(r'Size=(\d+)', line_stripped)
@@ -772,23 +786,25 @@ class FTPConnector:
             logger.info(f"Connexion au serveur FTP établie. Répertoire cible: {self._ftp.pwd()}")
             logger.debug(f"[PERF] Phase de connexion terminée en {(time.time() - phase_start)*1000:.0f}ms")
             
-            # Mesurer le temps de listage local
+            # Mesurer le temps de listage local (avec tailles pour comparaison)
             list_local_start = time.time()
-            source_files = self._list_local_files(local_dir)
+            source_files_dict = self._get_local_files_with_sizes(local_dir)
+            source_files = list(source_files_dict.keys())
             logger.debug(f"[PERF] Listage local terminé: {len(source_files)} fichiers trouvés en {(time.time() - list_local_start)*1000:.0f}ms")
             
             # Filtrer les fichiers exclus
             if exclude_patterns:
-                filtered_source_files = []
-                for filepath in source_files:
+                filtered_source_files = {}
+                for filepath, size in source_files_dict.items():
                     filename = os.path.basename(filepath)
                     if not should_exclude_file(filename, exclude_patterns):
-                        filtered_source_files.append(filepath)
+                        filtered_source_files[filepath] = size
                     else:
                         stats['excluded'] += 1
                         stats['excluded_files'].append(filepath)
                         logger.info(f"Fichier exclu de la synchronisation: {filepath}")
-                source_files = filtered_source_files
+                source_files_dict = filtered_source_files
+                source_files = list(filtered_source_files.keys())
             
             stats['source_file_count'] = len(source_files)
             logger.info(f"Nombre de fichiers dans la source: {stats['source_file_count']}")
@@ -804,8 +820,14 @@ class FTPConnector:
             source_set = set(source_files)
             remote_set = set(remote_files.keys())
             
-            # Fichiers à uploader : présents dans source mais pas dans remote
-            files_to_upload = source_set - remote_set
+            # Fichiers à uploader : présents dans source mais pas dans remote, OU tailles différentes
+            files_to_upload = set()
+            for file_path, local_size in source_files_dict.items():
+                if file_path not in remote_set:
+                    files_to_upload.add(file_path)
+                elif remote_files.get(file_path, 0) != local_size:
+                    files_to_upload.add(file_path)
+                    logger.debug(f"Fichier {file_path} a des tailles différentes (local: {local_size}, FTP: {remote_files[file_path]}), sera re-uploadé")
             
             # Fichiers à supprimer (présents dans remote mais pas dans source)
             files_to_delete = remote_set - source_set
