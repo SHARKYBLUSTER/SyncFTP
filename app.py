@@ -672,7 +672,7 @@ def check_corrupted_files_worker():
             
             # Exécuter la vérification (la fonction crée ses propres connecteurs)
             from ftp_tools import FTPConnector
-            result = FTPConnector(None).check_and_delete_corrupted_files(tasks, servers, logger=app.logger)
+            result = FTPConnector.check_and_delete_corrupted_files(tasks, servers, logger=app.logger)
             
             if result.get('corrupted_found', 0) > 0:
                 app.logger.info(f"Vérification des fichiers corrompus: {result['message']}")

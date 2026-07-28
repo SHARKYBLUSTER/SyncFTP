@@ -9,6 +9,7 @@ Il peut être importé et utilisé par l'application principale SyncFTP.
 import ftplib
 import os
 import io
+import re
 import time
 import fnmatch
 from dataclasses import dataclass
@@ -599,9 +600,12 @@ class FTPConnector:
                         
                         # Extraire le nom et la taille
                         if line_stripped.startswith('-') or line_stripped.startswith('d'):
-                            # Format LIST standard
+                            # Format LIST standard - approche robuste
                             parts = line_stripped.split()
                             if len(parts) >= 9:
+                                # Le nom du fichier est tout ce qui vient après les 8 premiers champs
+                                # (permissions, count, user, group, size, month, day, time/year)
+                                # Utiliser split() qui gère déjà les espaces multiples
                                 item_name = ' '.join(parts[8:])
                                 if is_file and len(parts) >= 5:
                                     try:
@@ -609,16 +613,20 @@ class FTPConnector:
                                     except (ValueError, IndexError):
                                         file_size = 0
                         elif '; ' in line_stripped:  # Format MLSD
-                            # Extraire la taille
-                            for part in line_stripped.split(';'):
-                                part = part.strip()
-                                if part.startswith('Size='):
-                                    try:
-                                        file_size = int(part.split('=')[1])
-                                    except (ValueError, IndexError):
-                                        file_size = 0
-                            # Extraire le nom (dernière partie après "; ")
-                            item_name = line_stripped.split('; ')[-1].strip()
+                            # Extraire la taille avec regex pour plus de robustesse
+                            size_match = re.search(r'Size=(\d+)', line_stripped)
+                            if size_match:
+                                try:
+                                    file_size = int(size_match.group(1))
+                                except (ValueError, IndexError):
+                                    file_size = 0
+                            # Extraire le nom - tout ce qui vient après le dernier '; '
+                            # Utiliser rfind pour éviter les problèmes si le nom contient ';'
+                            last_semicolon = line_stripped.rfind('; ')
+                            if last_semicolon != -1:
+                                item_name = line_stripped[last_semicolon + 2:].strip()
+                            else:
+                                item_name = line_stripped.strip()
                         
                         if not item_name:
                             continue
@@ -999,7 +1007,8 @@ class FTPConnector:
         finally:
             self.disconnect()
     
-    def check_and_delete_corrupted_files(self, tasks: List[Dict], servers: List[Dict], logger=None) -> Dict[str, Any]:
+    @staticmethod
+    def check_and_delete_corrupted_files(tasks: List[Dict], servers: List[Dict], logger=None) -> Dict[str, Any]:
         """
         Vérifie et supprime les fichiers corrompus (taille différente) sur les serveurs FTP cibles.
         Cette fonction se lance uniquement quand toutes les tâches de synchronisation sont terminées.
