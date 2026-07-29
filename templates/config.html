@@ -200,7 +200,7 @@
     
     function confirmClearDatabase() {
         if (confirm('⚠️ ÊTES-VOUS SÛR ? Cette action supprimera définitivement tous les logs et l\'historique. Elle est IRRÉVERSIBLE !')) {
-            fetch('/clear_database', {
+            fetch('/api/clear_database', {
                 method: 'POST',
                 headers: { 'X-Confirm': 'true' }
             }).then(response => response.json())
