@@ -7,119 +7,70 @@
 {% endblock %}
 
 {% block content %}
-
-    <!-- Welcome Section -->
-    <section class="welcome-section" aria-labelledby="welcome-title">
-        <h2 id="welcome-title" class="section-title">🏠 Tableau de bord</h2>
-        <p>Bienvenue dans {{ app_name }}. Ici, vous pouvez rapidement voir le nombre de serveurs configurés et accéder aux différentes fonctionnalités.</p>
-    </section>
-
-    <!-- Statistics Section -->
-    <section aria-labelledby="stats-title">
-        <h2 id="stats-title" class="section-title">📊 Statistiques</h2>
-        <div class="stats-grid">
-            <article class="stat-card">
-                <div class="icon">🌐</div>
-                <div class="value">{{ server_count }}</div>
-                <div class="label">Serveurs FTP enregistrés</div>
-            </article>
-            <article class="stat-card">
-                <div class="icon">🔄</div>
-                <div class="value">{{ task_count }}</div>
-                <div class="label">Tâches de synchronisation</div>
-            </article>
-        </div>
-    </section>
-
-    <!-- Synchronisation en cours Section -->
-    <section aria-labelledby="sync-title">
-        <h2 id="sync-title" class="section-title">🔄 Synchronisation en cours</h2>
-        <div id="syncStatsContainer">
-            <div class="sync-stats-grid" id="syncStatsGrid">
-                <div class="stat-card sync-card" id="syncCard">
-                    <div class="icon">📦</div>
-                    <div class="sync-info">
-                        <div class="sync-stat">
-                            <strong>Source:</strong> <span id="sourceFileCount">0</span> fichiers
-                        </div>
-                        <div class="sync-stat">
-                            <strong>Cible:</strong> <span id="targetFileCount">0</span> fichiers
-                        </div>
-                        <div class="sync-stat">
-                            <strong>Restants:</strong> <span id="filesRemaining">0</span> fichiers
-                        </div>
-                        <div class="sync-stat">
-                            <strong>Vitesse:</strong> <span id="averageSpeed">0</span> Mo/s
-                        </div>
-                        <div class="sync-stat">
-                            <strong>Fin estimée:</strong> <span id="estimatedEndTime">--:--:--</span>
-                        </div>
-                        <div class="sync-stat">
-                            <strong>Transférés:</strong> <span id="totalMBTransferred">0</span> Mo
-                        </div>
-                    </div>
-                </div>
-            </div>
-            <div id="activeSyncsList" class="mt-md"></div>
-        </div>
-    </section>
+    <div class="stats-grid">
+        <article class="stat-card">
+            <div class="icon">🌐</div>
+            <div class="value">{{ server_count }}</div>
+            <div class="label">Serveurs FTP enregistrés</div>
+        </article>
+        <article class="stat-card">
+            <div class="icon">🔄</div>
+            <div class="value">{{ task_count }}</div>
+            <div class="label">Tâches de synchronisation</div>
+        </article>
+        <article class="stat-card">
+            <div class="icon">🛑</div>
+            <div class="value">{{ disabled_count }}</div>
+            <div class="label">Tâches désactivées</div>
+        </article>
+        <article class="stat-card">
+            <div class="icon">✅</div>
+            <div class="value">{{ completed_count }}</div>
+            <div class="label">Tâches complétées</div>
+        </article>
+        <article class="stat-card">
+            <div class="icon">❌</div>
+            <div class="value">{{ failed_count }}</div>
+            <div class="label">fichiers échoués</div>
+            <button onclick="resetFailedTasks()" class="btn btn-sm btn-secondary mt-sm" title="Réinitialiser les tâches échouées">🔄 Réinitialiser</button>
+        </article>
+        <article class="stat-card">
+            <div class="icon">🏃</div>
+            <div class="value">{{ running_count }}</div>
+            <div class="label">Tâches en cours</div>
+        </article>
+        <article class="stat-card">
+            <div class="icon">⏸️</div>
+            <div class="value">{{ idle_count }}</div>
+            <div class="label">Tâches inactives</div>
+        </article>
+    </div>
 {% endblock %}
 
 {% block scripts %}
 <script>
-    function refreshSyncStats() {
-        fetch('/api/sync_stats')
-            .then(response => response.json())
-            .then(data => {
-                if (data.success) {
-                    const globalStats = data.global_stats;
-                    const activeSyncs = data.active_syncs || [];
-                    
-                    document.getElementById('sourceFileCount').textContent = globalStats.total_source_files || 0;
-                    document.getElementById('targetFileCount').textContent = globalStats.total_target_files || 0;
-                    document.getElementById('filesRemaining').textContent = globalStats.total_files_remaining || 0;
-                    document.getElementById('averageSpeed').textContent = globalStats.average_speed_mbps || 0;
-                    document.getElementById('totalMBTransferred').textContent = globalStats.total_mb_transferred || 0;
-                    document.getElementById('estimatedEndTime').textContent = globalStats.estimated_end_time || '--:--:--';
-                    
-                    const activeSyncsList = document.getElementById('activeSyncsList');
-                    if (activeSyncs.length > 0) {
-                        let html = '<div class="section"><h3 class="section-title">Tâches actives</h3>';
-                        activeSyncs.forEach(sync => {
-                            html += `
-                                <div class="card mb-md">
-                                    <strong>${sync.task_name || 'Inconnu'}</strong><br>
-                                    <small class="text-muted">Source: ${sync.source_directory || 'N/A'}</small><br>
-                                    <small class="text-muted">Uploadés: ${sync.files_uploaded || 0} | Restants: ${sync.files_remaining || 0}</small><br>
-                                    <small class="text-muted">Vitesse: ${sync.average_speed_mbps || 0} Mo/s</small><br>
-                                    <small class="text-muted">Fin: ${sync.estimated_end_time || '--:--:--'}</small>
-                                </div>
-                            `;
-                        });
-                        html += '</div>';
-                        activeSyncsList.innerHTML = html;
-                    } else {
-                        activeSyncsList.innerHTML = '<p class="text-center text-muted mt-md">Aucune synchronisation en cours</p>';
-                    }
-                    
-                    const syncCard = document.getElementById('syncCard');
-                    if (globalStats.has_active_sync) {
-                        syncCard.classList.add('active');
-                        syncCard.classList.remove('inactive');
-                    } else {
-                        syncCard.classList.add('inactive');
-                        syncCard.classList.remove('active');
-                    }
-                }
-            })
-            .catch(error => {
-                console.error('Erreur lors du rafraîchissement des stats:', error);
-            });
+function resetFailedTasks() {
+    if (confirm('Êtes-vous sûr de vouloir réinitialiser toutes les tâches échouées ? Elles repasseront en statut idle.')) {
+        fetch('/api/reset_failed_tasks', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            }
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                alert(data.message);
+                location.reload();
+            } else {
+                alert('Erreur: ' + (data.message || 'Impossible de réinitialiser les tâches'));
+            }
+        })
+        .catch(error => {
+            console.error('Erreur:', error);
+            alert('Erreur lors de la réinitialisation');
+        });
     }
-    
-    setInterval(refreshSyncStats, 3000);
-    document.addEventListener('DOMContentLoaded', function() {
-        refreshSyncStats();
-    });
+}
 </script>
 {% endblock %}

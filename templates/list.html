@@ -103,8 +103,7 @@
                             <p id="serverTimeoutHelp" class="form-hint">Temps d'attente maximal pour la connexion en secondes</p>
                         </div>
                     </div>
-                    <fieldset class="form-row">
-                        <legend class="sr-only">Options de connexion</legend>
+                    <div class="form-row">
                         <div class="form-group">
                             <div class="form-check">
                                 <input type="checkbox" id="serverUseSsl" name="use_ssl" value="true" class="form-check-input">
@@ -116,7 +115,14 @@
                             <input type="text" id="serverTestDirectory" name="test_directory" placeholder="/chemin/vers/dossier" class="form-control form-input" aria-describedby="serverTestDirectoryHelp">
                             <p id="serverTestDirectoryHelp" class="form-hint">Chemin du répertoire à tester sur le serveur</p>
                         </div>
-                    </fieldset>
+                    </div>
+                    <div class="form-row">
+                        <div class="form-group">
+                            <button type="button" onclick="testServerWithDirectory()" class="btn btn--info btn--sm" aria-label="Tester le répertoire">
+                                🔍 TESTER LE RÉPERTOIRE
+                            </button>
+                        </div>
+                    </div>
                 </form>
             </div>
             <div class="modal-footer">
@@ -175,8 +181,7 @@
                             <p id="editServerTimeoutHelp" class="form-hint">Temps d'attente maximal pour la connexion en secondes</p>
                         </div>
                     </div>
-                    <fieldset class="form-row">
-                        <legend class="sr-only">Options de connexion</legend>
+                    <div class="form-row">
                         <div class="form-group">
                             <div class="form-check">
                                 <input type="checkbox" id="editServerUseSsl" name="use_ssl" value="true" class="form-check-input">
@@ -188,7 +193,14 @@
                             <input type="text" id="editServerTestDirectory" name="test_directory" placeholder="/chemin/vers/dossier" class="form-control form-input" aria-describedby="editServerTestDirectoryHelp">
                             <p id="editServerTestDirectoryHelp" class="form-hint">Chemin du répertoire à tester sur le serveur</p>
                         </div>
-                    </fieldset>
+                    </div>
+                    <div class="form-row">
+                        <div class="form-group">
+                            <button type="button" onclick="testEditServerWithDirectory()" class="btn btn--info btn--sm" aria-label="Tester le répertoire">
+                                🔍 TESTER LE RÉPERTOIRE
+                            </button>
+                        </div>
+                    </div>
                 </form>
             </div>
             <div class="modal-footer">
@@ -592,5 +604,56 @@
             }
         }
     });
+
+    // Test with directory functions
+    function testServerWithDirectory() {
+        const testDirectory = document.getElementById('serverTestDirectory').value;
+        if (!testDirectory) {
+            alert('Veuillez spécifier un répertoire à tester');
+            return;
+        }
+        
+        // In the add modal, we don't have a server_id yet, so we need to save first or create a temp test
+        alert('Veuillez d\'abord enregistrer le serveur, puis utilisez le bouton Tester depuis la liste des serveurs pour tester avec un répertoire.');
+    }
+
+    function testEditServerWithDirectory() {
+        const serverId = document.getElementById('editServerId').value;
+        const testDirectory = document.getElementById('editServerTestDirectory').value;
+        
+        if (!serverId) {
+            alert('ID de serveur manquant');
+            return;
+        }
+        
+        if (!testDirectory) {
+            alert('Veuillez spécifier un répertoire à tester');
+            return;
+        }
+        
+        const testBtn = document.querySelector('#editServerModal .btn--info');
+        const originalText = testBtn.textContent;
+        testBtn.textContent = 'Test en cours...';
+        testBtn.disabled = true;
+        
+        fetch('/test_server', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/x-www-form-urlencoded',
+            },
+            body: 'server_id=' + encodeURIComponent(serverId) + '&test_directory=' + encodeURIComponent(testDirectory)
+        })
+        .then(response => response.json())
+        .then(data => {
+            alert(data.message + (data.directory_message ? '\n\nRépertoire: ' + data.directory_message : ''));
+        })
+        .catch(error => {
+            alert('Erreur: ' + error.toString());
+        })
+        .finally(() => {
+            testBtn.textContent = originalText;
+            testBtn.disabled = false;
+        });
+    }
 </script>
 {% endblock %}
