@@ -110,7 +110,7 @@
                 </div>
             </div>
         </form>
-    </div>
+    </section>
 
     <!-- Sync Configuration -->
     <section aria-labelledby="sync-config-title">
@@ -169,7 +169,7 @@
                 </div>
             </div>
         </form>
-    </div>
+    </section>
 
     <!-- Danger Zone -->
     <section class="danger-zone" aria-labelledby="danger-zone-title">
@@ -182,17 +182,19 @@
             </div>
         </div>
         
-        <div class="danger-action">
-            <button class="btn btn--danger" onclick="confirmResetAll()" aria-label="Réinitialiser toute la configuration. Attention, cette action est irréversible">🗑️ Réinitialiser toute la configuration</button>
-            <p class="form-hint">Supprime tous les serveurs, tâches et paramètres</p>
-        </div>
-        <div class="danger-action">
-            <button class="btn btn--danger" onclick="confirmClearDatabase()" aria-label="Nettoyer la base de données. Attention, cette action est irréversible">🧹 Nettoyer la base de données</button>
-            <p class="form-hint">Supprime les logs et l'historique des synchronisations</p>
-        </div>
-        <div class="danger-action">
-            <button class="btn btn--danger" onclick="confirmFactoryReset()" aria-label="Réinitialisation usine. Attention, toutes les données seront perdues">🏭 Réinitialisation usine</button>
-            <p class="form-hint">Rétablit l'application à son état initial</p>
+        <div class="danger-actions">
+            <div class="danger-action">
+                <button class="btn btn--danger" onclick="confirmResetAll()" aria-label="Réinitialiser toute la configuration. Attention, cette action est irréversible">🗑️ Réinitialiser toute la configuration</button>
+                <p class="form-hint">Supprime tous les serveurs, tâches et paramètres</p>
+            </div>
+            <div class="danger-action">
+                <button class="btn btn--danger" onclick="confirmClearDatabase()" aria-label="Nettoyer la base de données. Attention, cette action est irréversible">🧹 Nettoyer la base de données</button>
+                <p class="form-hint">Supprime les logs et l'historique des synchronisations</p>
+            </div>
+            <div class="danger-action">
+                <button class="btn btn--danger" onclick="confirmFactoryReset()" aria-label="Réinitialisation usine. Attention, toutes les données seront perdues">🏭 Réinitialisation usine</button>
+                <p class="form-hint">Rétablit l'application à son état initial</p>
+            </div>
         </div>
     </section>
 {% endblock %}
