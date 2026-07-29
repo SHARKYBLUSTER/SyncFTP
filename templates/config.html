@@ -182,23 +182,15 @@
         
         <div class="alert alert--danger mb-lg" role="alert" aria-live="assertive">
             <div class="alert-content">
-                <h4 class="alert-title">⚠️ Actions irréversibles</h4>
-                <p class="alert-message">Ces actions peuvent entraîner la perte de données. Soyez prudent.</p>
+                <h4 class="alert-title">⚠️ Action irréversible</h4>
+                <p class="alert-message">Cette action supprimera définitivement les logs et l'historique.</p>
             </div>
         </div>
         
         <div class="danger-actions">
             <div class="danger-action">
-                <button class="btn btn--danger" onclick="confirmResetAll()" aria-label="Réinitialiser toute la configuration. Attention, cette action est irréversible">🗑️ Réinitialiser toute la configuration</button>
-                <p class="form-hint">Supprime tous les serveurs, tâches et paramètres</p>
-            </div>
-            <div class="danger-action">
-                <button class="btn btn--danger" onclick="confirmClearDatabase()" aria-label="Nettoyer la base de données. Attention, cette action est irréversible">🧹 Nettoyer la base de données</button>
-                <p class="form-hint">Supprime les logs et l'historique des synchronisations</p>
-            </div>
-            <div class="danger-action">
-                <button class="btn btn--danger" onclick="confirmFactoryReset()" aria-label="Réinitialisation usine. Attention, toutes les données seront perdues">🏭 Réinitialisation usine</button>
-                <p class="form-hint">Rétablit l'application à son état initial</p>
+                <button class="btn btn--danger" onclick="confirmClearDatabase()" aria-label="Effacer les logs et l'historique. Attention, cette action est irréversible">🧹 Effacer les logs et l'historique</button>
+                <p class="form-hint">Supprime définitivement tous les logs et l'historique des synchronisations</p>
             </div>
         </div>
     </section>
@@ -213,50 +205,16 @@
         }
     }
     
-    function confirmResetAll() {
-        if (confirm('⚠️ ÊTES-VOUS SÛR ? Cette action supprimera TOUS les serveurs, TOUTES les tâches et TOUTES les configurations. Elle est IRRÉVERSIBLE !')) {
-            fetch('/reset_all', {
-                method: 'POST',
-                headers: { 'X-Confirm': 'true' }
-            }).then(response => response.json())
-              .then(data => {
-                  if (data.success) {
-                      alert('Configuration réinitialisée');
-                      window.location.reload();
-                  } else {
-                      alert('Erreur: ' + (data.message || 'Action annulée'));
-                  }
-              });
-        }
-    }
-    
     function confirmClearDatabase() {
-        if (confirm('⚠️ ÊTES-VOUS SÛR ? Cette action supprimera les logs et l\'historique. Elle est IRRÉVERSIBLE !')) {
+        if (confirm('⚠️ ÊTES-VOUS SÛR ? Cette action supprimera définitivement tous les logs et l\'historique. Elle est IRRÉVERSIBLE !')) {
             fetch('/clear_database', {
                 method: 'POST',
                 headers: { 'X-Confirm': 'true' }
             }).then(response => response.json())
               .then(data => {
                   if (data.success) {
-                      alert('Base de données nettoyée');
+                      alert('Logs et historique supprimés');
                       window.location.reload();
-                  } else {
-                      alert('Erreur: ' + (data.message || 'Action annulée'));
-                  }
-              });
-        }
-    }
-    
-    function confirmFactoryReset() {
-        if (confirm('⚠️ ⚠️ ⚠️ DERNIÈRE CHANCE ! Réinitialisation complète de l\'application. TOUTES les données seront perdues !')) {
-            fetch('/factory_reset', {
-                method: 'POST',
-                headers: { 'X-Confirm': 'FACTORY_RESET_CONFIRM' }
-            }).then(response => response.json())
-              .then(data => {
-                  if (data.success) {
-                      alert('Réinitialisation usine effectuée. Redirection vers la page d\'accueil...');
-                      window.location.href = '/';
                   } else {
                       alert('Erreur: ' + (data.message || 'Action annulée'));
                   }
