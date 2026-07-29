@@ -52,7 +52,7 @@
         </div>
 
         <!-- Logs Display -->
-        <div class="card">
+        <div class="card logs-card">
             <div class="log-container">
                 <div class="log-header">
                     <span class="log-title">Logs système</span>
@@ -108,9 +108,7 @@
                 }
                 
                 logsContent.innerHTML = html;
-                if (autoScrollEnabled) {
-                    scrollToBottom();
-                }
+                scrollToTop();
             });
     }
     
@@ -138,13 +136,12 @@
         btn.textContent = autoScrollEnabled ? '📍 Suivre: ACTIF' : '📍 Suivre';
         if (autoScrollEnabled) {
             refreshLogs();
-            scrollToBottom();
         }
     }
     
-    function scrollToBottom() {
+    function scrollToTop() {
         const logContent = document.querySelector('.log-content');
-        logContent.scrollTop = logContent.scrollHeight;
+        logContent.scrollTop = 0;
     }
     
     function escapeHtml(text) {

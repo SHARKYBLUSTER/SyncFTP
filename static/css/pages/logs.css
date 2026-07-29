@@ -2,12 +2,17 @@
    Logs Page Specific Styles - SyncFTP
    ============================================ */
 
+/* Log Card - ensure it's tall enough to display all logs */
+.logs-card {
+    min-height: 950px;
+}
+
 /* Log Container */
 .log-container {
     background: var(--color-gray-900);
     border-radius: var(--radius-lg);
     overflow: hidden;
-    max-height: 600px;
+    max-height: 900px;
     overflow-y: auto;
 }
 
@@ -34,7 +39,7 @@
     font-size: var(--font-size-sm);
     line-height: var(--line-height-relaxed);
     color: var(--color-gray-300);
-    max-height: 550px;
+    max-height: 825px;
     overflow-y: auto;
 }
 
