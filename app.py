@@ -876,6 +876,8 @@ def api_logs():
                         'message': line.strip()
                     })
         
+        # Inverser l'ordre pour afficher du plus récent au plus ancien
+        log_entries.reverse()
         return jsonify({'logs': log_entries})
 
 

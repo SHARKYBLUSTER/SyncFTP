@@ -34,8 +34,6 @@
     font-size: var(--font-size-sm);
     line-height: var(--line-height-relaxed);
     color: var(--color-gray-300);
-    white-space: pre-wrap;
-    word-break: break-all;
     max-height: 550px;
     overflow-y: auto;
 }
@@ -44,6 +42,9 @@
 .log-entry {
     padding: var(--spacing-xs) 0;
     border-bottom: var(--border-width-thin) solid var(--color-gray-800);
+    display: flex;
+    align-items: center;
+    gap: var(--spacing-sm);
 }
 
 .log-entry:last-child {
@@ -57,16 +58,24 @@
 /* Log Timestamp */
 .log-timestamp {
     color: var(--color-gray-500);
-    margin-right: var(--spacing-md);
     font-size: var(--font-size-xs);
+    white-space: nowrap;
 }
 
 /* Log Level */
 .log-level {
-    display: inline-block;
     width: 80px;
     font-weight: var(--font-weight-semibold);
+    white-space: nowrap;
+}
+
+/* Log Message */
+.log-message {
+    flex: 1;
     color: var(--color-gray-300);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
 }
 
 /* Log Entry by Level */
@@ -93,11 +102,6 @@
 .log-entry--debug .log-level,
 .log-entry--debug .log-message {
     color: var(--color-gray-500);
-}
-
-/* Log Message */
-.log-message {
-    color: var(--color-gray-300);
 }
 
 /* Auto-scroll button states */
