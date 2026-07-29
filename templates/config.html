@@ -226,8 +226,7 @@
 <body>
     <div class="container">
         <header>
-            <h1>🚀 {{ app_name }}</h1>
-            <p class="subtitle">Gérez et testez vos connexions FTP facilement</p>
+            <h1>{{ app_name }}</h1>
             <p style="color: #666; font-size: 0.9em; margin-top: 5px;">Version: {{ app_version }}</p>
         </header>
         
@@ -518,7 +517,7 @@
                             showStatus(data.message, 'success');
                             // Rediriger vers une page d'au revoir ou attendre l'arrêt
                             setTimeout(() => {
-                                document.body.innerHTML = '<div style="text-align: center; margin-top: 50px; color: white;"><h2>⏹️ Service en cours d\'arrêt...</h2><p>Merci d\'avoir utilisé FTP Server Manager</p></div>';
+                                document.body.innerHTML = '<div style="text-align: center; margin-top: 50px; color: white;"><h2>⏹️ Service en cours d\'arrêt...</h2><p>Merci d\'avoir utilisé SyncFTP</p></div>';
                             }, 1000);
                         } else {
                             showStatus('Erreur: ' + (data.message || 'Impossible d\'arrêter le service'), 'error');

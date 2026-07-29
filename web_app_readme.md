@@ -1,6 +1,6 @@
-# FTP Server Manager - Application Web
+# SyncFTP - Application Web
 
-Application web pour gérer et tester plusieurs serveurs FTP.
+Application web pour gérer et synchroniser plusieurs serveurs FTP.
 
 ## Installation
 

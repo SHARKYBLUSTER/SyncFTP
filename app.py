@@ -1,9 +1,9 @@
 #!/usr/bin/env python3
 """
-FTP Server Manager - Application Web
-=====================================
+SyncFTP - Application Web
+========================
 
-Application web pour gérer et tester plusieurs serveurs FTP.
+Application web pour gérer et synchroniser plusieurs serveurs FTP.
 Utilise Flask pour le backend et fournit une interface simple.
 
 Utilisation:
@@ -24,7 +24,7 @@ from flask import Flask, render_template, request, jsonify, redirect, url_for
 from ftp_tools import FTPConfig, FTPConnector
 
 # Configuration
-APP_NAME = "FTP Server Manager"
+APP_NAME = "SyncFTP"
 APP_VERSION = "1.0.0"
 DATA_FILE = "ftp_servers.json"
 TASKS_FILE = "sync_tasks.json"
@@ -1207,7 +1207,7 @@ def run_flask_app():
 
 if __name__ == '__main__':
     # Parsing des arguments CLI
-    parser = argparse.ArgumentParser(description='FTP Server Manager')
+    parser = argparse.ArgumentParser(description='SyncFTP')
     parser.add_argument('--silent', action='store_true', help='Mode silencieux (seulement les erreurs)')
     parser.add_argument('--verbose', action='store_true', help='Mode verbeux (tous les logs)')
     parser.add_argument('--host', default='0.0.0.0', help='Host pour le serveur web')
