@@ -314,7 +314,7 @@
         testBtnText.textContent = 'Test en cours...';
         testBtnLoading.classList.remove('d-none');
 
-        fetch('/test_server/' + serverId, {
+        fetch('/test_server', {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/x-www-form-urlencoded',
