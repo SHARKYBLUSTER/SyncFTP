@@ -885,7 +885,11 @@ def index():
         if task.get('status') == 'failed' and task.get('last_result'):
             stats = task['last_result'].get('stats', {})
             if 'failed_files' in stats:
-                failed_files.extend(stats['failed_files'])
+                for file in stats['failed_files']:
+                    failed_files.append({
+                        'task_name': task.get('name', 'Tâche inconnue'),
+                        'file_name': file
+                    })
     
     return render_template('index.html', 
                          server_count=len(servers), 
@@ -1652,7 +1656,7 @@ def reset_failed_tasks():
 
 @app.route('/api/failed_files', methods=['GET'])
 def api_failed_files():
-    """API: Retourne la liste des fichiers échoués"""
+    """API: Retourne la liste des fichiers échoués avec le nom de la tâche"""
     tasks = load_tasks()
     
     failed_files = []
@@ -1660,7 +1664,11 @@ def api_failed_files():
         if task.get('status') == 'failed' and task.get('last_result'):
             stats = task['last_result'].get('stats', {})
             if 'failed_files' in stats:
-                failed_files.extend(stats['failed_files'])
+                for file in stats['failed_files']:
+                    failed_files.append({
+                        'task_name': task.get('name', 'Tâche inconnue'),
+                        'file_name': file
+                    })
     
     return jsonify({
         'success': True,

@@ -44,18 +44,12 @@
             <div class="value">{{ idle_count }}</div>
             <div class="label">Tâches inactives</div>
         </article>
-        {% if failed_files %}
-        <article class="stat-card failed-files-card">
+        <article class="stat-card failed-files-card" style="display: none;">
             <div class="icon">❌</div>
-            <div class="value">{{ failed_files|length }}</div>
+            <div class="value">0</div>
             <div class="label">Fichiers échoués</div>
-            <div class="failed-files-list">
-                {% for file in failed_files %}
-                <div class="failed-file-item">{{ file }}</div>
-                {% endfor %}
-            </div>
+            <div class="failed-files-list"></div>
         </article>
-        {% endif %}
     </div>
 {% endblock %}
 
@@ -96,8 +90,10 @@ function refreshFailedFiles() {
             
             if (data.failed_files && data.failed_files.length > 0) {
                 let html = '';
-                data.failed_files.forEach(file => {
-                    html += `<div class="failed-file-item">${escapeHtml(file)}</div>`;
+                data.failed_files.forEach(item => {
+                    const taskName = escapeHtml(item.task_name || 'Tâche inconnue');
+                    const fileName = escapeHtml(item.file_name || 'Fichier inconnu');
+                    html += `<div class="failed-file-item"><strong>${taskName}:</strong> ${fileName}</div>`;
                 });
                 
                 if (container) {
@@ -110,6 +106,12 @@ function refreshFailedFiles() {
                     card.style.display = 'block';
                 }
             } else {
+                if (container) {
+                    container.innerHTML = '';
+                }
+                if (countElement) {
+                    countElement.textContent = '0';
+                }
                 if (card) {
                     card.style.display = 'none';
                 }
