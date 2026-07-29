@@ -1,6 +1,6 @@
 # SyncFTP
 
-**Version 2.5.3**
+**Version 2.5.4**
 
 **Application Web de Gestion et Synchronisation FTP**
 
@@ -214,7 +214,7 @@ python app.py --host 127.0.0.1 --port 8080
   "max_log_size_mb": 10,
   "auto_refresh": true,
   "corrupted_files_check_interval": 300,
-  "exclude_patterns": "*.tmp,*.part,*.temp,*.~lk,*.lock,Thumbs.db,desktop.ini,.github/,.env",
+  "exclude_patterns": "*.tmp,*.part,*.temp,*.~lk,*.lock,Thumbs.db,desktop.ini,.github/,.stfolder/,.env",
   "debug_logging_enabled": false,
   "task_save_throttle": 10,
   "small_file_timeout": 10,
@@ -286,6 +286,7 @@ Licence libre - Utilisation, modification et distribution autorisées.
 
 ## Historique des versions
 
+- **2.5.4** - Exclusion des répertoires .github/ et .stfolder/ par défaut, amélioration exclusion répertoires, textarea plus large pour les patterns
 - **2.5.3** - Ajout section mise à jour via git pull dans README
 - **2.5.2** - Correction réactivation bouton arrêt serveur
 - **2.5.1** - Ajout bouton arret serveur dans page configuration

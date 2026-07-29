@@ -124,8 +124,8 @@
             
             <div class="form-group">
                 <label for="excludePatterns" class="form-label">Patterns à exclure</label>
-                <textarea id="excludePatterns" name="exclude_patterns" class="form-control form-textarea" aria-describedby="excludePatternsHelp" form="mainConfigForm" rows="4">{{ config.exclude_patterns|default('*.tmp,*.part,*.temp,*.~lk,*.lock,Thumbs.db,desktop.ini,.github/,.env') }}</textarea>
-                <p id="excludePatternsHelp" class="form-hint">Séparés par des virgules, ex: *.tmp,*.log,.github/,.env (utilisez / à la fin pour exclure un répertoire entier)</p>
+                <textarea id="excludePatterns" name="exclude_patterns" class="form-control form-textarea" aria-describedby="excludePatternsHelp" form="mainConfigForm" rows="4">{{ config.exclude_patterns|default('*.tmp,*.part,*.temp,*.~lk,*.lock,Thumbs.db,desktop.ini,.github/,.stfolder/,.env') }}</textarea>
+                <p id="excludePatternsHelp" class="form-hint">Séparés par des virgules, ex: *.tmp,*.log,.github/,.stfolder/,.env (utilisez / à la fin pour exclure un répertoire entier)</p>
             </div>
         </div>
     </section>
