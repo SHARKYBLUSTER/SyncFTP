@@ -1201,23 +1201,42 @@ def update_server():
 @app.route('/test_server', methods=['POST'])
 def test_server():
     """Teste la connexion à un serveur FTP"""
-    server_id = request.form.get('server_id')
-    
-    servers = load_servers()
-    server = next((s for s in servers if s['id'] == server_id), None)
-    
-    if not server:
+    try:
+        server_id = request.form.get('server_id')
+        
+        if not server_id:
+            return jsonify({
+                'success': False,
+                'server_name': 'Inconnu',
+                'server_id': None,
+                'message': 'Aucun ID de serveur fourni',
+                'error': 'Le paramètre server_id est manquant'
+            }), 400
+        
+        servers = load_servers()
+        server = next((s for s in servers if s['id'] == server_id), None)
+        
+        if not server:
+            return jsonify({
+                'success': False,
+                'server_name': 'Inconnu',
+                'server_id': server_id,
+                'message': 'Serveur non trouvé',
+                'error': 'Le serveur avec cet ID n\'existe pas'
+            }), 404
+        
+        result = test_ftp_connection(server)
+        
+        return jsonify(result)
+    except Exception as e:
+        app.logger.error(f"Erreur dans test_server: {e}", exc_info=True)
         return jsonify({
             'success': False,
             'server_name': 'Inconnu',
-            'server_id': server_id,
-            'message': 'Serveur non trouvé',
-            'error': 'Le serveur avec cet ID n\'existe pas'
-        }), 404
-    
-    result = test_ftp_connection(server)
-    
-    return jsonify(result)
+            'server_id': server_id if 'server_id' in locals() else None,
+            'message': 'Erreur interne du serveur',
+            'error': str(e)
+        }), 500
 
 
 @app.route('/api/servers')
