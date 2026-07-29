@@ -1,0 +1,219 @@
+/* ========================================
+   SyncFTP Design Tokens
+   Color palette, spacing, typography, shadows, borders, radii
+   ======================================== */
+
+/* --- Color Palette --- */
+
+/* Primary colors - based on existing gradient (#667eea to #764ba2) */
+--color-primary-50: #f5f3ff;
+--color-primary-100: #e8e5ff;
+--color-primary-200: #d1c7ff;
+--color-primary-300: #b8a5ff;
+--color-primary-400: #9f83ff;
+--color-primary-500: #8863ff;
+--color-primary-600: #667eea;
+--color-primary-700: #5568d6;
+--color-primary-800: #4452c2;
+--color-primary-900: #333caf;
+--color-primary-950: #22269c;
+
+/* Secondary colors - purple accent (#764ba2) */
+--color-secondary-50: #fdfaff;
+--color-secondary-100: #f9f0ff;
+--color-secondary-200: #f0e0ff;
+--color-secondary-300: #e4cfff;
+--color-secondary-400: #d3adff;
+--color-secondary-500: #be8bff;
+--color-secondary-600: #a869ff;
+--color-secondary-700: #9247e8;
+--color-secondary-800: #764ba2;
+--color-secondary-900: #5c3578;
+--color-secondary-950: #422052;
+
+/* Success colors */
+--color-success-50: #f0fdf4;
+--color-success-100: #dcfce7;
+--color-success-200: #bbf7d0;
+--color-success-300: #86efac;
+--color-success-400: #4ade80;
+--color-success-500: #22c55e;
+--color-success-600: #16a34a;
+--color-success-700: #15803d;
+--color-success-800: #166534;
+--color-success-900: #14532d;
+
+/* Warning colors */
+--color-warning-50: #fffbeb;
+--color-warning-100: #fef3c7;
+--color-warning-200: #fde68a;
+--color-warning-300: #fcd34d;
+--color-warning-400: #fbbf24;
+--color-warning-500: #f59e0b;
+--color-warning-600: #d97706;
+--color-warning-700: #b45309;
+--color-warning-800: #92400e;
+--color-warning-900: #78350f;
+
+/* Danger/Error colors */
+--color-danger-50: #fef2f2;
+--color-danger-100: #fee2e2;
+--color-danger-200: #fecaca;
+--color-danger-300: #fca5a5;
+--color-danger-400: #f87171;
+--color-danger-500: #ef4444;
+--color-danger-600: #dc2626;
+--color-danger-700: #b91c1c;
+--color-danger-800: #991b1b;
+--color-danger-900: #7f1d1d;
+
+/* Info colors */
+--color-info-50: #eff6ff;
+--color-info-100: #dbeafe;
+--color-info-200: #bfdbfe;
+--color-info-300: #93c5fd;
+--color-info-400: #60a5fa;
+--color-info-500: #3b82f6;
+--color-info-600: #2563eb;
+--color-info-700: #1d4ed8;
+--color-info-800: #1e40af;
+--color-info-900: #1e3a8a;
+
+/* Neutral/Grayscale */
+--color-gray-50: #f9fafb;
+--color-gray-100: #f3f4f6;
+--color-gray-200: #e5e7eb;
+--color-gray-300: #d1d5db;
+--color-gray-400: #9ca3af;
+--color-gray-500: #6b7280;
+--color-gray-600: #4b5563;
+--color-gray-700: #374151;
+--color-gray-800: #1f2937;
+--color-gray-900: #111827;
+--color-gray-950: #030712;
+
+/* White and Black */
+--color-white: #ffffff;
+--color-black: #000000;
+
+/* Semantic colors */
+--color-background: var(--color-gray-50);
+--color-background-elevated: var(--color-white);
+--color-text-primary: var(--color-gray-900);
+--color-text-secondary: var(--color-gray-600);
+--color-text-muted: var(--color-gray-400);
+--color-text-inverse: var(--color-white);
+--color-border: var(--color-gray-200);
+--color-border-strong: var(--color-gray-300);
+
+/* Gradient definitions */
+--gradient-primary: linear-gradient(135deg, var(--color-primary-600) 0%, var(--color-secondary-800) 100%);
+--gradient-success: linear-gradient(135deg, var(--color-success-500) 0%, var(--color-success-700) 100%);
+--gradient-warning: linear-gradient(135deg, var(--color-warning-500) 0%, var(--color-warning-700) 100%);
+--gradient-danger: linear-gradient(135deg, var(--color-danger-500) 0%, var(--color-danger-700) 100%);
+--gradient-info: linear-gradient(135deg, var(--color-info-500) 0%, var(--color-info-700) 100%);
+
+/* --- Spacing Scale --- */
+/* Based on 4px base unit */
+--spacing-xs: 0.25rem;    /* 4px */
+--spacing-sm: 0.5rem;     /* 8px */
+--spacing-md: 1rem;       /* 16px */
+--spacing-lg: 1.5rem;     /* 24px */
+--spacing-xl: 2rem;       /* 32px */
+--spacing-2xl: 3rem;      /* 48px */
+--spacing-3xl: 4rem;      /* 64px */
+--spacing-4xl: 6rem;      /* 96px */
+
+/* Fixed spacing values */
+--spacing-1: 0.25rem;
+--spacing-2: 0.5rem;
+--spacing-3: 0.75rem;
+--spacing-4: 1rem;
+--spacing-5: 1.25rem;
+--spacing-6: 1.5rem;
+--spacing-8: 2rem;
+--spacing-10: 2.5rem;
+--spacing-12: 3rem;
+--spacing-16: 4rem;
+--spacing-20: 5rem;
+--spacing-24: 6rem;
+
+/* --- Typography Scale --- */
+--font-family-base: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+--font-family-mono: 'SF Mono', 'Monaco', 'Cascadia Code', 'Roboto Mono', Consolas, monospace;
+
+--font-size-xs: 0.75rem;    /* 12px */
+--font-size-sm: 0.875rem;   /* 14px */
+--font-size-base: 1rem;     /* 16px */
+--font-size-lg: 1.125rem;   /* 18px */
+--font-size-xl: 1.25rem;    /* 20px */
+--font-size-2xl: 1.5rem;    /* 24px */
+--font-size-3xl: 1.875rem;  /* 30px */
+--font-size-4xl: 2.25rem;   /* 36px */
+--font-size-5xl: 3rem;      /* 48px */
+
+/* Font weights */
+--font-weight-normal: 400;
+--font-weight-medium: 500;
+--font-weight-semibold: 600;
+--font-weight-bold: 700;
+
+/* Line heights */
+--line-height-none: 1;
+--line-height-tight: 1.25;
+--line-height-snug: 1.375;
+--line-height-normal: 1.5;
+--line-height-relaxed: 1.625;
+--line-height-loose: 2;
+
+/* Letter spacing */
+--letter-spacing-tight: -0.025em;
+--letter-spacing-normal: 0;
+--letter-spacing-wide: 0.025em;
+--letter-spacing-wider: 0.05em;
+--letter-spacing-widest: 0.1em;
+
+/* --- Shadows --- */
+--shadow-sm: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
+--shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.1), 0 1px 2px -1px rgba(0, 0, 0, 0.1);
+--shadow-md: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -2px rgba(0, 0, 0, 0.1);
+--shadow-lg: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -4px rgba(0, 0, 0, 0.1);
+--shadow-xl: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 8px 10px -6px rgba(0, 0, 0, 0.1);
+--shadow-2xl: 0 25px 50px -12px rgba(0, 0, 0, 0.25);
+--shadow-inner: inset 0 2px 4px 0 rgba(0, 0, 0, 0.05);
+
+/* Colored shadows */
+--shadow-primary: 0 10px 30px rgba(102, 126, 234, 0.3);
+--shadow-primary-hover: 0 15px 40px rgba(102, 126, 234, 0.4);
+
+/* --- Border Radius --- */
+--radius-none: 0;
+--radius-sm: 0.125rem;    /* 2px */
+--radius: 0.25rem;       /* 4px */
+--radius-md: 0.375rem;    /* 6px */
+--radius-lg: 0.5rem;      /* 8px */
+--radius-xl: 0.75rem;     /* 12px */
+--radius-2xl: 1rem;       /* 16px */
+--radius-3xl: 1.5rem;     /* 24px */
+--radius-full: 9999px;
+
+/* --- Borders --- */
+--border-width-thin: 1px;
+--border-width-medium: 2px;
+--border-width-thick: 4px;
+--border-color: var(--color-border);
+
+/* --- Transitions --- */
+--transition-fast: 150ms ease;
+--transition: 200ms ease;
+--transition-slow: 300ms ease;
+--transition-timing: cubic-bezier(0.4, 0, 0.2, 1);
+
+/* --- Z-Index Scale --- */
+--z-dropdown: 100;
+--z-sticky: 200;
+--z-fixed: 300;
+--z-modal-backdrop: 400;
+--z-modal: 500;
+--z-popover: 600;
+--z-tooltip: 700;

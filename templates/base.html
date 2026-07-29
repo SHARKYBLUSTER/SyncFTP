@@ -1,0 +1,101 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="SyncFTP - Gestionnaire de synchronisation FTP">
+    <meta name="theme-color" content="#667eea">
+    
+    <!-- Design Tokens -->
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/variables.css') }}">
+    
+    <!-- Base Styles -->
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/base.css') }}">
+    
+    <!-- Components -->
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/components.css') }}">
+    
+    <!-- Page-specific title -->
+    <title>{% block title %}{{ app_name }} - {{ page_title|default('') }}{% endblock %}</title>
+    
+    <!-- Favicon -->
+    <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>📦</text></svg>">
+    
+    <!-- Preload critical resources -->
+    <link rel="preload" href="{{ url_for('static', filename='css/variables.css') }}" as="style">
+    <link rel="preload" href="{{ url_for('static', filename='css/base.css') }}" as="style">
+    
+    <!-- Skip to content link for accessibility -->
+    <a href="#main-content" class="skip-link">Aller au contenu principal</a>
+    
+    <!-- Additional head content -->
+    {% block head %}{% endblock %}
+</head>
+<body>
+    <!-- Skip link styles (hidden but accessible) -->
+    <style>
+        .skip-link {
+            position: absolute;
+            top: -40px;
+            left: 0;
+            background: var(--color-primary-600);
+            color: var(--color-white);
+            padding: var(--spacing-sm) var(--spacing-md);
+            z-index: 9999;
+            transition: top 0.3s;
+        }
+        
+        .skip-link:focus {
+            top: 0;
+        }
+    </style>
+
+    <div class="container">
+        <!-- Header -->
+        <header role="banner">
+            <h1>{{ app_name }}</h1>
+            {% if app_version %}
+                <p style="color: var(--color-text-muted); font-size: var(--font-size-sm); margin-top: var(--spacing-xs);">
+                    Version: {{ app_version }}
+                </p>
+            {% endif %}
+            
+            <!-- Navigation -->
+            {% block navigation %}
+                <div class="nav-menu" role="navigation" aria-label="Navigation principale">
+                    <a href="/" class="nav-btn">🏠 TABLEAU DE BORD</a>
+                    <a href="/add" class="nav-btn">➕ AJOUTER SERVEUR FTP</a>
+                    <a href="/list" class="nav-btn">📋 LISTE DES SERVEURS</a>
+                    <a href="/tasks" class="nav-btn">🔄 TACHES DE SYNC</a>
+                    <a href="/logs" class="nav-btn">📜 LOGS</a>
+                    <a href="/config" class="nav-btn">⚙️ CONFIGURATION</a>
+                </div>
+            {% endblock %}
+        </header>
+
+        <!-- Main content -->
+        <main id="main-content" role="main">
+            {% block content %}{% endblock %}
+        </main>
+
+        <!-- Footer -->
+        {% block footer %}
+            <footer role="contentinfo" class="mt-xl text-center text-muted">
+                <p>&copy; {{ current_year|default('2026') }} SyncFTP. Tous droits réservés.</p>
+            </footer>
+        {% endblock %}
+    </div>
+
+    <!-- Global JavaScript variables -->
+    <script>
+        window.SyncFTP = {
+            appName: '{{ app_name }}',
+            appVersion: '{{ app_version }}',
+            baseUrl: '{{ request.base_url }}'
+        };
+    </script>
+    
+    <!-- Page-specific scripts -->
+    {% block scripts %}{% endblock %}
+</body>
+</html>

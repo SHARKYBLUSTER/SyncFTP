@@ -1,553 +1,283 @@
-<!DOCTYPE html>
-<html lang="fr">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>{{ app_name }} - Configuration</title>
-    <style>
-        * {
-            margin: 0;
-            padding: 0;
-            box-sizing: border-box;
-        }
-        
-        body {
-            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            min-height: 100vh;
-            padding: 20px;
-        }
-        
-        .container {
-            max-width: 1200px;
-            margin: 0 auto;
-        }
-        
-        header {
-            background: white;
-            padding: 30px;
-            border-radius: 15px;
-            box-shadow: 0 10px 30px rgba(0,0,0,0.2);
-            margin-bottom: 30px;
-            text-align: center;
-        }
-        
-        h1 {
-            color: #667eea;
-            font-size: 2.5em;
-            margin-bottom: 10px;
-        }
-        
-        .subtitle {
-            color: #666;
-            font-size: 1.1em;
-        }
-        
-        .section {
-            background: white;
-            padding: 25px;
-            border-radius: 15px;
-            box-shadow: 0 10px 30px rgba(0,0,0,0.2);
-            margin-bottom: 30px;
-        }
-        
-        .section-title {
-            font-size: 1.5em;
-            color: #667eea;
-            margin-bottom: 20px;
-            padding-bottom: 10px;
-            border-bottom: 3px solid #667eea;
-        }
-        
-        /* Menu de navigation */
-        .nav-menu {
-            display: flex;
-            gap: 15px;
-            margin-bottom: 25px;
-            justify-content: center;
-            flex-wrap: wrap;
-        }
-        
-        .nav-btn {
-            display: inline-block;
-            padding: 15px 30px;
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            color: white;
-            border: none;
-            border-radius: 8px;
-            font-size: 16px;
-            font-weight: 600;
-            cursor: pointer;
-            transition: transform 0.2s, box-shadow 0.2s;
-            text-decoration: none;
-        }
-        
-        .nav-btn:hover {
-            transform: translateY(-2px);
-            box-shadow: 0 5px 15px rgba(102, 126, 234, 0.4);
-        }
-        
-        /* Formulaire de configuration */
-        .config-section {
-            margin-bottom: 30px;
-        }
-        
-        .config-section:last-child {
-            margin-bottom: 0;
-        }
-        
-        .btn-danger {
-            background: linear-gradient(135deg, #dc3545 0%, #c82333 100%);
-        }
-        
-        .config-section h3 {
-            color: #667eea;
-            margin-bottom: 15px;
-            font-size: 1.2em;
-        }
-        
-        .config-section p {
-            color: #666;
-            margin-bottom: 15px;
-            font-size: 0.95em;
-        }
-        
-        .form-group {
-            margin-bottom: 20px;
-        }
-        
-        .form-group label {
-            display: block;
-            margin-bottom: 8px;
-            font-weight: 600;
-            color: #333;
-        }
-        
-        .form-group input[type="number"],
-        .form-group select {
-            width: 100%;
-            max-width: 300px;
-            padding: 12px;
-            border: 2px solid #e0e0e0;
-            border-radius: 8px;
-            font-size: 16px;
-            transition: border-color 0.3s;
-        }
-        
-        .form-group input:focus,
-        .form-group select:focus {
-            outline: none;
-            border-color: #667eea;
-        }
-        
-        .btn {
-            display: inline-block;
-            padding: 12px 30px;
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            color: white;
-            border: none;
-            border-radius: 8px;
-            font-size: 16px;
-            font-weight: 600;
-            cursor: pointer;
-            transition: transform 0.2s, box-shadow 0.2s;
-        }
-        
-        .btn:hover {
-            transform: translateY(-2px);
-            box-shadow: 0 5px 15px rgba(102, 126, 234, 0.4);
-        }
-        
-        .btn-secondary {
-            background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
-        }
-        
-        .btn-success {
-            background: linear-gradient(135deg, #28a745 0%, #218838 100%);
-        }
-        
-        .config-actions {
-            display: flex;
-            gap: 15px;
-            margin-top: 20px;
-        }
-        
-        .status-message {
-            padding: 15px;
-            border-radius: 8px;
-            margin-top: 20px;
-            display: none;
-        }
-        
-        .status-message.success {
-            background: #d4edda;
-            color: #155724;
-            border: 1px solid #c3e6cb;
-            display: block;
-        }
-        
-        .status-message.error {
-            background: #f8d7da;
-            color: #721c24;
-            border: 1px solid #f5c6cb;
-            display: block;
-        }
-        
-        .config-grid {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
-            gap: 20px;
-        }
-        
-        .card {
-            background: #f8f9fa;
-            padding: 20px;
-            border-radius: 10px;
-            border-left: 5px solid #667eea;
-        }
-        
-        @media (max-width: 768px) {
-            .nav-menu {
-                flex-direction: column;
-                align-items: center;
-            }
-            
-            .nav-btn {
-                width: 80%;
-                margin-bottom: 10px;
-            }
-            
-            .config-grid {
-                grid-template-columns: 1fr;
-            }
-        }
-    </style>
-</head>
-<body>
-    <div class="container">
-        <header>
-            <h1>{{ app_name }}</h1>
-            <p style="color: #666; font-size: 0.9em; margin-top: 5px;">Version: {{ app_version }}</p>
-        </header>
-        
-        <!-- Menu de navigation -->
-        <div class="section">
-            <div class="nav-menu">
-                <a href="/" class="nav-btn">🏠 TABLEAU DE BORD</a>
-                <a href="/add" class="nav-btn">➕ AJOUTER SERVEUR FTP</a>
-                <a href="/list" class="nav-btn">📋 LISTE DES SERVEURS</a>
-                <a href="/tasks" class="nav-btn">🔄 TACHES DE SYNC</a>
-                <a href="/logs" class="nav-btn">📜 LOGS</a>
-                <a href="/config" class="nav-btn">⚙️ CONFIGURATION</a>
-            </div>
-        </div>
-        
-        <!-- Section: Configuration -->
-        <div class="section">
-            <h2 class="section-title">⚙️ Configuration de l'application</h2>
-            
-            <div class="config-grid">
-                <!-- Configuration des logs -->
-                <div class="card">
-                    <h3>📜 Paramètres des logs</h3>
-                    <form id="configForm">
-                        <div class="form-group">
-                            <label for="logLevel">Niveau de logging</label>
-                            <select id="logLevel" name="log_level">
-                                <option value="DEBUG" {% if config.log_level == 'DEBUG' %}selected{% endif %}>🐛 DEBUG (Tous les logs)</option>
-                                <option value="INFO" {% if config.log_level == 'INFO' %}selected{% endif %}>ℹ️ INFO (Log standard)</option>
-                                <option value="WARNING" {% if config.log_level == 'WARNING' %}selected{% endif %}>⚠️ WARNING (Avertissements et erreurs)</option>
-                                <option value="ERROR" {% if config.log_level == 'ERROR' %}selected{% endif %}>❌ ERROR (Uniquement les erreurs)</option>
-                            </select>
-                            <small style="display: block; margin-top: 5px; color: #666;">
-                                Note: Pour voir les logs DEBUG de performance, activez aussi l'option ci-dessous
-                            </small>
-                        </div>
-                        
-                        <div class="form-group">
-                            <label for="debugLogging">Logs de performance DEBUG activés</label>
-                            <select id="debugLogging" name="debug_logging_enabled">
-                                <option value="true" {% if config.debug_logging_enabled %}selected{% endif %}>✅ Oui</option>
-                                <option value="false" {% if not config.debug_logging_enabled %}selected{% endif %}>❌ Non</option>
-                            </select>
-                            <small style="display: block; margin-top: 5px; color: #666;">
-                                Active les logs détaillés de performance pour le débogage des lenteurs
-                            </small>
-                        </div>
-                        
-                        <div class="form-group">
-                            <label for="taskSaveThrottle">Sauvegarder après N fichiers</label>
-                            <input type="number" id="taskSaveThrottle" name="task_save_throttle" 
-                                   value="{{ config.task_save_throttle }}" min="1" max="100">
-                            <small style="display: block; margin-top: 5px; color: #666;">
-                                Nombre de fichiers entre chaque sauvegarde pendant la synchronisation (pour optimiser les performances)
-                            </small>
-                        </div>
-                        
-                        <div class="form-group">
-                            <label for="smallFileTimeout">Timeout petits fichiers (secondes)</label>
-                            <input type="number" id="smallFileTimeout" name="small_file_timeout" 
-                                   value="{{ config.small_file_timeout }}" min="1" max="300">
-                            <small style="display: block; margin-top: 5px; color: #666;">
-                                Timeout pour les fichiers ≤ seuil (défaut: 10s)
-                            </small>
-                        </div>
-                        
-                        <div class="form-group">
-                            <label for="largeFileTimeout">Timeout gros fichiers (secondes)</label>
-                            <input type="number" id="largeFileTimeout" name="large_file_timeout" 
-                                   value="{{ config.large_file_timeout }}" min="10" max="600">
-                            <small style="display: block; margin-top: 5px; color: #666;">
-                                Timeout pour les fichiers > seuil (défaut: 60s)
-                            </small>
-                        </div>
-                        
-                        <div class="form-group">
-                            <label for="largeFileThreshold">Seuil fichiers volumineux (Mo)</label>
-                            <input type="number" id="largeFileThreshold" name="large_file_threshold_mb" 
-                                   value="{{ config.large_file_threshold_mb }}" min="1" max="1000">
-                            <small style="display: block; margin-top: 5px; color: #666;">
-                                Fichiers supérieurs à ce seuil utiliseront le timeout étendu (défaut: 50 Mo)
-                            </small>
-                        </div>
-                        
-                        <div class="form-group">
-                            <label for="logRetention">Période de rétention (jours)</label>
-                            <input type="number" id="logRetention" name="log_retention_days" 
-                                   value="{{ config.log_retention_days }}" min="1" max="365">
-                            <small style="display: block; margin-top: 5px; color: #666;">
-                                Les logs plus vieux que cette période seront automatiquement supprimés
-                            </small>
-                        </div>
-                        
-                        <div class="config-actions">
-                            <button type="button" class="btn btn-success" onclick="saveConfig()">💾 Sauvegarder</button>
-                        </div>
-                    </form>
-                </div>
-                
-                <!-- Configuration de l'interface -->
-                <div class="card">
-                    <h3>🎨 Paramètres de l'interface</h3>
-                    <form id="uiConfigForm">
-                        <div class="form-group">
-                            <label for="refreshInterval">Intervalle de rafraîchissement (secondes)</label>
-                            <input type="number" id="refreshInterval" name="log_refresh_interval" 
-                                   value="{{ config.log_refresh_interval }}" min="1" max="60">
-                            <small style="display: block; margin-top: 5px; color: #666;">
-                                Intervalle entre chaque rafraîchissement automatique des logs
-                            </small>
-                        </div>
-                        
-                        <div class="form-group">
-                            <label for="autoRefresh">Auto-rafraîchissement activé</label>
-                            <select id="autoRefresh" name="auto_refresh">
-                                <option value="true" {% if config.auto_refresh %}selected{% endif %}>✅ Oui</option>
-                                <option value="false" {% if not config.auto_refresh %}selected{% endif %}>❌ Non</option>
-                            </select>
-                            <small style="display: block; margin-top: 5px; color: #666;">
-                                Activer ou désactiver le rafraîchissement automatique
-                            </small>
-                        </div>
-                        
-                        <div class="form-group">
-                            <label for="corruptedCheckInterval">Intervalle de vérification des fichiers corrompus (secondes)</label>
-                            <input type="number" id="corruptedCheckInterval" name="corrupted_files_check_interval" 
-                                   value="{{ config.corrupted_files_check_interval }}" min="60" max="86400">
-                            <small style="display: block; margin-top: 5px; color: #666;">
-                                Intervalle entre chaque vérification des fichiers corrompus (ne s'exécute que quand toutes les tâches sont terminées)
-                            </small>
-                        </div>
-                        
-                        <div class="form-group">
-                            <label for="excludePatterns">Patterns de fichiers à exclure</label>
-                            <input type="text" id="excludePatterns" name="exclude_patterns" 
-                                   value="{{ config.exclude_patterns }}" placeholder="*.tmp,*.part,*.temp">
-                            <small style="display: block; margin-top: 5px; color: #666;">
-                                Patterns de fichiers à exclure de la synchronisation (séparés par des virgules). Exemples: *.tmp,*.part,Thumbs.db,desktop.ini
-                            </small>
-                        </div>
-                        
-                        <div class="config-actions">
-                            <button type="button" class="btn btn-success" onclick="saveConfig()">💾 Sauvegarder</button>
-                        </div>
-                    </form>
-                </div>
-            </div>
-            
-            <!-- Actions rapides -->
-            <div class="card" style="margin-top: 20px;">
-                <h3>⚡ Actions rapides</h3>
-                <div style="display: flex; gap: 15px; flex-wrap: wrap;">
-                    <button class="btn" onclick="cleanupLogs()">🧹 Nettoyer les logs anciens</button>
-                    <button class="btn btn-secondary" onclick="resetConfig()">🔄 Réinitialiser la configuration</button>
-                    <button class="btn btn-danger" onclick="shutdownServer()">⏹️ Éteindre le service</button>
-                </div>
-            </div>
-            
-            <div id="statusMessage" class="status-message"></div>
+{% extends "base.html" %}
+
+{% set page_title = "Configuration" %}
+
+{% block navigation %}{% endblock %}
+
+{% block content %}
+    <!-- Navigation Menu -->
+    <div class="section">
+        <div class="nav-menu">
+            <a href="/" class="nav-btn">🏠 TABLEAU DE BORD</a>
+            <a href="/add" class="nav-btn">➕ AJOUTER SERVEUR FTP</a>
+            <a href="/list" class="nav-btn">📋 LISTE DES SERVEURS</a>
+            <a href="/tasks" class="nav-btn">🔄 TACHES DE SYNC</a>
+            <a href="/logs" class="nav-btn">📜 LOGS</a>
+            <a href="/config" class="nav-btn">⚙️ CONFIGURATION</a>
         </div>
     </div>
+
+    <!-- Configuration Header -->
+    <div class="section">
+        <h2 class="section-title">⚙️ Configuration de {{ app_name }}</h2>
+        <div class="alert alert--info">
+            <div class="alert-content">
+                <h4 class="alert-title">ℹ️ Version: {{ app_version }}</h4>
+                <p class="alert-message">Configurez les paramètres de votre application</p>
+            </div>
+        </div>
+    </div>
+
+    <!-- General Configuration -->
+    <div class="section">
+        <h3 class="section-title" style="font-size: var(--font-size-xl);">📋 Paramètres généraux</h3>
+        
+        <form id="generalConfigForm" action="/save_config" method="POST" class="mt-lg">
+            <div class="form-row">
+                <div class="form-group">
+                    <label for="appName" class="form-label">Nom de l'application</label>
+                    <input type="text" id="appName" name="app_name" value="{{ app_name }}" class="form-control form-input">
+                </div>
+                <div class="form-group">
+                    <label for="appVersion" class="form-label">Version</label>
+                    <input type="text" id="appVersion" name="app_version" value="{{ app_version }}" class="form-control form-input" readonly>
+                </div>
+            </div>
+            
+            <div class="form-group">
+                <label for="defaultTimeout" class="form-label">Timeout par défaut (secondes)</label>
+                <input type="number" id="defaultTimeout" name="default_timeout" value="{{ config.default_timeout|default(30) }}" min="1" class="form-control form-input" style="max-width: 200px;">
+                <p class="form-hint">Timeout de connexion par défaut pour les nouveaux serveurs</p>
+            </div>
+            
+            <div class="form-group">
+                <div class="form-check">
+                    <input type="checkbox" id="autoSyncEnabled" name="auto_sync_enabled" value="true" {% if config.auto_sync_enabled|default(false) %}checked{% endif %} class="form-check-input">
+                    <label for="autoSyncEnabled" class="form-check-label">Activer la synchronisation automatique par défaut</label>
+                </div>
+            </div>
+            
+            <div class="form-group">
+                <div class="form-check">
+                    <input type="checkbox" id="debugMode" name="debug_mode" value="true" {% if config.debug_mode|default(false) %}checked{% endif %} class="form-check-input">
+                    <label for="debugMode" class="form-check-label">Mode debug (plus de logs détaillés)</label>
+                </div>
+            </div>
+            
+            <div class="form-row mt-lg">
+                <div class="form-group">
+                    <button type="submit" class="btn btn--primary">💾 Enregistrer les paramètres</button>
+                    <button type="button" class="btn btn--secondary" onclick="resetGeneralConfig()">↺ Réinitialiser</button>
+                </div>
+            </div>
+        </form>
+    </div>
+
+    <!-- Network Configuration -->
+    <div class="section">
+        <h3 class="section-title" style="font-size: var(--font-size-xl);">🌐 Paramètres réseau</h3>
+        
+        <form id="networkConfigForm" action="/save_network_config" method="POST" class="mt-lg">
+            <div class="form-row">
+                <div class="form-group">
+                    <label for="maxConnections" class="form-label">Connexions simultanées maximales</label>
+                    <input type="number" id="maxConnections" name="max_connections" value="{{ config.max_connections|default(5) }}" min="1" max="20" class="form-control form-input" style="max-width: 200px;">
+                    <p class="form-hint">Nombre maximum de connexions FTP simultanées</p>
+                </div>
+                <div class="form-group">
+                    <label for="connectionTimeout" class="form-label">Timeout de connexion (secondes)</label>
+                    <input type="number" id="connectionTimeout" name="connection_timeout" value="{{ config.connection_timeout|default(30) }}" min="1" class="form-control form-input" style="max-width: 200px;">
+                </div>
+            </div>
+            
+            <div class="form-row">
+                <div class="form-group">
+                    <label for="retryAttempts" class="form-label">Nombre de tentatives de reconnexion</label>
+                    <input type="number" id="retryAttempts" name="retry_attempts" value="{{ config.retry_attempts|default(3) }}" min="0" max="10" class="form-control form-input" style="max-width: 200px;">
+                </div>
+                <div class="form-group">
+                    <label for="retryDelay" class="form-label">Délai entre tentatives (secondes)</label>
+                    <input type="number" id="retryDelay" name="retry_delay" value="{{ config.retry_delay|default(5) }}" min="0" max="60" class="form-control form-input" style="max-width: 200px;">
+                </div>
+            </div>
+            
+            <div class="form-row mt-lg">
+                <div class="form-group">
+                    <button type="submit" class="btn btn--primary">💾 Enregistrer</button>
+                    <button type="button" class="btn btn--secondary" onclick="resetNetworkConfig()">↺ Réinitialiser</button>
+                </div>
+            </div>
+        </form>
+    </div>
+
+    <!-- Sync Configuration -->
+    <div class="section">
+        <h3 class="section-title" style="font-size: var(--font-size-xl);">🔄 Paramètres de synchronisation</h3>
+        
+        <form id="syncConfigForm" action="/save_sync_config" method="POST" class="mt-lg">
+            <div class="form-row">
+                <div class="form-group">
+                    <label for="largeFileThreshold" class="form-label">Seuil fichier volumineux (Mo)</label>
+                    <input type="number" id="largeFileThreshold" name="large_file_threshold" value="{{ config.large_file_threshold|default(50) }}" min="1" class="form-control form-input" style="max-width: 200px;">
+                    <p class="form-hint">Fichiers supérieurs à ce seuil utiliseront un timeout plus long</p>
+                </div>
+                <div class="form-group">
+                    <label for="largeFileTimeout" class="form-label">Timeout fichier volumineux (minutes)</label>
+                    <input type="number" id="largeFileTimeout" name="large_file_timeout" value="{{ config.large_file_timeout|default(30) }}" min="1" class="form-control form-input" style="max-width: 200px;">
+                </div>
+            </div>
+            
+            <div class="form-row">
+                <div class="form-group">
+                    <label for="smallFileTimeout" class="form-label">Timeout fichier standard (minutes)</label>
+                    <input type="number" id="smallFileTimeout" name="small_file_timeout" value="{{ config.small_file_timeout|default(10) }}" min="1" class="form-control form-input" style="max-width: 200px;">
+                </div>
+                <div class="form-group">
+                    <label for="bufferSize" class="form-label">Taille du buffer (Ko)</label>
+                    <input type="number" id="bufferSize" name="buffer_size" value="{{ config.buffer_size|default(8192) }}" min="1024" step="1024" class="form-control form-input" style="max-width: 200px;">
+                </div>
+            </div>
+            
+            <div class="form-group">
+                <div class="form-check">
+                    <input type="checkbox" id="verifyChecksum" name="verify_checksum" value="true" {% if config.verify_checksum|default(false) %}checked{% endif %} class="form-check-input">
+                    <label for="verifyChecksum" class="form-check-label">Vérifier la somme de contrôle (MD5) après transfert</label>
+                </div>
+                <p class="form-hint">Vérifie l'intégrité des fichiers transférés (peut ralentir la synchronisation)</p>
+            </div>
+            
+            <div class="form-group">
+                <div class="form-check">
+                    <input type="checkbox" id="deleteSourceAfterSync" name="delete_source_after_sync" value="true" {% if config.delete_source_after_sync|default(false) %}checked{% endif %} class="form-check-input">
+                    <label for="deleteSourceAfterSync" class="form-check-label">Supprimer les fichiers source après synchronisation</label>
+                </div>
+                <p class="form-error">⚠️ Attention: cette option supprimera les fichiers locaux après transfert réussi</p>
+            </div>
+            
+            <div class="form-row mt-lg">
+                <div class="form-group">
+                    <button type="submit" class="btn btn--primary">💾 Enregistrer</button>
+                    <button type="button" class="btn btn--secondary" onclick="resetSyncConfig()">↺ Réinitialiser</button>
+                </div>
+            </div>
+        </form>
+    </div>
+
+    <!-- Danger Zone -->
+    <div class="section">
+        <h3 class="section-title" style="font-size: var(--font-size-xl); color: var(--color-danger-500);">⚠️ Zone dangereuse</h3>
+        
+        <div class="alert alert--danger mb-lg">
+            <div class="alert-content">
+                <h4 class="alert-title">⚠️ Actions irréversibles</h4>
+                <p class="alert-message">Ces actions peuvent entraîner la perte de données. Soyez prudent.</p>
+            </div>
+        </div>
+        
+        <div class="form-row">
+            <div class="form-group">
+                <button class="btn btn--danger" onclick="confirmResetAll()">🗑️ Réinitialiser toute la configuration</button>
+                <p class="form-hint">Supprime tous les serveurs, tâches et paramètres</p>
+            </div>
+            <div class="form-group">
+                <button class="btn btn--danger" onclick="confirmClearDatabase()">🧹 Nettoyer la base de données</button>
+                <p class="form-hint">Supprime les logs et l'historique des synchronisations</p>
+            </div>
+            <div class="form-group">
+                <button class="btn btn--danger" onclick="confirmFactoryReset()">🏭 Réinitialisation usine</button>
+                <p class="form-hint">Rétablit l'application à son état initial</p>
+            </div>
+        </div>
+    </div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+    function resetGeneralConfig() {
+        if (confirm('Réinitialiser les paramètres généraux ?')) {
+            document.getElementById('generalConfigForm').reset();
+        }
+    }
     
-    <script>
-        // Charger la configuration au démarrage
-        function loadConfig() {
-            fetch('/api/config')
-                .then(response => response.json())
-                .then(config => {
-                    // Mettre à jour les valeurs du formulaire
-                    document.getElementById('logLevel').value = config.log_level || 'INFO';
-                    document.getElementById('logRetention').value = config.log_retention_days || 7;
-                    document.getElementById('refreshInterval').value = config.log_refresh_interval || 3;
-                    document.getElementById('autoRefresh').value = config.auto_refresh !== false ? 'true' : 'false';
-                    document.getElementById('corruptedCheckInterval').value = config.corrupted_files_check_interval || 300;
-                    document.getElementById('excludePatterns').value = config.exclude_patterns || '*.tmp,*.part,*.temp,*.~lk,*.lock,Thumbs.db,desktop.ini';
-                    document.getElementById('debugLogging').value = config.debug_logging_enabled ? 'true' : 'false';
-                    document.getElementById('taskSaveThrottle').value = config.task_save_throttle || 10;
-                    document.getElementById('smallFileTimeout').value = config.small_file_timeout || 10;
-                    document.getElementById('largeFileTimeout').value = config.large_file_timeout || 60;
-                    document.getElementById('largeFileThreshold').value = config.large_file_threshold_mb || 50;
-                })
-                .catch(error => {
-                    showStatus('Erreur lors du chargement de la configuration', 'error');
-                });
+    function resetNetworkConfig() {
+        if (confirm('Réinitialiser les paramètres réseau ?')) {
+            document.getElementById('networkConfigForm').reset();
         }
-        
-        // Sauvegarder la configuration
-        function saveConfig() {
-            const config = {
-                log_level: document.getElementById('logLevel').value,
-                log_retention_days: parseInt(document.getElementById('logRetention').value) || 7,
-                log_refresh_interval: parseInt(document.getElementById('refreshInterval').value) || 3,
-                auto_refresh: document.getElementById('autoRefresh').value === 'true',
-                corrupted_files_check_interval: parseInt(document.getElementById('corruptedCheckInterval').value) || 300,
-                exclude_patterns: document.getElementById('excludePatterns').value || '*.tmp,*.part,*.temp,*.~lk,*.lock,Thumbs.db,desktop.ini',
-                debug_logging_enabled: document.getElementById('debugLogging').value === 'true',
-                task_save_throttle: parseInt(document.getElementById('taskSaveThrottle').value) || 10,
-                small_file_timeout: parseInt(document.getElementById('smallFileTimeout').value) || 10,
-                large_file_timeout: parseInt(document.getElementById('largeFileTimeout').value) || 60,
-                large_file_threshold_mb: parseInt(document.getElementById('largeFileThreshold').value) || 50
-            };
-            
-            fetch('/api/config', {
+    }
+    
+    function resetSyncConfig() {
+        if (confirm('Réinitialiser les paramètres de synchronisation ?')) {
+            document.getElementById('syncConfigForm').reset();
+        }
+    }
+    
+    function confirmResetAll() {
+        if (confirm('⚠️ ÊTES-VOUS SÛR ? Cette action supprimera TOUS les serveurs, TOUTES les tâches et TOUTES les configurations. Elle est IRRÉVERSIBLE !')) {
+            fetch('/reset_all', {
                 method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                },
-                body: JSON.stringify(config)
-            })
-            .then(response => response.json())
-            .then(data => {
-                if (data.success) {
-                    showStatus('Configuration sauvegardée avec succès!', 'success');
-                    
-                    // Mettre à jour l'intervalle de rafraîchissement dans la page logs
-                    if (window.opener && window.opener.updateRefreshInterval) {
-                        window.opener.updateRefreshInterval(config.log_refresh_interval * 1000);
-                    }
-                } else {
-                    showStatus('Erreur: ' + data.message, 'error');
-                }
-            })
-            .catch(error => {
-                showStatus('Erreur: ' + error.message, 'error');
-            });
+                headers: { 'X-Confirm': 'true' }
+            }).then(response => response.json())
+              .then(data => {
+                  if (data.success) {
+                      alert('Configuration réinitialisée');
+                      window.location.reload();
+                  } else {
+                      alert('Erreur: ' + (data.message || 'Action annulée'));
+                  }
+              });
         }
-        
-        // Nettoyer les logs anciens
-        function cleanupLogs() {
-            if (confirm('Êtes-vous sûr de vouloir nettoyer les logs anciens selon la période de rétention actuelle ?')) {
-                fetch('/api/cleanup_logs', { method: 'POST' })
-                    .then(response => response.json())
-                    .then(data => {
-                        showStatus(data.message, 'success');
-                    })
-                    .catch(error => {
-                        showStatus('Erreur: ' + error.message, 'error');
-                    });
-            }
+    }
+    
+    function confirmClearDatabase() {
+        if (confirm('⚠️ ÊTES-VOUS SÛR ? Cette action supprimera les logs et l\'historique. Elle est IRRÉVERSIBLE !')) {
+            fetch('/clear_database', {
+                method: 'POST',
+                headers: { 'X-Confirm': 'true' }
+            }).then(response => response.json())
+              .then(data => {
+                  if (data.success) {
+                      alert('Base de données nettoyée');
+                      window.location.reload();
+                  } else {
+                      alert('Erreur: ' + (data.message || 'Action annulée'));
+                  }
+              });
         }
-        
-        // Réinitialiser la configuration
-        function resetConfig() {
-            if (confirm('Êtes-vous sûr de vouloir réinitialiser la configuration aux valeurs par défaut ?')) {
-                const defaultConfig = {
-                    log_level: 'INFO',
-                    log_retention_days: 7,
-                    log_refresh_interval: 3,
-                    auto_refresh: true,
-                    corrupted_files_check_interval: 300,
-                    exclude_patterns: '*.tmp,*.part,*.temp,*.~lk,*.lock,Thumbs.db,desktop.ini',
-                    debug_logging_enabled: false,
-                    task_save_throttle: 10,
-                    small_file_timeout: 10,
-                    large_file_timeout: 60,
-                    large_file_threshold_mb: 50
-                };
-                
-                fetch('/api/config', {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json',
-                    },
-                    body: JSON.stringify(defaultConfig)
-                })
-                .then(response => response.json())
-                .then(data => {
-                    if (data.success) {
-                        showStatus('Configuration réinitialisée!', 'success');
-                        loadConfig();
-                    } else {
-                        showStatus('Erreur: ' + data.message, 'error');
-                    }
-                })
-                .catch(error => {
-                    showStatus('Erreur: ' + error.message, 'error');
-                });
-            }
+    }
+    
+    function confirmFactoryReset() {
+        if (confirm('⚠️ ⚠️ ⚠️ DERNIÈRE CHANCE ! Réinitialisation complète de l\'application. TOUTES les données seront perdues !')) {
+            fetch('/factory_reset', {
+                method: 'POST',
+                headers: { 'X-Confirm': 'FACTORY_RESET_CONFIRM' }
+            }).then(response => response.json())
+              .then(data => {
+                  if (data.success) {
+                      alert('Réinitialisation usine effectuée. Redirection vers la page d\'accueil...');
+                      window.location.href = '/';
+                  } else {
+                      alert('Erreur: ' + (data.message || 'Action annulée'));
+                  }
+              });
         }
-        
-        // Éteindre le service
-        function shutdownServer() {
-            if (confirm('⚠️ Êtes-vous SÛR de vouloir éteindre le service ? Toutes les synchronisations en cours seront arrêtées.')) {
-                fetch('/api/shutdown', { method: 'POST' })
-                    .then(response => response.json())
-                    .then(data => {
-                        if (data.success) {
-                            showStatus(data.message, 'success');
-                            // Rediriger vers une page d'au revoir ou attendre l'arrêt
-                            setTimeout(() => {
-                                document.body.innerHTML = '<div style="text-align: center; margin-top: 50px; color: white;"><h2>⏹️ Service en cours d\'arrêt...</h2><p>Merci d\'avoir utilisé SyncFTP</p></div>';
-                            }, 1000);
-                        } else {
-                            showStatus('Erreur: ' + (data.message || 'Impossible d\'arrêter le service'), 'error');
-                        }
-                    })
-                    .catch(error => {
-                        showStatus('Erreur: ' + error.message, 'error');
-                    });
-            }
-        }
-        
-        // Afficher un message de statut
-        function showStatus(message, type) {
-            const statusElement = document.getElementById('statusMessage');
-            statusElement.textContent = message;
-            statusElement.className = `status-message ${type}`;
-            
-            // Masquer après 5 secondes
-            setTimeout(() => {
-                statusElement.classList.remove(type);
-                setTimeout(() => {
-                    statusElement.style.display = 'none';
-                }, 300);
-            }, 5000);
-        }
-        
-        // Charger la configuration au démarrage
-        document.addEventListener('DOMContentLoaded', function() {
-            loadConfig();
-        });
-    </script>
-</body>
-</html>
+    }
+    
+    // Form submission handlers
+    document.getElementById('generalConfigForm').addEventListener('submit', function(e) {
+        e.preventDefault();
+        const formData = new FormData(this);
+        fetch('/save_config', {
+            method: 'POST',
+            body: formData
+        }).then(response => response.json())
+          .then(data => {
+              if (data.success) {
+                  alert('Configuration enregistrée avec succès');
+                  location.reload();
+              } else {
+                  alert('Erreur: ' + (data.message || 'Impossible d\'enregistrer'));
+              }
+          });
+    });
+</script>
+{% endblock %}
