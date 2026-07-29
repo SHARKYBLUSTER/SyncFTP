@@ -149,14 +149,13 @@
             </div>
             
             <div class="form-group">
-                <label for="logLevel" class="form-label">Niveau de log</label>
-                <select id="logLevel" name="log_level" class="form-control form-select" form="mainConfigForm" aria-describedby="logLevelHelp">
-                    <option value="DEBUG" {% if config.log_level|default('INFO') == 'DEBUG' %}selected{% endif %}>DEBUG</option>
-                    <option value="INFO" {% if config.log_level|default('INFO') == 'INFO' %}selected{% endif %}>INFO</option>
-                    <option value="WARNING" {% if config.log_level|default('INFO') == 'WARNING' %}selected{% endif %}>WARNING</option>
-                    <option value="ERROR" {% if config.log_level|default('INFO') == 'ERROR' %}selected{% endif %}>ERROR</option>
+                <label for="logMode" class="form-label">Mode de logging serveur</label>
+                <select id="logMode" name="log_mode" class="form-control form-select" form="mainConfigForm" aria-describedby="logModeHelp">
+                    <option value="standard" {% if config.log_mode|default('standard') == 'standard' %}selected{% endif %}>Standard</option>
+                    <option value="silent" {% if config.log_mode|default('standard') == 'silent' %}selected{% endif %}>Silent</option>
+                    <option value="verbose" {% if config.log_mode|default('standard') == 'verbose' %}selected{% endif %}>Verbose</option>
                 </select>
-                <p id="logLevelHelp" class="form-hint">Niveau de détail des logs</p>
+                <p id="logModeHelp" class="form-hint">Niveau de verbosité des logs serveur (Standard=INFO, Silent=ERREURS seulement, Verbose=TOUT)</p>
             </div>
             
             <div class="form-group">

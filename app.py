@@ -75,20 +75,21 @@ def apply_log_level_from_config():
     global file_handler, stream_handler
     
     config = load_config()
-    log_level_map = {
-        'DEBUG': logging.DEBUG,
-        'INFO': logging.INFO,
-        'SUCCESS': logging.SUCCESS,
-        'WARNING': logging.WARNING,
-        'ERROR': logging.ERROR
-    }
     
+    # Mapping des modes CLI vers niveaux Python
+    mode_level_map = {
+        'verbose': logging.DEBUG,
+        'standard': logging.INFO,
+        'silent': logging.ERROR
+    }
+
     # Si debug_logging_enabled est vrai, forcer le niveau à DEBUG
     debug_enabled = config.get('debug_logging_enabled', False)
     if debug_enabled:
         new_level = logging.DEBUG
     else:
-        new_level = log_level_map.get(config.get('log_level', 'INFO'), logging.INFO)
+        # Utiliser log_mode s'il existe, sinon laisser le niveau actuel
+        new_level = mode_level_map.get(config.get('log_mode', 'standard'), logging.INFO)
     
     app.logger.setLevel(new_level)
     if file_handler:
@@ -117,7 +118,7 @@ def load_config():
         'app_version': '1.0.0',
         'log_retention_days': 7,
         'log_refresh_interval': 3,
-        'log_level': 'INFO',
+        'log_mode': 'standard',
         'auto_refresh': True,
         'corrupted_files_check_interval': 300,  # 5 minutes en secondes
         'exclude_patterns': '*.tmp,*.part,*.temp,*.~lk,*.lock,Thumbs.db,desktop.ini',  # Patterns à exclure
@@ -137,7 +138,21 @@ def load_config():
     try:
         with open(CONFIG_FILE, 'r', encoding='utf-8') as f:
             config = json.load(f)
+        # Migration de l'ancien log_level vers log_mode
+        if 'log_level' in config and 'log_mode' not in config:
+            old_level = config['log_level']
+            if old_level in ['WARNING', 'ERROR']:
+                config['log_mode'] = 'silent'
+            elif old_level == 'DEBUG':
+                config['log_mode'] = 'verbose'
+            else:  # INFO, SUCCESS
+                config['log_mode'] = 'standard'
+            save_config(config)
+        
         # Ajouter les valeurs par défaut si elles n'existent pas
+        if 'log_mode' not in config:
+            config['log_mode'] = 'standard'
+            save_config(config)
         if 'corrupted_files_check_interval' not in config:
             config['corrupted_files_check_interval'] = 300
             save_config(config)
@@ -182,9 +197,6 @@ def load_config():
             save_config(config)
         if 'log_refresh_interval' not in config:
             config['log_refresh_interval'] = 3
-            save_config(config)
-        if 'log_level' not in config:
-            config['log_level'] = 'INFO'
             save_config(config)
         if 'auto_refresh' not in config:
             config['auto_refresh'] = True
