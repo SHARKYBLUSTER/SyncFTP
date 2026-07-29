@@ -180,6 +180,7 @@
             <div class="form-group">
                 <button type="submit" form="mainConfigForm" class="btn btn--primary" aria-label="Enregistrer toute la configuration">💾 Enregistrer toute la configuration</button>
                 <button type="button" class="btn btn--secondary" onclick="resetMainConfig()" aria-label="Réinitialiser la configuration">↺ Réinitialiser</button>
+                <button type="button" id="shutdownBtn" class="btn btn--danger" onclick="confirmShutdown()" aria-label="Éteindre le serveur">🛑 Éteindre le serveur</button>
             </div>
         </div>
     </section>
@@ -193,6 +194,78 @@
             document.getElementById('mainConfigForm').reset();
         }
     }
+
+    function confirmShutdown() {
+        const shutdownBtn = document.getElementById('shutdownBtn');
+        
+        // Si le bouton n'existe pas ou est déjà désactivé, ne rien faire
+        if (!shutdownBtn || shutdownBtn.disabled) {
+            return;
+        }
+        
+        // Demander confirmation
+        if (confirm('Êtes-vous sûr de vouloir éteindre le serveur ? Cette action arrêtera toutes les synchronisations en cours.')) {
+            shutdownServer(shutdownBtn);
+        }
+    }
+
+    function shutdownServer(btn) {
+        // Désactiver le bouton
+        btn.disabled = true;
+        btn.textContent = '🛑 Arrêt en cours...';
+        
+        try {
+            if (window.SyncFTP) {
+                window.SyncFTP.toggleButtonLoading(btn, true);
+                window.SyncFTP.announce('Arrêt du serveur en cours...');
+            }
+        } catch(e) {
+            // Ignorer les erreurs
+        }
+
+        // Utiliser sendBeacon qui est conçu pour envoyer des requêtes
+        // même quand la page est sur le point de se fermer
+        if (navigator.sendBeacon) {
+            const data = new Blob([JSON.stringify({})], {type: 'application/json'});
+            navigator.sendBeacon('/api/shutdown', data);
+        } else {
+            // Fallback avec fetch + keepalive
+            fetch('/api/shutdown', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({}),
+                keepalive: true
+            }).catch(() => {});
+        }
+        
+        // Désactiver tous les boutons de shutdown sur la page
+        const allShutdownBtns = document.querySelectorAll('button[id="shutdownBtn"], button[onclick*="confirmShutdown"]');
+        allShutdownBtns.forEach(b => {
+            b.disabled = true;
+            b.textContent = '🛑 Arrêt en cours...';
+        });
+        
+        // Stocker l'état dans localStorage pour persister entre les pages
+        localStorage.setItem('syncftp_shutdown_requested', 'true');
+        
+        // Afficher un message
+        setTimeout(() => {
+            alert('Arrêt du serveur demandé. L\'application va s\'arrêter sous peu.');
+        }, 100);
+    }
+    
+    // Vérifier au chargement si un arrêt est déjà en cours
+    document.addEventListener('DOMContentLoaded', function() {
+        if (localStorage.getItem('syncftp_shutdown_requested') === 'true') {
+            const btn = document.getElementById('shutdownBtn');
+            if (btn) {
+                btn.disabled = true;
+                btn.textContent = '🛑 Arrêt en cours...';
+            }
+        }
+    });
 
     // Form submission handler for main config form
     function handleMainConfigSubmit(e) {
