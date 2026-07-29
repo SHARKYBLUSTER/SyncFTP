@@ -12,7 +12,7 @@
     <section aria-labelledby="tasks-title">
         <div class="d-flex justify-between items-center mb-lg">
             <h2 id="tasks-title" class="section-title mb-0">🔄 Gestion des tâches de synchronisation</h2>
-            <a href="/add_task" class="btn btn--primary">➕ NOUVELLE TÂCHE</a>
+            <button onclick="openTaskModal()" class="btn btn--primary">➕ NOUVELLE TÂCHE</button>
         </div>
         
         {% if tasks %}
@@ -42,7 +42,7 @@
                                 <td>{{ task.last_run|default('Jamais') }}</td>
                                 <td class="action-btns">
                                     <button class="action-btn action-btn--sync" onclick="runTask({{ task.id }})" title="Exécuter" aria-label="Exécuter la tâche {{ task.name }}">🔄</button>
-                                    <a href="/edit_task/{{ task.id }}" class="action-btn action-btn--edit" title="Modifier" aria-label="Modifier la tâche {{ task.name }}">✏️</a>
+                                    <button onclick="openTaskModal('{{ task.id }}')" class="action-btn action-btn--edit" title="Modifier" aria-label="Modifier la tâche {{ task.name }}">✏️</button>
                                     <form action="/delete_task/{{ task.id }}" method="POST" class="d-inline">
                                         <button type="submit" class="action-btn action-btn--delete" onclick="return confirm('Êtes-vous sûr ?')" title="Supprimer" aria-label="Supprimer la tâche {{ task.name }}">🗑️</button>
                                     </form>
@@ -92,7 +92,7 @@
                     </div>
                     <div class="form-group">
                         <label for="taskTargetServer" class="form-label form-label--required">Serveur FTP de destination</label>
-                        <select id="taskTargetServer" name="target_ftp_server_id" required class="form-control form-select" aria-required="true" aria-describedby="taskTargetServerHelp">
+                        <select id="taskTargetServer" name="server_id" required class="form-control form-select" aria-required="true" aria-describedby="taskTargetServerHelp">
                             <option value="">-- Sélectionner un serveur --</option>
                             {% for server in servers %}
                                 <option value="{{ server.id }}">{{ server.name }} ({{ server.host }})</option>
@@ -102,15 +102,15 @@
                     </div>
                     <div class="form-group">
                         <label for="taskTargetPath" class="form-label">Chemin distant</label>
-                        <input type="text" id="taskTargetPath" name="target_path" class="form-control form-input" placeholder="/chemin/distant" aria-describedby="taskTargetPathHelp">
+                        <input type="text" id="taskTargetPath" name="target_directory" class="form-control form-input" placeholder="/chemin/distant" aria-describedby="taskTargetPathHelp">
                         <p id="taskTargetPathHelp" class="form-hint">Chemin du dossier de destination sur le serveur FTP (facultatif)</p>
                     </div>
                     <fieldset class="form-row">
                         <legend class="sr-only">Options de synchronisation</legend>
                         <div class="form-group">
                             <div class="form-check">
-                                <input type="checkbox" id="taskAutoSync" name="auto_sync" value="true" class="form-check-input">
-                                <label for="taskAutoSync" class="form-check-label">Synchronisation automatique</label>
+                                <input type="checkbox" id="taskEnabled" name="enabled" value="true" class="form-check-input">
+                                <label for="taskEnabled" class="form-check-label">Synchronisation automatique</label>
                             </div>
                         </div>
                         <div class="form-group">
@@ -144,18 +144,28 @@
             fetch('/get_task/' + taskId)
                 .then(response => response.json())
                 .then(data => {
-                    document.getElementById('taskId').value = data.id;
-                    document.getElementById('taskName').value = data.name;
-                    document.getElementById('taskSource').value = data.source_directory;
-                    document.getElementById('taskTargetServer').value = data.target_ftp_server_id;
-                    document.getElementById('taskTargetPath').value = data.target_path || '';
-                    document.getElementById('taskAutoSync').checked = data.auto_sync || false;
-                    document.getElementById('taskInterval').value = data.sync_interval || 60;
+                    if (data.success && data.task) {
+                        document.getElementById('taskId').value = data.task.id;
+                        document.getElementById('taskName').value = data.task.name;
+                        document.getElementById('taskSource').value = data.task.source_directory;
+                        document.getElementById('taskTargetServer').value = data.task.server_id;
+                        document.getElementById('taskTargetPath').value = data.task.target_directory || '';
+                        document.getElementById('taskEnabled').checked = data.task.enabled || false;
+                        document.getElementById('taskInterval').value = data.task.sync_interval || 60;
+                    } else {
+                        alert('Erreur: ' + (data.message || 'Impossible de charger la tâche'));
+                        closeTaskModal();
+                        return;
+                    }
                     // Focus first focusable element after loading
                     const focusableElements = modal.querySelectorAll('button, [href], input, select, textarea, [tabindex]:not([tabindex="-1"])');
                     if (focusableElements.length > 0) {
                         focusableElements[0].focus();
                     }
+                })
+                .catch(error => {
+                    alert('Erreur: Impossible de charger la tâche');
+                    closeTaskModal();
                 });
         } else {
             // New task mode

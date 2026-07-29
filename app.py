@@ -20,6 +20,7 @@ import logging
 import threading
 import time
 import signal
+import uuid
 from datetime import datetime, timedelta
 from flask import Flask, render_template, request, jsonify, redirect, url_for
 from ftp_tools import FTPConfig, FTPConnector
@@ -1163,13 +1164,81 @@ def api_tasks():
     return jsonify(tasks)
 
 
+@app.route('/get_task/<task_id>', methods=['GET'])
+def get_task(task_id):
+    """Récupère les informations d'une tâche"""
+    tasks = load_tasks()
+    task = next((t for t in tasks if t['id'] == task_id), None)
+    if not task:
+        return jsonify({'success': False, 'message': 'Tâche non trouvée'}), 404
+    return jsonify({'success': True, 'task': task})
+
+
+@app.route('/save_task', methods=['POST'])
+def save_task():
+    """Sauvegarde une tâche (création ou modification)"""
+    data = request.form.to_dict()
+    task_id = data.get('task_id', '')
+    
+    if task_id:
+        # Modification de tâche existante
+        tasks = load_tasks()
+        task = next((t for t in tasks if t['id'] == task_id), None)
+        
+        if not task:
+            return jsonify({'success': False, 'message': 'Tâche non trouvée'}), 404
+        
+        # Mettre à jour les champs
+        task['name'] = data.get('name', task['name'])
+        task['server_id'] = data.get('server_id', task['server_id'])
+        task['source_directory'] = data.get('source_directory', task['source_directory'])
+        task['target_directory'] = data.get('target_directory', task['target_directory'])
+        task['sync_interval'] = int(data.get('sync_interval', task['sync_interval']))
+        task['enabled'] = data.get('enabled') == 'true'
+        
+        save_tasks(tasks)
+        app.logger.info(f"Tâche mise à jour: {task['name']}")
+        
+        # Redémarrer les threads pour appliquer les changements
+        start_sync_threads()
+    else:
+        # Nouvelle tâche
+        # Générer un ID unique
+        import uuid
+        task_id = str(uuid.uuid4())
+        
+        task = {
+            'id': task_id,
+            'name': data.get('name', f"Tâche {datetime.now().strftime('%Y%m%d_%H%M%S')}"),
+            'server_id': data.get('server_id', ''),
+            'source_directory': data.get('source_directory', ''),
+            'target_directory': data.get('target_directory', ''),
+            'sync_interval': int(data.get('sync_interval', 60)),
+            'enabled': data.get('enabled') == 'true',
+            'created_at': datetime.now().isoformat(),
+            'last_run': None,
+            'last_result': None,
+            'status': 'idle'
+        }
+        
+        tasks = load_tasks()
+        tasks.append(task)
+        save_tasks(tasks)
+        
+        app.logger.info(f"Tâche de synchronisation ajoutée: {task['name']}")
+        
+        # Démarrer le thread pour cette nouvelle tâche
+        start_sync_threads()
+    
+    return redirect(url_for('tasks_page'))
+
+
 @app.route('/add_task', methods=['POST'])
 def add_task():
     """Ajoute une nouvelle tâche de synchronisation"""
     data = request.form.to_dict()
     
     # Générer un ID unique
-    import uuid
     task_id = str(uuid.uuid4())
     
     task = {
