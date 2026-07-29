@@ -130,7 +130,8 @@ def load_config():
         'connection_timeout': 30,  # Timeout de connexion en secondes
         'max_connections': 5,  # Nombre maximum de connexions simultanées
         'retry_attempts': 3,  # Nombre de tentatives de reconnexion
-        'retry_delay': 5  # Délai entre les tentatives en secondes
+        'retry_delay': 5,  # Délai entre les tentatives en secondes
+        'max_log_size_mb': 10  # Taille maximale des logs en Mo avant nettoyage
     }
     if not os.path.exists(CONFIG_FILE):
         save_config(default_config)
@@ -201,6 +202,9 @@ def load_config():
         if 'auto_refresh' not in config:
             config['auto_refresh'] = True
             save_config(config)
+        if 'max_log_size_mb' not in config:
+            config['max_log_size_mb'] = 10
+            save_config(config)
         return config
     except Exception as e:
         app.logger.error(f"Erreur lors du chargement de la config: {e}")
@@ -252,6 +256,40 @@ def should_save_tasks():
         return False
 
 
+def cleanup_logs_by_size():
+    """Nettoie les logs si le fichier dépasse la taille maximale configurée"""
+    config = load_config()
+    max_size_mb = config.get('max_log_size_mb', 10)
+    
+    if not os.path.exists(LOG_FILE):
+        return
+    
+    try:
+        # Vérifier la taille actuelle du fichier
+        file_size_bytes = os.path.getsize(LOG_FILE)
+        max_size_bytes = max_size_mb * 1024 * 1024  # Convertir Mo en octets
+        
+        if file_size_bytes <= max_size_bytes:
+            return  # Pas besoin de nettoyer
+        
+        # Lire toutes les lignes
+        with open(LOG_FILE, 'r', encoding='utf-8') as f:
+            lines = f.readlines()
+        
+        # Supprimer 20% des lignes les plus anciennes pour réduire la taille
+        # Cela permet un nettoyage progressif plutôt que de tout supprimer
+        lines_to_remove = max(1, int(len(lines) * 0.2))
+        new_lines = lines[lines_to_remove:]
+        
+        # Écrire les lignes restantes
+        with open(LOG_FILE, 'w', encoding='utf-8') as f:
+            f.writelines(new_lines)
+        
+        app.logger.info(f"Nettoyage des logs par taille: supprimées {lines_to_remove} lignes, taille réduite de {file_size_bytes} à {os.path.getsize(LOG_FILE)} octets")
+    except Exception as e:
+        app.logger.error(f"Erreur lors du nettoyage des logs par taille: {e}")
+
+
 def cleanup_old_logs():
     """Nettoie les logs anciens selon la période de rétention"""
     config = load_config()
@@ -279,6 +317,9 @@ def cleanup_old_logs():
         
         with open(LOG_FILE, 'w', encoding='utf-8') as f:
             f.writelines(new_lines)
+        
+        # Après le nettoyage par date, vérifier aussi la taille
+        cleanup_logs_by_size()
         
         app.logger.info(f"Nettoyage des logs: conservés {len(new_lines)} lignes sur {len(lines)}")
     except Exception as e:

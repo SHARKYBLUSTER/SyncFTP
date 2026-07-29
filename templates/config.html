@@ -148,6 +148,14 @@
                 </div>
             </div>
             
+            <div class="form-row">
+                <div class="form-group">
+                    <label for="maxLogSize" class="form-label">Taille maximale des logs (Mo)</label>
+                    <input type="number" id="maxLogSize" name="max_log_size_mb" value="{{ config.max_log_size_mb|default(10) }}" min="1" class="form-control form-input config-input-narrow" aria-describedby="maxLogSizeHelp" form="mainConfigForm">
+                    <p id="maxLogSizeHelp" class="form-hint">Taille maximale du fichier de logs avant nettoyage automatique (les logs les plus anciens seront supprimés)</p>
+                </div>
+            </div>
+            
             <div class="form-group">
                 <label for="logMode" class="form-label">Mode de logging serveur</label>
                 <select id="logMode" name="log_mode" class="form-control form-select" form="mainConfigForm" aria-describedby="logModeHelp">
