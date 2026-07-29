@@ -151,10 +151,7 @@
     display: flex;
 }
 
-/* Task form specific */
-.task-form-row {
-    margin-bottom: var(--spacing-md);
-}
+
 
 /* Responsive */
 @media (max-width: 768px) {

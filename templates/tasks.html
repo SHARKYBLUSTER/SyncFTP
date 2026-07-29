@@ -105,8 +105,7 @@
                         <input type="text" id="taskTargetPath" name="target_directory" class="form-control form-input" placeholder="/chemin/distant" aria-describedby="taskTargetPathHelp">
                         <p id="taskTargetPathHelp" class="form-hint">Chemin du dossier de destination sur le serveur FTP (facultatif)</p>
                     </div>
-                    <fieldset class="form-row">
-                        <legend class="sr-only">Options de synchronisation</legend>
+                    <div class="form-row">
                         <div class="form-group">
                             <div class="form-check">
                                 <input type="checkbox" id="taskEnabled" name="enabled" value="true" class="form-check-input">
@@ -118,7 +117,7 @@
                             <input type="number" id="taskInterval" name="sync_interval" value="60" min="1" class="form-control form-input" aria-describedby="taskIntervalHelp">
                             <p id="taskIntervalHelp" class="form-hint">Intervalle entre chaque synchronisation automatique en minutes</p>
                         </div>
-                    </fieldset>
+                    </div>
                 </form>
             </div>
             <div class="modal-footer">
