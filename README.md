@@ -100,7 +100,17 @@ source venv/bin/activate
 pip install flask
 ```
 
----
+### Avec Gitbash (Windows)
+```bash
+git clone https://github.com/SHARKYBLUSTER/SyncFTP.git
+cd SyncFTP
+python -m venv venv
+```
+
+```bash
+source venv/Scripts/activate
+pip install flask
+```
 
 ## Utilisation
 
