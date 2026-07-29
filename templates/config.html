@@ -32,42 +32,47 @@
     <div class="section">
         <h3 class="section-title" style="font-size: var(--font-size-xl);">📋 Paramètres généraux</h3>
         
-        <form id="generalConfigForm" action="/save_config" method="POST" class="mt-lg">
-            <div class="form-row">
+        <form id="generalConfigForm" action="/save_config" method="POST" class="mt-lg" aria-label="Formulaire de configuration générale">
+            <fieldset>
+                <legend class="sr-only">Paramètres généraux</legend>
+                <div class="form-row">
+                    <div class="form-group">
+                        <label for="appName" class="form-label">Nom de l'application</label>
+                        <input type="text" id="appName" name="app_name" value="{{ app_name }}" class="form-control form-input" aria-describedby="appNameHelp">
+                        <p id="appNameHelp" class="form-hint">Nom affiché dans l'application</p>
+                    </div>
+                    <div class="form-group">
+                        <label for="appVersion" class="form-label">Version</label>
+                        <input type="text" id="appVersion" name="app_version" value="{{ app_version }}" class="form-control form-input" readonly aria-describedby="appVersionHelp">
+                        <p id="appVersionHelp" class="form-hint">Version actuelle de l'application (en lecture seule)</p>
+                    </div>
+                </div>
+                
                 <div class="form-group">
-                    <label for="appName" class="form-label">Nom de l'application</label>
-                    <input type="text" id="appName" name="app_name" value="{{ app_name }}" class="form-control form-input">
+                    <label for="defaultTimeout" class="form-label">Timeout par défaut (secondes)</label>
+                    <input type="number" id="defaultTimeout" name="default_timeout" value="{{ config.default_timeout|default(30) }}" min="1" class="form-control form-input" style="max-width: 200px;" aria-describedby="defaultTimeoutHelp">
+                    <p id="defaultTimeoutHelp" class="form-hint">Timeout de connexion par défaut pour les nouveaux serveurs</p>
                 </div>
+                
                 <div class="form-group">
-                    <label for="appVersion" class="form-label">Version</label>
-                    <input type="text" id="appVersion" name="app_version" value="{{ app_version }}" class="form-control form-input" readonly>
+                    <div class="form-check">
+                        <input type="checkbox" id="autoSyncEnabled" name="auto_sync_enabled" value="true" {% if config.auto_sync_enabled|default(false) %}checked{% endif %} class="form-check-input">
+                        <label for="autoSyncEnabled" class="form-check-label">Activer la synchronisation automatique par défaut</label>
+                    </div>
                 </div>
-            </div>
-            
-            <div class="form-group">
-                <label for="defaultTimeout" class="form-label">Timeout par défaut (secondes)</label>
-                <input type="number" id="defaultTimeout" name="default_timeout" value="{{ config.default_timeout|default(30) }}" min="1" class="form-control form-input" style="max-width: 200px;">
-                <p class="form-hint">Timeout de connexion par défaut pour les nouveaux serveurs</p>
-            </div>
-            
-            <div class="form-group">
-                <div class="form-check">
-                    <input type="checkbox" id="autoSyncEnabled" name="auto_sync_enabled" value="true" {% if config.auto_sync_enabled|default(false) %}checked{% endif %} class="form-check-input">
-                    <label for="autoSyncEnabled" class="form-check-label">Activer la synchronisation automatique par défaut</label>
+                
+                <div class="form-group">
+                    <div class="form-check">
+                        <input type="checkbox" id="debugMode" name="debug_mode" value="true" {% if config.debug_mode|default(false) %}checked{% endif %} class="form-check-input">
+                        <label for="debugMode" class="form-check-label">Mode debug (plus de logs détaillés)</label>
+                    </div>
                 </div>
-            </div>
-            
-            <div class="form-group">
-                <div class="form-check">
-                    <input type="checkbox" id="debugMode" name="debug_mode" value="true" {% if config.debug_mode|default(false) %}checked{% endif %} class="form-check-input">
-                    <label for="debugMode" class="form-check-label">Mode debug (plus de logs détaillés)</label>
-                </div>
-            </div>
+            </fieldset>
             
             <div class="form-row mt-lg">
                 <div class="form-group">
-                    <button type="submit" class="btn btn--primary">💾 Enregistrer les paramètres</button>
-                    <button type="button" class="btn btn--secondary" onclick="resetGeneralConfig()">↺ Réinitialiser</button>
+                    <button type="submit" class="btn btn--primary" aria-label="Enregistrer les paramètres généraux">💾 Enregistrer les paramètres</button>
+                    <button type="button" class="btn btn--secondary" onclick="resetGeneralConfig()" aria-label="Réinitialiser les paramètres généraux">↺ Réinitialiser</button>
                 </div>
             </div>
         </form>
@@ -77,34 +82,40 @@
     <div class="section">
         <h3 class="section-title" style="font-size: var(--font-size-xl);">🌐 Paramètres réseau</h3>
         
-        <form id="networkConfigForm" action="/save_network_config" method="POST" class="mt-lg">
-            <div class="form-row">
-                <div class="form-group">
-                    <label for="maxConnections" class="form-label">Connexions simultanées maximales</label>
-                    <input type="number" id="maxConnections" name="max_connections" value="{{ config.max_connections|default(5) }}" min="1" max="20" class="form-control form-input" style="max-width: 200px;">
-                    <p class="form-hint">Nombre maximum de connexions FTP simultanées</p>
+        <form id="networkConfigForm" action="/save_network_config" method="POST" class="mt-lg" aria-label="Formulaire de configuration réseau">
+            <fieldset>
+                <legend class="sr-only">Paramètres réseau</legend>
+                <div class="form-row">
+                    <div class="form-group">
+                        <label for="maxConnections" class="form-label">Connexions simultanées maximales</label>
+                        <input type="number" id="maxConnections" name="max_connections" value="{{ config.max_connections|default(5) }}" min="1" max="20" class="form-control form-input" style="max-width: 200px;" aria-describedby="maxConnectionsHelp">
+                        <p id="maxConnectionsHelp" class="form-hint">Nombre maximum de connexions FTP simultanées</p>
+                    </div>
+                    <div class="form-group">
+                        <label for="connectionTimeout" class="form-label">Timeout de connexion (secondes)</label>
+                        <input type="number" id="connectionTimeout" name="connection_timeout" value="{{ config.connection_timeout|default(30) }}" min="1" class="form-control form-input" style="max-width: 200px;" aria-describedby="connectionTimeoutHelp">
+                        <p id="connectionTimeoutHelp" class="form-hint">Temps maximal pour établir une connexion</p>
+                    </div>
                 </div>
-                <div class="form-group">
-                    <label for="connectionTimeout" class="form-label">Timeout de connexion (secondes)</label>
-                    <input type="number" id="connectionTimeout" name="connection_timeout" value="{{ config.connection_timeout|default(30) }}" min="1" class="form-control form-input" style="max-width: 200px;">
+                
+                <div class="form-row">
+                    <div class="form-group">
+                        <label for="retryAttempts" class="form-label">Nombre de tentatives de reconnexion</label>
+                        <input type="number" id="retryAttempts" name="retry_attempts" value="{{ config.retry_attempts|default(3) }}" min="0" max="10" class="form-control form-input" style="max-width: 200px;" aria-describedby="retryAttemptsHelp">
+                        <p id="retryAttemptsHelp" class="form-hint">Nombre de tentatives avant d'abandonner</p>
+                    </div>
+                    <div class="form-group">
+                        <label for="retryDelay" class="form-label">Délai entre tentatives (secondes)</label>
+                        <input type="number" id="retryDelay" name="retry_delay" value="{{ config.retry_delay|default(5) }}" min="0" max="60" class="form-control form-input" style="max-width: 200px;" aria-describedby="retryDelayHelp">
+                        <p id="retryDelayHelp" class="form-hint">Temps d'attente entre chaque tentative de reconnexion</p>
+                    </div>
                 </div>
-            </div>
-            
-            <div class="form-row">
-                <div class="form-group">
-                    <label for="retryAttempts" class="form-label">Nombre de tentatives de reconnexion</label>
-                    <input type="number" id="retryAttempts" name="retry_attempts" value="{{ config.retry_attempts|default(3) }}" min="0" max="10" class="form-control form-input" style="max-width: 200px;">
-                </div>
-                <div class="form-group">
-                    <label for="retryDelay" class="form-label">Délai entre tentatives (secondes)</label>
-                    <input type="number" id="retryDelay" name="retry_delay" value="{{ config.retry_delay|default(5) }}" min="0" max="60" class="form-control form-input" style="max-width: 200px;">
-                </div>
-            </div>
+            </fieldset>
             
             <div class="form-row mt-lg">
                 <div class="form-group">
-                    <button type="submit" class="btn btn--primary">💾 Enregistrer</button>
-                    <button type="button" class="btn btn--secondary" onclick="resetNetworkConfig()">↺ Réinitialiser</button>
+                    <button type="submit" class="btn btn--primary" aria-label="Enregistrer les paramètres réseau">💾 Enregistrer</button>
+                    <button type="button" class="btn btn--secondary" onclick="resetNetworkConfig()" aria-label="Réinitialiser les paramètres réseau">↺ Réinitialiser</button>
                 </div>
             </div>
         </form>
@@ -114,50 +125,56 @@
     <div class="section">
         <h3 class="section-title" style="font-size: var(--font-size-xl);">🔄 Paramètres de synchronisation</h3>
         
-        <form id="syncConfigForm" action="/save_sync_config" method="POST" class="mt-lg">
-            <div class="form-row">
+        <form id="syncConfigForm" action="/save_sync_config" method="POST" class="mt-lg" aria-label="Formulaire de configuration de synchronisation">
+            <fieldset>
+                <legend class="sr-only">Paramètres de synchronisation</legend>
+                <div class="form-row">
+                    <div class="form-group">
+                        <label for="largeFileThreshold" class="form-label">Seuil fichier volumineux (Mo)</label>
+                        <input type="number" id="largeFileThreshold" name="large_file_threshold" value="{{ config.large_file_threshold|default(50) }}" min="1" class="form-control form-input" style="max-width: 200px;" aria-describedby="largeFileThresholdHelp">
+                        <p id="largeFileThresholdHelp" class="form-hint">Fichiers supérieurs à ce seuil utiliseront un timeout plus long</p>
+                    </div>
+                    <div class="form-group">
+                        <label for="largeFileTimeout" class="form-label">Timeout fichier volumineux (minutes)</label>
+                        <input type="number" id="largeFileTimeout" name="large_file_timeout" value="{{ config.large_file_timeout|default(30) }}" min="1" class="form-control form-input" style="max-width: 200px;" aria-describedby="largeFileTimeoutHelp">
+                        <p id="largeFileTimeoutHelp" class="form-hint">Timeout pour les fichiers dépassant le seuil</p>
+                    </div>
+                </div>
+                
+                <div class="form-row">
+                    <div class="form-group">
+                        <label for="smallFileTimeout" class="form-label">Timeout fichier standard (minutes)</label>
+                        <input type="number" id="smallFileTimeout" name="small_file_timeout" value="{{ config.small_file_timeout|default(10) }}" min="1" class="form-control form-input" style="max-width: 200px;" aria-describedby="smallFileTimeoutHelp">
+                        <p id="smallFileTimeoutHelp" class="form-hint">Timeout pour les fichiers sous le seuil</p>
+                    </div>
+                    <div class="form-group">
+                        <label for="bufferSize" class="form-label">Taille du buffer (Ko)</label>
+                        <input type="number" id="bufferSize" name="buffer_size" value="{{ config.buffer_size|default(8192) }}" min="1024" step="1024" class="form-control form-input" style="max-width: 200px;" aria-describedby="bufferSizeHelp">
+                        <p id="bufferSizeHelp" class="form-hint">Taille du buffer de transfert en kilo-octets</p>
+                    </div>
+                </div>
+                
                 <div class="form-group">
-                    <label for="largeFileThreshold" class="form-label">Seuil fichier volumineux (Mo)</label>
-                    <input type="number" id="largeFileThreshold" name="large_file_threshold" value="{{ config.large_file_threshold|default(50) }}" min="1" class="form-control form-input" style="max-width: 200px;">
-                    <p class="form-hint">Fichiers supérieurs à ce seuil utiliseront un timeout plus long</p>
+                    <div class="form-check">
+                        <input type="checkbox" id="verifyChecksum" name="verify_checksum" value="true" {% if config.verify_checksum|default(false) %}checked{% endif %} class="form-check-input">
+                        <label for="verifyChecksum" class="form-check-label">Vérifier la somme de contrôle (MD5) après transfert</label>
+                    </div>
+                    <p class="form-hint" id="verifyChecksumHelp">Vérifie l'intégrité des fichiers transférés (peut ralentir la synchronisation)</p>
                 </div>
+                
                 <div class="form-group">
-                    <label for="largeFileTimeout" class="form-label">Timeout fichier volumineux (minutes)</label>
-                    <input type="number" id="largeFileTimeout" name="large_file_timeout" value="{{ config.large_file_timeout|default(30) }}" min="1" class="form-control form-input" style="max-width: 200px;">
+                    <div class="form-check">
+                        <input type="checkbox" id="deleteSourceAfterSync" name="delete_source_after_sync" value="true" {% if config.delete_source_after_sync|default(false) %}checked{% endif %} class="form-check-input" aria-describedby="deleteSourceHelp">
+                        <label for="deleteSourceAfterSync" class="form-check-label">Supprimer les fichiers source après synchronisation</label>
+                    </div>
+                    <p class="form-error" id="deleteSourceHelp">⚠️ Attention: cette option supprimera les fichiers locaux après transfert réussi</p>
                 </div>
-            </div>
-            
-            <div class="form-row">
-                <div class="form-group">
-                    <label for="smallFileTimeout" class="form-label">Timeout fichier standard (minutes)</label>
-                    <input type="number" id="smallFileTimeout" name="small_file_timeout" value="{{ config.small_file_timeout|default(10) }}" min="1" class="form-control form-input" style="max-width: 200px;">
-                </div>
-                <div class="form-group">
-                    <label for="bufferSize" class="form-label">Taille du buffer (Ko)</label>
-                    <input type="number" id="bufferSize" name="buffer_size" value="{{ config.buffer_size|default(8192) }}" min="1024" step="1024" class="form-control form-input" style="max-width: 200px;">
-                </div>
-            </div>
-            
-            <div class="form-group">
-                <div class="form-check">
-                    <input type="checkbox" id="verifyChecksum" name="verify_checksum" value="true" {% if config.verify_checksum|default(false) %}checked{% endif %} class="form-check-input">
-                    <label for="verifyChecksum" class="form-check-label">Vérifier la somme de contrôle (MD5) après transfert</label>
-                </div>
-                <p class="form-hint">Vérifie l'intégrité des fichiers transférés (peut ralentir la synchronisation)</p>
-            </div>
-            
-            <div class="form-group">
-                <div class="form-check">
-                    <input type="checkbox" id="deleteSourceAfterSync" name="delete_source_after_sync" value="true" {% if config.delete_source_after_sync|default(false) %}checked{% endif %} class="form-check-input">
-                    <label for="deleteSourceAfterSync" class="form-check-label">Supprimer les fichiers source après synchronisation</label>
-                </div>
-                <p class="form-error">⚠️ Attention: cette option supprimera les fichiers locaux après transfert réussi</p>
-            </div>
+            </fieldset>
             
             <div class="form-row mt-lg">
                 <div class="form-group">
-                    <button type="submit" class="btn btn--primary">💾 Enregistrer</button>
-                    <button type="button" class="btn btn--secondary" onclick="resetSyncConfig()">↺ Réinitialiser</button>
+                    <button type="submit" class="btn btn--primary" aria-label="Enregistrer les paramètres de synchronisation">💾 Enregistrer</button>
+                    <button type="button" class="btn btn--secondary" onclick="resetSyncConfig()" aria-label="Réinitialiser les paramètres de synchronisation">↺ Réinitialiser</button>
                 </div>
             </div>
         </form>
@@ -167,7 +184,7 @@
     <div class="section">
         <h3 class="section-title" style="font-size: var(--font-size-xl); color: var(--color-danger-500);">⚠️ Zone dangereuse</h3>
         
-        <div class="alert alert--danger mb-lg">
+        <div class="alert alert--danger mb-lg" role="alert" aria-live="assertive">
             <div class="alert-content">
                 <h4 class="alert-title">⚠️ Actions irréversibles</h4>
                 <p class="alert-message">Ces actions peuvent entraîner la perte de données. Soyez prudent.</p>
@@ -176,15 +193,15 @@
         
         <div class="form-row">
             <div class="form-group">
-                <button class="btn btn--danger" onclick="confirmResetAll()">🗑️ Réinitialiser toute la configuration</button>
+                <button class="btn btn--danger" onclick="confirmResetAll()" aria-label="Réinitialiser toute la configuration. Attention, cette action est irréversible">🗑️ Réinitialiser toute la configuration</button>
                 <p class="form-hint">Supprime tous les serveurs, tâches et paramètres</p>
             </div>
             <div class="form-group">
-                <button class="btn btn--danger" onclick="confirmClearDatabase()">🧹 Nettoyer la base de données</button>
+                <button class="btn btn--danger" onclick="confirmClearDatabase()" aria-label="Nettoyer la base de données. Attention, cette action est irréversible">🧹 Nettoyer la base de données</button>
                 <p class="form-hint">Supprime les logs et l'historique des synchronisations</p>
             </div>
             <div class="form-group">
-                <button class="btn btn--danger" onclick="confirmFactoryReset()">🏭 Réinitialisation usine</button>
+                <button class="btn btn--danger" onclick="confirmFactoryReset()" aria-label="Réinitialisation usine. Attention, toutes les données seront perdues">🏭 Réinitialisation usine</button>
                 <p class="form-hint">Rétablit l'application à son état initial</p>
             </div>
         </div>

@@ -26,15 +26,15 @@
         
         {% if tasks %}
             <div class="table-container">
-                <table class="table">
+                <table class="table" aria-label="Liste des tâches de synchronisation">
                     <thead>
                         <tr>
-                            <th>Nom</th>
-                            <th>Source</th>
-                            <th>Destination</th>
-                            <th>Statut</th>
-                            <th>Dernière exécution</th>
-                            <th>Actions</th>
+                            <th scope="col">Nom</th>
+                            <th scope="col">Source</th>
+                            <th scope="col">Destination</th>
+                            <th scope="col">Statut</th>
+                            <th scope="col">Dernière exécution</th>
+                            <th scope="col">Actions</th>
                         </tr>
                     </thead>
                     <tbody>
@@ -44,16 +44,16 @@
                                 <td>{{ task.source_directory }}</td>
                                 <td>{{ task.target_ftp_server|default('-') }}</td>
                                 <td>
-                                    <span class="status-badge status-badge--{{ task.status|default('inactive') }}">
+                                    <span class="status-badge status-badge--{{ task.status|default('inactive') }}" role="status" aria-label="Statut: {{ task.status|default('Inactif') }}">
                                         {{ task.status|default('Inactif') }}
                                     </span>
                                 </td>
                                 <td>{{ task.last_run|default('Jamais') }}</td>
                                 <td class="action-btns">
-                                    <button class="action-btn action-btn--sync" onclick="runTask({{ task.id }})" title="Exécuter">🔄</button>
-                                    <a href="/edit_task/{{ task.id }}" class="action-btn action-btn--edit" title="Modifier">✏️</a>
+                                    <button class="action-btn action-btn--sync" onclick="runTask({{ task.id }})" title="Exécuter" aria-label="Exécuter la tâche {{ task.name }}">🔄</button>
+                                    <a href="/edit_task/{{ task.id }}" class="action-btn action-btn--edit" title="Modifier" aria-label="Modifier la tâche {{ task.name }}">✏️</a>
                                     <form action="/delete_task/{{ task.id }}" method="POST" style="display: inline;">
-                                        <button type="submit" class="action-btn action-btn--delete" onclick="return confirm('Êtes-vous sûr ?')" title="Supprimer">🗑️</button>
+                                        <button type="submit" class="action-btn action-btn--delete" onclick="return confirm('Êtes-vous sûr ?')" title="Supprimer" aria-label="Supprimer la tâche {{ task.name }}">🗑️</button>
                                     </form>
                                 </td>
                             </tr>
@@ -80,37 +80,42 @@
     </div>
 
     <!-- Task Configuration Modal -->
-    <div id="taskModal" class="modal-overlay" style="display: none;">
-        <div class="modal">
+    <div id="taskModal" class="modal-overlay" style="display: none;" role="dialog" aria-modal="true" aria-labelledby="taskModalTitle" aria-hidden="true">
+        <div class="modal" role="document">
             <div class="modal-header">
-                <h2 class="modal-title">⚙️ Configurer une tâche de synchronisation</h2>
-                <button class="modal-close" onclick="closeTaskModal()">&times;</button>
+                <h2 id="taskModalTitle" class="modal-title">⚙️ Configurer une tâche de synchronisation</h2>
+                <button class="modal-close" onclick="closeTaskModal()" aria-label="Fermer la fenêtre modale" type="button">&times;</button>
             </div>
             <div class="modal-body">
-                <form id="taskForm" action="/save_task" method="POST">
+                <form id="taskForm" action="/save_task" method="POST" aria-labelledby="taskModalTitle">
                     <input type="hidden" id="taskId" name="task_id" value="">
                     <div class="form-group">
                         <label for="taskName" class="form-label form-label--required">Nom de la tâche</label>
-                        <input type="text" id="taskName" name="name" required class="form-control form-input" placeholder="Ma tâche de sync">
+                        <input type="text" id="taskName" name="name" required class="form-control form-input" placeholder="Ma tâche de sync" aria-required="true" aria-describedby="taskNameHelp">
+                        <p id="taskNameHelp" class="form-hint">Donnez un nom descriptif à votre tâche de synchronisation</p>
                     </div>
                     <div class="form-group">
                         <label for="taskSource" class="form-label form-label--required">Dossier source</label>
-                        <input type="text" id="taskSource" name="source_directory" required class="form-control form-input" placeholder="/chemin/vers/dossier/source">
+                        <input type="text" id="taskSource" name="source_directory" required class="form-control form-input" placeholder="/chemin/vers/dossier/source" aria-required="true" aria-describedby="taskSourceHelp">
+                        <p id="taskSourceHelp" class="form-hint">Chemin absolu du dossier source à synchroniser</p>
                     </div>
                     <div class="form-group">
                         <label for="taskTargetServer" class="form-label form-label--required">Serveur FTP de destination</label>
-                        <select id="taskTargetServer" name="target_ftp_server_id" required class="form-control form-select">
+                        <select id="taskTargetServer" name="target_ftp_server_id" required class="form-control form-select" aria-required="true" aria-describedby="taskTargetServerHelp">
                             <option value="">-- Sélectionner un serveur --</option>
                             {% for server in servers %}
                                 <option value="{{ server.id }}">{{ server.name }} ({{ server.host }})</option>
                             {% endfor %}
                         </select>
+                        <p id="taskTargetServerHelp" class="form-hint">Sélectionnez le serveur FTP où les fichiers seront transférés</p>
                     </div>
                     <div class="form-group">
                         <label for="taskTargetPath" class="form-label">Chemin distant</label>
-                        <input type="text" id="taskTargetPath" name="target_path" class="form-control form-input" placeholder="/chemin/distant">
+                        <input type="text" id="taskTargetPath" name="target_path" class="form-control form-input" placeholder="/chemin/distant" aria-describedby="taskTargetPathHelp">
+                        <p id="taskTargetPathHelp" class="form-hint">Chemin du dossier de destination sur le serveur FTP (facultatif)</p>
                     </div>
-                    <div class="form-row">
+                    <fieldset class="form-row">
+                        <legend class="sr-only">Options de synchronisation</legend>
                         <div class="form-group">
                             <div class="form-check">
                                 <input type="checkbox" id="taskAutoSync" name="auto_sync" value="true" class="form-check-input">
@@ -119,14 +124,15 @@
                         </div>
                         <div class="form-group">
                             <label for="taskInterval" class="form-label">Intervalle (minutes)</label>
-                            <input type="number" id="taskInterval" name="sync_interval" value="60" min="1" class="form-control form-input">
+                            <input type="number" id="taskInterval" name="sync_interval" value="60" min="1" class="form-control form-input" aria-describedby="taskIntervalHelp">
+                            <p id="taskIntervalHelp" class="form-hint">Intervalle entre chaque synchronisation automatique en minutes</p>
                         </div>
-                    </div>
+                    </fieldset>
                 </form>
             </div>
             <div class="modal-footer">
-                <button type="submit" form="taskForm" class="btn btn--primary">💾 Enregistrer</button>
-                <button type="button" class="btn btn--secondary" onclick="closeTaskModal()">Annuler</button>
+                <button type="submit" form="taskForm" class="btn btn--primary" aria-label="Enregistrer la tâche de synchronisation">💾 Enregistrer</button>
+                <button type="button" class="btn btn--secondary" onclick="closeTaskModal()" aria-label="Annuler la configuration de la tâche">Annuler</button>
             </div>
         </div>
     </div>
@@ -134,8 +140,14 @@
 
 {% block scripts %}
 <script>
+    // Modal accessibility utilities
+    let lastFocusedElementTask = null;
+
     function openTaskModal(taskId = '') {
-        document.getElementById('taskModal').style.display = 'flex';
+        const modal = document.getElementById('taskModal');
+        lastFocusedElementTask = document.activeElement;
+        modal.style.display = 'flex';
+        
         if (taskId) {
             // Edit mode - load task data
             fetch('/get_task/' + taskId)
@@ -148,17 +160,64 @@
                     document.getElementById('taskTargetPath').value = data.target_path || '';
                     document.getElementById('taskAutoSync').checked = data.auto_sync || false;
                     document.getElementById('taskInterval').value = data.sync_interval || 60;
+                    // Focus first focusable element after loading
+                    const focusableElements = modal.querySelectorAll('button, [href], input, select, textarea, [tabindex]:not([tabindex="-1"])');
+                    if (focusableElements.length > 0) {
+                        focusableElements[0].focus();
+                    }
                 });
         } else {
             // New task mode
             document.getElementById('taskForm').reset();
             document.getElementById('taskId').value = '';
+            // Focus first focusable element
+            const focusableElements = modal.querySelectorAll('button, [href], input, select, textarea, [tabindex]:not([tabindex="-1"])');
+            if (focusableElements.length > 0) {
+                focusableElements[0].focus();
+            }
         }
+        
+        modal.setAttribute('aria-hidden', 'false');
+        document.body.style.overflow = 'hidden';
     }
 
     function closeTaskModal() {
-        document.getElementById('taskModal').style.display = 'none';
+        const modal = document.getElementById('taskModal');
+        modal.style.display = 'none';
+        modal.setAttribute('aria-hidden', 'true');
+        document.body.style.overflow = '';
+        // Return focus to previously focused element
+        if (lastFocusedElementTask) {
+            lastFocusedElementTask.focus();
+        }
     }
+
+    // Focus trap for task modal
+    document.addEventListener('keydown', function(e) {
+        const modal = document.getElementById('taskModal');
+        if (modal.style.display !== 'flex') return;
+        
+        // Escape key closes modal
+        if (e.key === 'Escape') {
+            closeTaskModal();
+            return;
+        }
+        
+        // Focus trap
+        if (e.key === 'Tab') {
+            const focusableElements = modal.querySelectorAll('button, [href], input, select, textarea, [tabindex]:not([tabindex="-1"])');
+            const firstElement = focusableElements[0];
+            const lastElement = focusableElements[focusableElements.length - 1];
+            
+            if (e.shiftKey && document.activeElement === firstElement) {
+                lastElement.focus();
+                e.preventDefault();
+            } else if (!e.shiftKey && document.activeElement === lastElement) {
+                firstElement.focus();
+                e.preventDefault();
+            }
+        }
+    });
 
     function runTask(taskId) {
         if (confirm('Exécuter cette tâche maintenant ?')) {

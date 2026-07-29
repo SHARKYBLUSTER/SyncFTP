@@ -20,38 +20,45 @@
     <!-- Add Server Section -->
     <div class="section">
         <h2 class="section-title">➕ Ajouter un serveur FTP</h2>
-        <form id="addServerForm" action="/add_server" method="POST">
+        <form id="addServerForm" action="/add_server" method="POST" aria-labelledby="addServerSectionTitle">
             <div class="form-row">
                 <div class="form-group">
                     <label for="name" class="form-label form-label--required">Nom du serveur</label>
-                    <input type="text" id="name" name="name" required placeholder="Mon Serveur FTP" class="form-control form-input">
+                    <input type="text" id="name" name="name" required placeholder="Mon Serveur FTP" class="form-control form-input" aria-required="true" aria-describedby="nameHelp">
+                    <p id="nameHelp" class="form-hint">Nom unique pour identifier ce serveur FTP</p>
                 </div>
                 <div class="form-group">
                     <label for="host" class="form-label form-label--required">Hôte</label>
-                    <input type="text" id="host" name="host" required placeholder="ftp.example.com" class="form-control form-input">
+                    <input type="text" id="host" name="host" required placeholder="ftp.example.com" class="form-control form-input" aria-required="true" aria-describedby="hostHelp">
+                    <p id="hostHelp" class="form-hint">Adresse IP ou nom d'hôte du serveur FTP</p>
                 </div>
             </div>
             <div class="form-row">
                 <div class="form-group">
                     <label for="port" class="form-label">Port</label>
-                    <input type="number" id="port" name="port" value="21" min="1" max="65535" class="form-control form-input">
+                    <input type="number" id="port" name="port" value="21" min="1" max="65535" class="form-control form-input" aria-describedby="portHelp">
+                    <p id="portHelp" class="form-hint">Port du serveur FTP (par défaut: 21)</p>
                 </div>
                 <div class="form-group">
                     <label for="username" class="form-label">Utilisateur</label>
-                    <input type="text" id="username" name="username" value="anonymous" class="form-control form-input">
+                    <input type="text" id="username" name="username" value="anonymous" class="form-control form-input" aria-describedby="usernameHelp">
+                    <p id="usernameHelp" class="form-hint">Nom d'utilisateur pour la connexion FTP</p>
                 </div>
             </div>
             <div class="form-row">
                 <div class="form-group">
                     <label for="password" class="form-label">Mot de passe</label>
-                    <input type="password" id="password" name="password" class="form-control form-input">
+                    <input type="password" id="password" name="password" class="form-control form-input" aria-describedby="passwordHelp">
+                    <p id="passwordHelp" class="form-hint">Mot de passe pour la connexion FTP (facultatif pour l'anonyme)</p>
                 </div>
                 <div class="form-group">
                     <label for="timeout" class="form-label">Timeout (secondes)</label>
-                    <input type="number" id="timeout" name="timeout" value="30" min="1" class="form-control form-input">
+                    <input type="number" id="timeout" name="timeout" value="30" min="1" class="form-control form-input" aria-describedby="timeoutHelp">
+                    <p id="timeoutHelp" class="form-hint">Temps d'attente maximal pour la connexion en secondes</p>
                 </div>
             </div>
-            <div class="form-row">
+            <fieldset class="form-row">
+                <legend class="sr-only">Options de connexion</legend>
                 <div class="form-group">
                     <div class="form-check">
                         <input type="checkbox" id="use_ssl" name="use_ssl" value="true" class="form-check-input">
@@ -60,13 +67,14 @@
                 </div>
                 <div class="form-group">
                     <label for="test_directory" class="form-label">Répertoire à tester</label>
-                    <input type="text" id="test_directory" name="test_directory" placeholder="/chemin/vers/dossier" class="form-control form-input">
+                    <input type="text" id="test_directory" name="test_directory" placeholder="/chemin/vers/dossier" class="form-control form-input" aria-describedby="testDirectoryHelp">
+                    <p id="testDirectoryHelp" class="form-hint">Chemin du répertoire à tester sur le serveur</p>
                 </div>
-            </div>
+            </fieldset>
             <div class="form-row">
                 <div class="form-group flex items-center gap-sm">
-                    <button type="submit" class="btn btn--primary">💾 ENREGISTRER FTP</button>
-                    <a href="/list" class="btn btn--secondary">🔙 Retour à la liste</a>
+                    <button type="submit" class="btn btn--primary" aria-label="Enregistrer le serveur FTP">💾 ENREGISTRER FTP</button>
+                    <a href="/list" class="btn btn--secondary" aria-label="Retour à la liste des serveurs">🔙 Retour à la liste</a>
                 </div>
             </div>
         </form>

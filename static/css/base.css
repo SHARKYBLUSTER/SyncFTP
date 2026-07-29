@@ -86,10 +86,35 @@ select {
     outline: none;
 }
 
-/* Make focus styles visible */
+/* Make focus styles visible - improved for accessibility */
 :focus-visible {
     outline: var(--border-width-medium) solid var(--color-primary-500);
     outline-offset: 2px;
+}
+
+/* Enhanced focus for buttons and interactive elements */
+button:focus-visible,
+a:focus-visible,
+input:focus-visible,
+select:focus-visible,
+textarea:focus-visible,
+[tabindex]:focus-visible {
+    outline: var(--border-width-medium) solid var(--color-primary-500);
+    outline-offset: 2px;
+    box-shadow: 0 0 0 4px rgba(102, 126, 234, 0.25);
+}
+
+/* Screen reader only class - visually hidden but accessible */
+.sr-only {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    padding: 0;
+    margin: -1px;
+    overflow: hidden;
+    clip: rect(0, 0, 0, 0);
+    white-space: nowrap;
+    border: 0;
 }
 
 /* --- Base HTML Elements --- */
@@ -346,6 +371,12 @@ header h1 {
 
 .nav-btn:active {
     transform: translateY(0);
+}
+
+.nav-btn:focus-visible {
+    outline: var(--border-width-medium) solid var(--color-white);
+    outline-offset: -2px;
+    box-shadow: 0 0 0 4px rgba(102, 126, 234, 0.4);
 }
 
 /* Card styles */
@@ -609,6 +640,14 @@ header h1 {
     font-size: var(--font-size-sm);
     cursor: pointer;
     transition: all var(--transition);
+    border: none;
+    background: transparent;
+}
+
+.action-btn:focus-visible {
+    outline: var(--border-width-medium) solid var(--color-primary-500);
+    outline-offset: 2px;
+    box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.25);
 }
 
 .action-btn--edit {
@@ -800,10 +839,25 @@ header h1 {
     color: var(--color-text-muted);
     padding: var(--spacing-xs);
     line-height: 1;
+    width: var(--spacing-xl);
+    height: var(--spacing-xl);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: var(--radius-full);
+    transition: all var(--transition);
 }
 
 .modal-close:hover {
     color: var(--color-text-primary);
+    background: var(--color-gray-200);
+}
+
+.modal-close:focus-visible {
+    outline: var(--border-width-medium) solid var(--color-primary-500);
+    outline-offset: -2px;
+    color: var(--color-text-primary);
+    background: var(--color-primary-50);
 }
 
 .modal-body {
