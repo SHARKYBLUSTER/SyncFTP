@@ -963,7 +963,10 @@ class FTPConnector:
             message = (f"Synchronisation terminée: {stats['uploaded']} fichiers uploadés, "
                       f"{stats['deleted']} fichiers supprimés, {stats['errors']} erreurs")
             
-            logger.info(message)
+            if success and logger and hasattr(logger, 'success'):
+                logger.success(message)
+            else:
+                logger.info(message)
             logger.debug(f"[PERF] Synchronisation complète terminée en {stats['duration_seconds']:.2f}s")
             
             return success, message, stats

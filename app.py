@@ -24,6 +24,10 @@ from datetime import datetime, timedelta
 from flask import Flask, render_template, request, jsonify, redirect, url_for
 from ftp_tools import FTPConfig, FTPConnector
 
+# Add SUCCESS log level
+logging.addLevelName(25, "SUCCESS")
+logging.SUCCESS = 25
+
 # Configuration
 APP_NAME = "SyncFTP"
 APP_VERSION = "1.0.0"
@@ -60,6 +64,10 @@ def setup_logging(verbose=False, silent=False):
         handlers=[file_handler, stream_handler]
     )
     app.logger.setLevel(log_level)
+    
+    # Add success method to Flask app logger
+    if not hasattr(app.logger, 'success'):
+        app.logger.success = lambda msg, *args, **kwargs: app.logger.log(logging.SUCCESS, msg, *args, **kwargs)
 
 
 def apply_log_level_from_config():
@@ -70,6 +78,7 @@ def apply_log_level_from_config():
     log_level_map = {
         'DEBUG': logging.DEBUG,
         'INFO': logging.INFO,
+        'SUCCESS': logging.SUCCESS,
         'WARNING': logging.WARNING,
         'ERROR': logging.ERROR
     }
@@ -565,7 +574,7 @@ def execute_sync_task(task):
             result['stats'] = stats
             
             if success:
-                app.logger.info(f"Tâche {task['id']} terminée avec succès: {stats.get('uploaded', 0)} fichiers synchronisés")
+                app.logger.success(f"Tâche {task['id']} terminée avec succès: {stats.get('uploaded', 0)} fichiers synchronisés")
                 debug_log(f"Tâche {task['id']} terminée: {stats.get('uploaded', 0)} uploadés, "
                          f"{stats.get('deleted', 0)} supprimés, durée: {stats.get('duration_seconds', 0):.2f}s, "
                          f"vitesse moyenne: {stats.get('average_speed_fps', 0):.2f} fichiers/s")
