@@ -951,38 +951,33 @@ def api_cleanup_logs():
 def api_clear_database():
     """API: Supprime tous les logs et l'historique des synchronisations"""
     try:
-        # Fermer le file handler pour permettre la suppression sous Windows
+        # Fermer et retirer le file handler pour permettre la suppression sous Windows
         global file_handler
         if file_handler:
+            file_handler.flush()
             file_handler.close()
+            logging.getLogger().removeHandler(file_handler)
             file_handler = None
         
         # Supprimer le fichier de logs
         if os.path.exists(LOG_FILE):
             os.remove(LOG_FILE)
-            app.logger.info("Fichier de logs supprimé")
         
         # Supprimer l'historique des tâches (sync_tasks.json)
         if os.path.exists(TASKS_FILE):
             os.remove(TASKS_FILE)
-            app.logger.info("Historique des synchronisations supprimé")
         
-        # Recréer un file handler vide pour que le logging continue de fonctionner
-        file_handler = logging.FileHandler(LOG_FILE, mode='a', encoding='utf-8')
-        file_handler.setLevel(app.logger.level)
-        file_handler.setFormatter(logging.Formatter(LOG_FORMAT))
-        app.logger.addHandler(file_handler)
+        # Recréer le file handler pour que le logging continue de fonctionner
+        recreate_file_handler()
+        
+        # Logger la réussite après avoir recréé le handler
+        app.logger.info("Logs et historique supprimés")
         
         return jsonify({'success': True, 'message': 'Logs et historique supprimés'})
     except Exception as e:
+        # Recréer le handler en cas d'erreur avant de logger
+        recreate_file_handler()
         app.logger.error(f"Erreur lors de la suppression des logs et historique: {e}")
-        # Recréer le handler en cas d'erreur
-        global file_handler
-        if file_handler is None:
-            file_handler = logging.FileHandler(LOG_FILE, mode='a', encoding='utf-8')
-            file_handler.setLevel(app.logger.level)
-            file_handler.setFormatter(logging.Formatter(LOG_FORMAT))
-            app.logger.addHandler(file_handler)
         return jsonify({'success': False, 'message': str(e)}), 500
 
 
