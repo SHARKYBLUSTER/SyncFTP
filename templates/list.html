@@ -328,7 +328,14 @@
             })
             .catch(error => {
                 closeModal();
-                displayTestResults({success: false, message: 'Erreur de connexion', error: error.toString()});
+                const serverName = document.getElementById('serverSelect').options[document.getElementById('serverSelect').selectedIndex].text;
+                displayTestResults({
+                    success: false,
+                    server_name: serverName,
+                    server_id: serverId,
+                    message: 'Erreur de connexion',
+                    error: error.toString()
+                });
             })
             .finally(() => {
                 testBtnText.textContent = 'TESTER';
@@ -339,8 +346,14 @@
     function displayTestResults(data) {
         const resultsDiv = document.getElementById('testResults');
         let html = '<div class="result-item ' + (data.success ? 'result-item--success' : 'result-item--error') + '">';
-        html += '<div class="server-name">' + (data.server_name || 'Serveur inconnu') + '</div>';
-        html += '<div class="message">' + data.message + '</div>';
+        html += '<div class="server-name">' + (data.server_name || data.server_id || 'Serveur inconnu') + '</div>';
+        html += '<div class="message">' + (data.message || 'Aucun message') + '</div>';
+        if (data.directory_message) {
+            html += '<div class="details"><strong>Répertoire:</strong> ' + data.directory_message + '</div>';
+        }
+        if (data.error) {
+            html += '<div class="details"><strong>Erreur:</strong> ' + data.error + '</div>';
+        }
         if (data.details) {
             html += '<div class="details">' + data.details + '</div>';
         }

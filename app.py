@@ -1207,7 +1207,13 @@ def test_server():
     server = next((s for s in servers if s['id'] == server_id), None)
     
     if not server:
-        return jsonify({'error': 'Serveur non trouvé'}), 404
+        return jsonify({
+            'success': False,
+            'server_name': 'Inconnu',
+            'server_id': server_id,
+            'message': 'Serveur non trouvé',
+            'error': 'Le serveur avec cet ID n\'existe pas'
+        }), 404
     
     result = test_ftp_connection(server)
     
