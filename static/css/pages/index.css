@@ -1,0 +1,164 @@
+/* ============================================
+   Index Page Specific Styles - SyncFTP
+   ============================================ */
+
+/* Welcome Section */
+.welcome-section {
+    background: linear-gradient(135deg, var(--color-primary-50) 0%, var(--color-primary-100) 100%);
+    border-radius: var(--radius-lg);
+    padding: var(--spacing-xl);
+    margin-bottom: var(--spacing-xl);
+    text-align: center;
+}
+
+.welcome-section .section-title {
+    font-size: var(--font-size-2xl);
+    color: var(--color-primary-800);
+    margin-bottom: var(--spacing-md);
+}
+
+.welcome-section p {
+    color: var(--color-primary-700);
+    font-size: var(--font-size-lg);
+    max-width: 600px;
+    margin: 0 auto;
+}
+
+/* Statistics Grid */
+.stats-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+    gap: var(--spacing-lg);
+    margin-bottom: var(--spacing-xl);
+}
+
+/* Stat Card */
+.stat-card {
+    background: var(--color-white);
+    border: var(--border-width-thin) solid var(--color-gray-200);
+    border-radius: var(--radius-lg);
+    padding: var(--spacing-lg);
+    box-shadow: var(--shadow-sm);
+    transition: transform 0.2s, box-shadow 0.2s;
+    text-align: center;
+}
+
+.stat-card:hover {
+    transform: translateY(-2px);
+    box-shadow: var(--shadow-md);
+}
+
+.stat-card .icon {
+    font-size: var(--font-size-3xl);
+    margin-bottom: var(--spacing-sm);
+}
+
+.stat-card .value {
+    font-size: var(--font-size-2xl);
+    font-weight: var(--font-weight-bold);
+    color: var(--color-primary-600);
+    margin-bottom: var(--spacing-xs);
+}
+
+.stat-card .label {
+    font-size: var(--font-size-sm);
+    color: var(--color-text-muted);
+}
+
+/* Sync Stats Grid */
+.sync-stats-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+    gap: var(--spacing-md);
+}
+
+/* Sync Card */
+.sync-card {
+    background: linear-gradient(135deg, var(--color-gray-600) 0%, var(--color-gray-700) 100%);
+    color: var(--color-white);
+    border-radius: var(--radius-lg);
+    padding: var(--spacing-lg);
+    text-align: center;
+}
+
+.sync-card.active {
+    background: linear-gradient(135deg, var(--color-success-600) 0%, var(--color-success-700) 100%);
+}
+
+.sync-card.inactive {
+    background: linear-gradient(135deg, var(--color-gray-500) 0%, var(--color-gray-600) 100%);
+}
+
+.sync-card .icon {
+    font-size: var(--font-size-2xl);
+    margin-bottom: var(--spacing-md);
+}
+
+.sync-info {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: var(--spacing-sm);
+    text-align: left;
+}
+
+.sync-stat {
+    font-size: var(--font-size-sm);
+}
+
+.sync-stat strong {
+    color: var(--color-gray-200);
+    display: block;
+    margin-bottom: var(--spacing-xs);
+}
+
+.sync-stat span {
+    color: var(--color-gray-300);
+}
+
+/* Active Syncs List */
+.active-syncs-list {
+    margin-top: var(--spacing-lg);
+}
+
+.active-sync-item {
+    background: var(--color-white);
+    border: var(--border-width-thin) solid var(--color-gray-200);
+    border-radius: var(--radius-md);
+    padding: var(--spacing-md);
+    margin-bottom: var(--spacing-sm);
+}
+
+.active-sync-item strong {
+    display: block;
+    margin-bottom: var(--spacing-xs);
+    color: var(--color-text-primary);
+}
+
+.active-sync-item small {
+    color: var(--color-text-muted);
+    display: block;
+    margin-bottom: var(--spacing-xs);
+}
+
+/* Responsive */
+@media (max-width: 768px) {
+    .welcome-section {
+        padding: var(--spacing-lg);
+    }
+    
+    .welcome-section .section-title {
+        font-size: var(--font-size-xl);
+    }
+    
+    .stats-grid {
+        grid-template-columns: 1fr;
+    }
+    
+    .sync-stats-grid {
+        grid-template-columns: 1fr;
+    }
+    
+    .sync-info {
+        grid-template-columns: 1fr;
+    }
+}

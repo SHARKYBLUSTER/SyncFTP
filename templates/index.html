@@ -2,49 +2,38 @@
 
 {% set page_title = "Tableau de bord" %}
 
-{% block navigation %}{% endblock %}  <!-- Hide navigation in header, shown in content -->
+{% block head %}
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/pages/index.css') }}">
+{% endblock %}
 
 {% block content %}
-    <!-- Navigation Menu Section -->
-    <div class="section">
-        <div class="nav-menu">
-            <a href="/" class="nav-btn">🏠 TABLEAU DE BORD</a>
-            <a href="/add" class="nav-btn">➕ AJOUTER SERVEUR FTP</a>
-            <a href="/list" class="nav-btn">📋 LISTE DES SERVEURS</a>
-            <a href="/tasks" class="nav-btn">🔄 TACHES DE SYNC</a>
-            <a href="/logs" class="nav-btn">📜 LOGS</a>
-            <a href="/config" class="nav-btn">⚙️ CONFIGURATION</a>
-        </div>
-    </div>
 
     <!-- Welcome Section -->
-    <div class="section">
-        <div class="welcome-section">
-            <h2 class="section-title">🏠 Tableau de bord</h2>
-            <p>Bienvenue dans {{ app_name }}. Ici, vous pouvez rapidement voir le nombre de serveurs configurés et accéder aux différentes fonctionnalités.</p>
-        </div>
-    </div>
+    <section class="welcome-section" aria-labelledby="welcome-title">
+        <h2 id="welcome-title" class="section-title">🏠 Tableau de bord</h2>
+        <p>Bienvenue dans {{ app_name }}. Ici, vous pouvez rapidement voir le nombre de serveurs configurés et accéder aux différentes fonctionnalités.</p>
+    </section>
 
     <!-- Statistics Section -->
-    <div class="section">
-        <h2 class="section-title">📊 Statistiques</h2>
+    <section aria-labelledby="stats-title">
+        <h2 id="stats-title" class="section-title">📊 Statistiques</h2>
         <div class="stats-grid">
-            <div class="stat-card">
+            <article class="stat-card">
                 <div class="icon">🌐</div>
                 <div class="value">{{ server_count }}</div>
                 <div class="label">Serveurs FTP enregistrés</div>
-            </div>
-            <div class="stat-card">
+            </article>
+            <article class="stat-card">
                 <div class="icon">🔄</div>
                 <div class="value">{{ task_count }}</div>
                 <div class="label">Tâches de synchronisation</div>
-            </div>
+            </article>
         </div>
-    </div>
+    </section>
 
     <!-- Synchronisation en cours Section -->
-    <div class="section">
-        <h2 class="section-title">🔄 Synchronisation en cours</h2>
+    <section aria-labelledby="sync-title">
+        <h2 id="sync-title" class="section-title">🔄 Synchronisation en cours</h2>
         <div id="syncStatsContainer">
             <div class="sync-stats-grid" id="syncStatsGrid">
                 <div class="stat-card sync-card" id="syncCard">
@@ -73,7 +62,7 @@
             </div>
             <div id="activeSyncsList" class="mt-md"></div>
         </div>
-    </div>
+    </section>
 {% endblock %}
 
 {% block scripts %}
@@ -115,9 +104,11 @@
                     
                     const syncCard = document.getElementById('syncCard');
                     if (globalStats.has_active_sync) {
-                        syncCard.style.background = 'linear-gradient(135deg, #28a745 0%, #218838 100%)';
+                        syncCard.classList.add('active');
+                        syncCard.classList.remove('inactive');
                     } else {
-                        syncCard.style.background = 'linear-gradient(135deg, #6c757d 0%, #495057 100%)';
+                        syncCard.classList.add('inactive');
+                        syncCard.classList.remove('active');
                     }
                 }
             })

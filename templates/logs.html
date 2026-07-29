@@ -2,33 +2,24 @@
 
 {% set page_title = "Logs" %}
 
-{% block navigation %}{% endblock %}
+{% block head %}
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/pages/logs.css') }}">
+{% endblock %}
 
 {% block content %}
-    <!-- Navigation Menu -->
-    <div class="section">
-        <div class="nav-menu">
-            <a href="/" class="nav-btn">🏠 TABLEAU DE BORD</a>
-            <a href="/add" class="nav-btn">➕ AJOUTER SERVEUR FTP</a>
-            <a href="/list" class="nav-btn">📋 LISTE DES SERVEURS</a>
-            <a href="/tasks" class="nav-btn">🔄 TACHES DE SYNC</a>
-            <a href="/logs" class="nav-btn">📜 LOGS</a>
-            <a href="/config" class="nav-btn">⚙️ CONFIGURATION</a>
-        </div>
-    </div>
 
     <!-- Logs Section -->
-    <div class="section">
-        <div class="flex justify-between items-center mb-lg">
-            <h2 class="section-title mb-0">📜 Journal des activités</h2>
-            <div class="flex gap-sm">
+    <section aria-labelledby="logs-title">
+        <div class="d-flex justify-between items-center mb-lg">
+            <h2 id="logs-title" class="section-title mb-0">📜 Journal des activités</h2>
+            <div class="d-flex gap-sm">
                 <button class="btn btn--secondary" onclick="clearLogs()">🗑️ Effacer les logs</button>
                 <button class="btn btn--primary" onclick="refreshLogs()">🔄 Rafraîchir</button>
             </div>
         </div>
         
         <!-- Log Filters -->
-        <div class="card mb-lg">
+        <div class="card logs-filters mb-lg">
             <h3 class="mb-md">🔍 Filtres</h3>
             <div class="form-row">
                 <div class="form-group">
@@ -84,7 +75,7 @@
                 </div>
             </div>
         </div>
-    </div>
+    </section>
 {% endblock %}
 
 {% block scripts %}
@@ -190,89 +181,4 @@
         refreshLogs();
     });
 </script>
-{% endblock %}
-
-{% block head %}
-<style>
-    .log-container {
-        background: var(--color-gray-900);
-        border-radius: var(--radius-lg);
-        overflow: hidden;
-        max-height: 600px;
-        overflow-y: auto;
-    }
-    
-    .log-header {
-        background: var(--color-gray-800);
-        padding: var(--spacing-md);
-        display: flex;
-        justify-content: space-between;
-        align-items: center;
-        border-bottom: var(--border-width-thin) solid var(--color-gray-700);
-    }
-    
-    .log-title {
-        font-size: var(--font-size-base);
-        font-weight: var(--font-weight-semibold);
-        color: var(--color-gray-100);
-    }
-    
-    .log-content {
-        padding: var(--spacing-md);
-        font-family: var(--font-family-mono);
-        font-size: var(--font-size-sm);
-        line-height: var(--line-height-relaxed);
-        color: var(--color-gray-300);
-        white-space: pre-wrap;
-        word-break: break-all;
-        max-height: 550px;
-        overflow-y: auto;
-    }
-    
-    .log-entry {
-        padding: var(--spacing-xs) 0;
-        border-bottom: var(--border-width-thin) solid var(--color-gray-800);
-    }
-    
-    .log-entry:last-child {
-        border-bottom: none;
-    }
-    
-    .log-entry:hover {
-        background: var(--color-gray-800);
-    }
-    
-    .log-timestamp {
-        color: var(--color-gray-500);
-        margin-right: var(--spacing-md);
-        font-size: var(--font-size-xs);
-    }
-    
-    .log-level {
-        display: inline-block;
-        width: 80px;
-        font-weight: var(--font-weight-semibold);
-        color: var(--color-gray-300);
-    }
-    
-    .log-entry--error .log-level, .log-entry--error .log-message {
-        color: var(--color-danger-400);
-    }
-    
-    .log-entry--warning .log-level, .log-entry--warning .log-message {
-        color: var(--color-warning-400);
-    }
-    
-    .log-entry--info .log-level, .log-entry--info .log-message {
-        color: var(--color-info-400);
-    }
-    
-    .log-entry--success .log-level, .log-entry--success .log-message {
-        color: var(--color-success-400);
-    }
-    
-    .log-entry--debug .log-level, .log-entry--debug .log-message {
-        color: var(--color-gray-500);
-    }
-</style>
 {% endblock %}

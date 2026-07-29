@@ -1,0 +1,84 @@
+/* ============================================
+   List Page Specific Styles - SyncFTP
+   ============================================ */
+
+/* Servers Grid */
+.servers-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(350px, 1fr));
+    gap: var(--spacing-lg);
+}
+
+/* Server Information */
+.server-info {
+    color: var(--color-text-secondary);
+    margin-bottom: var(--spacing-sm);
+    font-size: var(--font-size-sm);
+}
+
+.server-info strong {
+    color: var(--color-text-primary);
+}
+
+/* Server Actions */
+.server-actions {
+    display: flex;
+    gap: var(--spacing-sm);
+    margin-top: var(--spacing-md);
+}
+
+/* Test Results */
+.test-results {
+    padding: var(--spacing-md);
+}
+
+/* Result Items */
+.result-item {
+    padding: var(--spacing-md);
+    margin-bottom: var(--spacing-md);
+    border-radius: var(--radius-md);
+    border-left: var(--border-width-medium) solid var(--color-primary-600);
+    background: var(--color-gray-50);
+}
+
+.result-item--success {
+    background: var(--color-success-50);
+    border-left-color: var(--color-success-500);
+}
+
+.result-item--error {
+    background: var(--color-danger-50);
+    border-left-color: var(--color-danger-500);
+}
+
+.result-item .server-name {
+    font-weight: var(--font-weight-bold);
+    color: var(--color-text-primary);
+    margin-bottom: var(--spacing-xs);
+}
+
+.result-item .message {
+    color: var(--color-text-secondary);
+}
+
+.result-item .details {
+    font-size: var(--font-size-xs);
+    color: var(--color-text-muted);
+    margin-top: var(--spacing-xs);
+}
+
+/* Modal Overlay - for test modal */
+.list-modal-overlay {
+    display: none;
+}
+
+.list-modal-overlay[aria-hidden="false"] {
+    display: flex;
+}
+
+/* Responsive - Mobile */
+@media (max-width: 768px) {
+    .servers-grid {
+        grid-template-columns: 1fr;
+    }
+}

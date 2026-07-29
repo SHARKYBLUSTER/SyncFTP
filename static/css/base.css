@@ -949,6 +949,13 @@ header h1 {
 /* Text alignment */
 .text-center { text-align: center; }
 
+/* App version text */
+.app-version {
+    color: var(--color-text-muted);
+    font-size: var(--font-size-sm);
+    margin-top: var(--spacing-xs);
+}
+
 /* Margin top utilities */
 .mt-1 { margin-top: 0.25rem; }
 .mt-2 { margin-top: 0.5rem; }

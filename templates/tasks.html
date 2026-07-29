@@ -2,25 +2,16 @@
 
 {% set page_title = "Tâches de synchronisation" %}
 
-{% block navigation %}{% endblock %}
+{% block head %}
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/pages/tasks.css') }}">
+{% endblock %}
 
 {% block content %}
-    <!-- Navigation Menu -->
-    <div class="section">
-        <div class="nav-menu">
-            <a href="/" class="nav-btn">🏠 TABLEAU DE BORD</a>
-            <a href="/add" class="nav-btn">➕ AJOUTER SERVEUR FTP</a>
-            <a href="/list" class="nav-btn">📋 LISTE DES SERVEURS</a>
-            <a href="/tasks" class="nav-btn">🔄 TACHES DE SYNC</a>
-            <a href="/logs" class="nav-btn">📜 LOGS</a>
-            <a href="/config" class="nav-btn">⚙️ CONFIGURATION</a>
-        </div>
-    </div>
 
     <!-- Tasks Section -->
-    <div class="section">
-        <div class="flex justify-between items-center mb-lg">
-            <h2 class="section-title mb-0">🔄 Gestion des tâches de synchronisation</h2>
+    <section aria-labelledby="tasks-title">
+        <div class="d-flex justify-between items-center mb-lg">
+            <h2 id="tasks-title" class="section-title mb-0">🔄 Gestion des tâches de synchronisation</h2>
             <a href="/add_task" class="btn btn--primary">➕ NOUVELLE TÂCHE</a>
         </div>
         
@@ -52,7 +43,7 @@
                                 <td class="action-btns">
                                     <button class="action-btn action-btn--sync" onclick="runTask({{ task.id }})" title="Exécuter" aria-label="Exécuter la tâche {{ task.name }}">🔄</button>
                                     <a href="/edit_task/{{ task.id }}" class="action-btn action-btn--edit" title="Modifier" aria-label="Modifier la tâche {{ task.name }}">✏️</a>
-                                    <form action="/delete_task/{{ task.id }}" method="POST" style="display: inline;">
+                                    <form action="/delete_task/{{ task.id }}" method="POST" class="d-inline">
                                         <button type="submit" class="action-btn action-btn--delete" onclick="return confirm('Êtes-vous sûr ?')" title="Supprimer" aria-label="Supprimer la tâche {{ task.name }}">🗑️</button>
                                     </form>
                                 </td>
@@ -69,18 +60,18 @@
                 </div>
             </div>
         {% endif %}
-    </div>
+    </section>
 
     <!-- Active Tasks Section -->
-    <div class="section">
-        <h2 class="section-title">⚡ Tâches en cours d'exécution</h2>
+    <section aria-labelledby="active-tasks-title">
+        <h2 id="active-tasks-title" class="section-title">⚡ Tâches en cours d'exécution</h2>
         <div id="activeTasksList">
             <p class="text-center text-muted">Aucune tâche en cours d'exécution</p>
         </div>
-    </div>
+    </section>
 
     <!-- Task Configuration Modal -->
-    <div id="taskModal" class="modal-overlay" style="display: none;" role="dialog" aria-modal="true" aria-labelledby="taskModalTitle" aria-hidden="true">
+    <div id="taskModal" class="modal-overlay d-none" role="dialog" aria-modal="true" aria-labelledby="taskModalTitle" aria-hidden="true">
         <div class="modal" role="document">
             <div class="modal-header">
                 <h2 id="taskModalTitle" class="modal-title">⚙️ Configurer une tâche de synchronisation</h2>

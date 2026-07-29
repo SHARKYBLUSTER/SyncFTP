@@ -2,25 +2,16 @@
 
 {% set page_title = "Ajouter un serveur" %}
 
-{% block navigation %}{% endblock %}
+{% block head %}
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/pages/add.css') }}">
+{% endblock %}
 
 {% block content %}
-    <!-- Navigation Menu -->
-    <div class="section">
-        <div class="nav-menu">
-            <a href="/" class="nav-btn">🏠 TABLEAU DE BORD</a>
-            <a href="/add" class="nav-btn">➕ AJOUTER SERVEUR FTP</a>
-            <a href="/list" class="nav-btn">📋 LISTE DES SERVEURS</a>
-            <a href="/tasks" class="nav-btn">🔄 TACHES DE SYNC</a>
-            <a href="/logs" class="nav-btn">📜 LOGS</a>
-            <a href="/config" class="nav-btn">⚙️ CONFIGURATION</a>
-        </div>
-    </div>
 
     <!-- Add Server Section -->
-    <div class="section">
-        <h2 class="section-title">➕ Ajouter un serveur FTP</h2>
-        <form id="addServerForm" action="/add_server" method="POST" aria-labelledby="addServerSectionTitle">
+    <section aria-labelledby="add-server-title">
+        <h2 id="add-server-title" class="section-title">➕ Ajouter un serveur FTP</h2>
+        <form id="addServerForm" action="/add_server" method="POST" aria-labelledby="add-server-title">
             <div class="form-row">
                 <div class="form-group">
                     <label for="name" class="form-label form-label--required">Nom du serveur</label>
@@ -78,7 +69,7 @@
                 </div>
             </div>
         </form>
-    </div>
+    </section>
 {% endblock %}
 
 {% block scripts %}

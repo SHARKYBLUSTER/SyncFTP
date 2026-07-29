@@ -1,0 +1,120 @@
+/* ============================================
+   Config Page Specific Styles - SyncFTP
+   ============================================ */
+
+/* Configuration Section */
+.config-section {
+    margin-bottom: var(--spacing-xl);
+}
+
+/* Section Title - Config */
+.config-section-title {
+    font-size: var(--font-size-xl);
+    color: var(--color-text-primary);
+    margin-bottom: var(--spacing-md);
+    padding-bottom: var(--spacing-sm);
+    border-bottom: var(--border-width-thin) solid var(--color-gray-200);
+}
+
+/* Danger zone title */
+.config-section-title--danger {
+    color: var(--color-danger-500);
+    border-bottom-color: var(--color-danger-200);
+}
+
+/* Form Input Width */
+.config-input-narrow {
+    max-width: 200px;
+}
+
+/* Form Row */
+.config-form-row {
+    margin-bottom: var(--spacing-md);
+}
+
+/* Form Actions */
+.config-form-actions {
+    margin-top: var(--spacing-lg);
+    display: flex;
+    gap: var(--spacing-sm);
+}
+
+/* Alert - Info for version */
+.config-version-alert {
+    background: var(--color-info-50);
+    border: var(--border-width-thin) solid var(--color-info-200);
+    border-radius: var(--radius-md);
+    padding: var(--spacing-md);
+    margin-bottom: var(--spacing-lg);
+}
+
+.config-version-alert .alert-title {
+    color: var(--color-info-700);
+    font-size: var(--font-size-base);
+}
+
+.config-version-alert .alert-message {
+    color: var(--color-info-600);
+    font-size: var(--font-size-sm);
+}
+
+/* Danger Zone */
+.danger-zone {
+    border: var(--border-width-thin) solid var(--color-danger-200);
+    border-radius: var(--radius-md);
+    padding: var(--spacing-lg);
+    background: var(--color-danger-50);
+}
+
+.danger-zone .alert {
+    margin-bottom: var(--spacing-lg);
+}
+
+/* Danger Actions */
+.danger-actions {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+    gap: var(--spacing-lg);
+}
+
+.danger-action {
+    text-align: center;
+}
+
+.danger-action .btn {
+    margin-bottom: var(--spacing-sm);
+}
+
+.danger-action .form-hint {
+    font-size: var(--font-size-xs);
+    color: var(--color-danger-600);
+}
+
+/* Fieldset styling */
+.config-fieldset {
+    border: var(--border-width-thin) solid var(--color-gray-200);
+    border-radius: var(--radius-md);
+    padding: var(--spacing-md);
+    margin-bottom: var(--spacing-md);
+}
+
+.config-fieldset legend {
+    padding: 0 var(--spacing-sm);
+    font-size: var(--font-size-sm);
+    color: var(--color-text-secondary);
+}
+
+/* Responsive */
+@media (max-width: 768px) {
+    .config-form-row {
+        flex-direction: column;
+    }
+    
+    .config-form-row .form-group {
+        margin-bottom: var(--spacing-sm);
+    }
+    
+    .danger-actions {
+        grid-template-columns: 1fr;
+    }
+}

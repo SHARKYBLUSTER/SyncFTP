@@ -2,35 +2,26 @@
 
 {% set page_title = "Configuration" %}
 
-{% block navigation %}{% endblock %}
+{% block head %}
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/pages/config.css') }}">
+{% endblock %}
 
 {% block content %}
-    <!-- Navigation Menu -->
-    <div class="section">
-        <div class="nav-menu">
-            <a href="/" class="nav-btn">🏠 TABLEAU DE BORD</a>
-            <a href="/add" class="nav-btn">➕ AJOUTER SERVEUR FTP</a>
-            <a href="/list" class="nav-btn">📋 LISTE DES SERVEURS</a>
-            <a href="/tasks" class="nav-btn">🔄 TACHES DE SYNC</a>
-            <a href="/logs" class="nav-btn">📜 LOGS</a>
-            <a href="/config" class="nav-btn">⚙️ CONFIGURATION</a>
-        </div>
-    </div>
 
     <!-- Configuration Header -->
-    <div class="section">
-        <h2 class="section-title">⚙️ Configuration de {{ app_name }}</h2>
-        <div class="alert alert--info">
+    <section aria-labelledby="config-title">
+        <h2 id="config-title" class="section-title">⚙️ Configuration de {{ app_name }}</h2>
+        <div class="alert alert--info config-version-alert" role="alert">
             <div class="alert-content">
                 <h4 class="alert-title">ℹ️ Version: {{ app_version }}</h4>
                 <p class="alert-message">Configurez les paramètres de votre application</p>
             </div>
         </div>
-    </div>
+    </section>
 
     <!-- General Configuration -->
-    <div class="section">
-        <h3 class="section-title" style="font-size: var(--font-size-xl);">📋 Paramètres généraux</h3>
+    <section aria-labelledby="general-config-title">
+        <h3 id="general-config-title" class="config-section-title">📋 Paramètres généraux</h3>
         
         <form id="generalConfigForm" action="/save_config" method="POST" class="mt-lg" aria-label="Formulaire de configuration générale">
             <fieldset>
@@ -50,7 +41,7 @@
                 
                 <div class="form-group">
                     <label for="defaultTimeout" class="form-label">Timeout par défaut (secondes)</label>
-                    <input type="number" id="defaultTimeout" name="default_timeout" value="{{ config.default_timeout|default(30) }}" min="1" class="form-control form-input" style="max-width: 200px;" aria-describedby="defaultTimeoutHelp">
+                    <input type="number" id="defaultTimeout" name="default_timeout" value="{{ config.default_timeout|default(30) }}" min="1" class="form-control form-input config-input-narrow" aria-describedby="defaultTimeoutHelp">
                     <p id="defaultTimeoutHelp" class="form-hint">Timeout de connexion par défaut pour les nouveaux serveurs</p>
                 </div>
                 
@@ -79,8 +70,8 @@
     </div>
 
     <!-- Network Configuration -->
-    <div class="section">
-        <h3 class="section-title" style="font-size: var(--font-size-xl);">🌐 Paramètres réseau</h3>
+    <section aria-labelledby="network-config-title">
+        <h3 id="network-config-title" class="config-section-title">🌐 Paramètres réseau</h3>
         
         <form id="networkConfigForm" action="/save_network_config" method="POST" class="mt-lg" aria-label="Formulaire de configuration réseau">
             <fieldset>
@@ -88,12 +79,12 @@
                 <div class="form-row">
                     <div class="form-group">
                         <label for="maxConnections" class="form-label">Connexions simultanées maximales</label>
-                        <input type="number" id="maxConnections" name="max_connections" value="{{ config.max_connections|default(5) }}" min="1" max="20" class="form-control form-input" style="max-width: 200px;" aria-describedby="maxConnectionsHelp">
+                        <input type="number" id="maxConnections" name="max_connections" value="{{ config.max_connections|default(5) }}" min="1" max="20" class="form-control form-input config-input-narrow" aria-describedby="maxConnectionsHelp">
                         <p id="maxConnectionsHelp" class="form-hint">Nombre maximum de connexions FTP simultanées</p>
                     </div>
                     <div class="form-group">
                         <label for="connectionTimeout" class="form-label">Timeout de connexion (secondes)</label>
-                        <input type="number" id="connectionTimeout" name="connection_timeout" value="{{ config.connection_timeout|default(30) }}" min="1" class="form-control form-input" style="max-width: 200px;" aria-describedby="connectionTimeoutHelp">
+                        <input type="number" id="connectionTimeout" name="connection_timeout" value="{{ config.connection_timeout|default(30) }}" min="1" class="form-control form-input config-input-narrow" aria-describedby="connectionTimeoutHelp">
                         <p id="connectionTimeoutHelp" class="form-hint">Temps maximal pour établir une connexion</p>
                     </div>
                 </div>
@@ -101,12 +92,12 @@
                 <div class="form-row">
                     <div class="form-group">
                         <label for="retryAttempts" class="form-label">Nombre de tentatives de reconnexion</label>
-                        <input type="number" id="retryAttempts" name="retry_attempts" value="{{ config.retry_attempts|default(3) }}" min="0" max="10" class="form-control form-input" style="max-width: 200px;" aria-describedby="retryAttemptsHelp">
+                        <input type="number" id="retryAttempts" name="retry_attempts" value="{{ config.retry_attempts|default(3) }}" min="0" max="10" class="form-control form-input config-input-narrow" aria-describedby="retryAttemptsHelp">
                         <p id="retryAttemptsHelp" class="form-hint">Nombre de tentatives avant d'abandonner</p>
                     </div>
                     <div class="form-group">
                         <label for="retryDelay" class="form-label">Délai entre tentatives (secondes)</label>
-                        <input type="number" id="retryDelay" name="retry_delay" value="{{ config.retry_delay|default(5) }}" min="0" max="60" class="form-control form-input" style="max-width: 200px;" aria-describedby="retryDelayHelp">
+                        <input type="number" id="retryDelay" name="retry_delay" value="{{ config.retry_delay|default(5) }}" min="0" max="60" class="form-control form-input config-input-narrow" aria-describedby="retryDelayHelp">
                         <p id="retryDelayHelp" class="form-hint">Temps d'attente entre chaque tentative de reconnexion</p>
                     </div>
                 </div>
@@ -122,8 +113,8 @@
     </div>
 
     <!-- Sync Configuration -->
-    <div class="section">
-        <h3 class="section-title" style="font-size: var(--font-size-xl);">🔄 Paramètres de synchronisation</h3>
+    <section aria-labelledby="sync-config-title">
+        <h3 id="sync-config-title" class="config-section-title">🔄 Paramètres de synchronisation</h3>
         
         <form id="syncConfigForm" action="/save_sync_config" method="POST" class="mt-lg" aria-label="Formulaire de configuration de synchronisation">
             <fieldset>
@@ -131,12 +122,12 @@
                 <div class="form-row">
                     <div class="form-group">
                         <label for="largeFileThreshold" class="form-label">Seuil fichier volumineux (Mo)</label>
-                        <input type="number" id="largeFileThreshold" name="large_file_threshold" value="{{ config.large_file_threshold|default(50) }}" min="1" class="form-control form-input" style="max-width: 200px;" aria-describedby="largeFileThresholdHelp">
+                        <input type="number" id="largeFileThreshold" name="large_file_threshold" value="{{ config.large_file_threshold|default(50) }}" min="1" class="form-control form-input config-input-narrow" aria-describedby="largeFileThresholdHelp">
                         <p id="largeFileThresholdHelp" class="form-hint">Fichiers supérieurs à ce seuil utiliseront un timeout plus long</p>
                     </div>
                     <div class="form-group">
                         <label for="largeFileTimeout" class="form-label">Timeout fichier volumineux (minutes)</label>
-                        <input type="number" id="largeFileTimeout" name="large_file_timeout" value="{{ config.large_file_timeout|default(30) }}" min="1" class="form-control form-input" style="max-width: 200px;" aria-describedby="largeFileTimeoutHelp">
+                        <input type="number" id="largeFileTimeout" name="large_file_timeout" value="{{ config.large_file_timeout|default(30) }}" min="1" class="form-control form-input config-input-narrow" aria-describedby="largeFileTimeoutHelp">
                         <p id="largeFileTimeoutHelp" class="form-hint">Timeout pour les fichiers dépassant le seuil</p>
                     </div>
                 </div>
@@ -144,12 +135,12 @@
                 <div class="form-row">
                     <div class="form-group">
                         <label for="smallFileTimeout" class="form-label">Timeout fichier standard (minutes)</label>
-                        <input type="number" id="smallFileTimeout" name="small_file_timeout" value="{{ config.small_file_timeout|default(10) }}" min="1" class="form-control form-input" style="max-width: 200px;" aria-describedby="smallFileTimeoutHelp">
+                        <input type="number" id="smallFileTimeout" name="small_file_timeout" value="{{ config.small_file_timeout|default(10) }}" min="1" class="form-control form-input config-input-narrow" aria-describedby="smallFileTimeoutHelp">
                         <p id="smallFileTimeoutHelp" class="form-hint">Timeout pour les fichiers sous le seuil</p>
                     </div>
                     <div class="form-group">
                         <label for="bufferSize" class="form-label">Taille du buffer (Ko)</label>
-                        <input type="number" id="bufferSize" name="buffer_size" value="{{ config.buffer_size|default(8192) }}" min="1024" step="1024" class="form-control form-input" style="max-width: 200px;" aria-describedby="bufferSizeHelp">
+                        <input type="number" id="bufferSize" name="buffer_size" value="{{ config.buffer_size|default(8192) }}" min="1024" step="1024" class="form-control form-input config-input-narrow" aria-describedby="bufferSizeHelp">
                         <p id="bufferSizeHelp" class="form-hint">Taille du buffer de transfert en kilo-octets</p>
                     </div>
                 </div>
@@ -181,8 +172,8 @@
     </div>
 
     <!-- Danger Zone -->
-    <div class="section">
-        <h3 class="section-title" style="font-size: var(--font-size-xl); color: var(--color-danger-500);">⚠️ Zone dangereuse</h3>
+    <section class="danger-zone" aria-labelledby="danger-zone-title">
+        <h3 id="danger-zone-title" class="config-section-title config-section-title--danger">⚠️ Zone dangereuse</h3>
         
         <div class="alert alert--danger mb-lg" role="alert" aria-live="assertive">
             <div class="alert-content">
@@ -191,21 +182,19 @@
             </div>
         </div>
         
-        <div class="form-row">
-            <div class="form-group">
-                <button class="btn btn--danger" onclick="confirmResetAll()" aria-label="Réinitialiser toute la configuration. Attention, cette action est irréversible">🗑️ Réinitialiser toute la configuration</button>
-                <p class="form-hint">Supprime tous les serveurs, tâches et paramètres</p>
-            </div>
-            <div class="form-group">
-                <button class="btn btn--danger" onclick="confirmClearDatabase()" aria-label="Nettoyer la base de données. Attention, cette action est irréversible">🧹 Nettoyer la base de données</button>
-                <p class="form-hint">Supprime les logs et l'historique des synchronisations</p>
-            </div>
-            <div class="form-group">
-                <button class="btn btn--danger" onclick="confirmFactoryReset()" aria-label="Réinitialisation usine. Attention, toutes les données seront perdues">🏭 Réinitialisation usine</button>
-                <p class="form-hint">Rétablit l'application à son état initial</p>
-            </div>
+        <div class="danger-action">
+            <button class="btn btn--danger" onclick="confirmResetAll()" aria-label="Réinitialiser toute la configuration. Attention, cette action est irréversible">🗑️ Réinitialiser toute la configuration</button>
+            <p class="form-hint">Supprime tous les serveurs, tâches et paramètres</p>
         </div>
-    </div>
+        <div class="danger-action">
+            <button class="btn btn--danger" onclick="confirmClearDatabase()" aria-label="Nettoyer la base de données. Attention, cette action est irréversible">🧹 Nettoyer la base de données</button>
+            <p class="form-hint">Supprime les logs et l'historique des synchronisations</p>
+        </div>
+        <div class="danger-action">
+            <button class="btn btn--danger" onclick="confirmFactoryReset()" aria-label="Réinitialisation usine. Attention, toutes les données seront perdues">🏭 Réinitialisation usine</button>
+            <p class="form-hint">Rétablit l'application à son état initial</p>
+        </div>
+    </section>
 {% endblock %}
 
 {% block scripts %}
