@@ -947,6 +947,28 @@ def api_cleanup_logs():
     return jsonify({'success': True, 'message': 'Logs nettoyés'})
 
 
+@app.route('/api/clear_database', methods=['POST'])
+def api_clear_database():
+    """API: Supprime tous les logs et l'historique des synchronisations"""
+    try:
+        # Supprimer le fichier de logs
+        if os.path.exists(LOG_FILE):
+            os.remove(LOG_FILE)
+            app.logger.info("Fichier de logs supprimé")
+        
+        # Supprimer l'historique des tâches (sync_tasks.json)
+        if os.path.exists(TASKS_FILE):
+            # On pourrait le supprimer complètement ou le vider
+            # Pour l'instant, on le supprime
+            os.remove(TASKS_FILE)
+            app.logger.info("Historique des synchronisations supprimé")
+        
+        return jsonify({'success': True, 'message': 'Logs et historique supprimés'})
+    except Exception as e:
+        app.logger.error(f"Erreur lors de la suppression des logs et historique: {e}")
+        return jsonify({'success': False, 'message': str(e)}), 500
+
+
 @app.route('/api/shutdown', methods=['POST'])
 def api_shutdown():
     """API: Arrête proprement le service"""
