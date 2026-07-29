@@ -44,6 +44,18 @@
             <div class="value">{{ idle_count }}</div>
             <div class="label">Tâches inactives</div>
         </article>
+        {% if failed_files %}
+        <article class="stat-card failed-files-card">
+            <div class="icon">❌</div>
+            <div class="value">{{ failed_files|length }}</div>
+            <div class="label">Fichiers échoués</div>
+            <div class="failed-files-list">
+                {% for file in failed_files %}
+                <div class="failed-file-item">{{ file }}</div>
+                {% endfor %}
+            </div>
+        </article>
+        {% endif %}
     </div>
 {% endblock %}
 
@@ -72,5 +84,54 @@ function resetFailedTasks() {
         });
     }
 }
+
+function refreshFailedFiles() {
+    fetch('/api/failed_files')
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            const container = document.querySelector('.failed-files-list');
+            const countElement = document.querySelector('.failed-files-card .value');
+            const card = document.querySelector('.failed-files-card');
+            
+            if (data.failed_files && data.failed_files.length > 0) {
+                let html = '';
+                data.failed_files.forEach(file => {
+                    html += `<div class="failed-file-item">${escapeHtml(file)}</div>`;
+                });
+                
+                if (container) {
+                    container.innerHTML = html;
+                }
+                if (countElement) {
+                    countElement.textContent = data.count;
+                }
+                if (card) {
+                    card.style.display = 'block';
+                }
+            } else {
+                if (card) {
+                    card.style.display = 'none';
+                }
+            }
+        }
+    })
+    .catch(error => {
+        console.error('Erreur lors du rafraîchissement des fichiers échoués:', error);
+    });
+}
+
+function escapeHtml(text) {
+    const div = document.createElement('div');
+    div.textContent = text;
+    return div.innerHTML;
+}
+
+// Rafraîchir les fichiers échoués toutes les 10 secondes
+setInterval(refreshFailedFiles, 10000);
+// Premier rafraîchissement immédiat
+document.addEventListener('DOMContentLoaded', function() {
+    refreshFailedFiles();
+});
 </script>
 {% endblock %}

@@ -879,6 +879,14 @@ def index():
     failed_count = sum(1 for t in tasks if t.get('status') == 'failed')
     idle_count = sum(1 for t in tasks if t.get('status') == 'idle')
     
+    # Collecter les fichiers échoués des tâches avec statut 'failed'
+    failed_files = []
+    for task in tasks:
+        if task.get('status') == 'failed' and task.get('last_result'):
+            stats = task['last_result'].get('stats', {})
+            if 'failed_files' in stats:
+                failed_files.extend(stats['failed_files'])
+    
     return render_template('index.html', 
                          server_count=len(servers), 
                          task_count=len(tasks),
@@ -887,6 +895,7 @@ def index():
                          completed_count=completed_count,
                          failed_count=failed_count,
                          idle_count=idle_count,
+                         failed_files=failed_files,
                          app_name=APP_NAME, 
                          app_version=APP_VERSION)
 
@@ -1638,6 +1647,25 @@ def reset_failed_tasks():
         'success': True,
         'message': f'{reset_count} tâche(s) échouée(s) réinitialisée(s)',
         'reset_count': reset_count
+    })
+
+
+@app.route('/api/failed_files', methods=['GET'])
+def api_failed_files():
+    """API: Retourne la liste des fichiers échoués"""
+    tasks = load_tasks()
+    
+    failed_files = []
+    for task in tasks:
+        if task.get('status') == 'failed' and task.get('last_result'):
+            stats = task['last_result'].get('stats', {})
+            if 'failed_files' in stats:
+                failed_files.extend(stats['failed_files'])
+    
+    return jsonify({
+        'success': True,
+        'failed_files': failed_files,
+        'count': len(failed_files)
     })
 
 

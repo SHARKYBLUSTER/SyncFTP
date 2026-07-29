@@ -140,6 +140,49 @@
     margin-bottom: var(--spacing-xs);
 }
 
+/* Failed Files Card */
+.failed-files-card {
+    background: linear-gradient(135deg, var(--color-danger-50) 0%, var(--color-danger-100) 100%);
+    border: var(--border-width-thin) solid var(--color-danger-200);
+}
+
+.failed-files-card .icon {
+    color: var(--color-danger-600);
+}
+
+.failed-files-card .value {
+    color: var(--color-danger-700);
+}
+
+.failed-files-list {
+    margin-top: var(--spacing-sm);
+    max-height: 200px;
+    overflow-y: auto;
+    background: var(--color-white);
+    border-radius: var(--radius-md);
+    padding: var(--spacing-sm);
+    text-align: left;
+}
+
+.failed-file-item {
+    font-size: var(--font-size-xs);
+    color: var(--color-text-secondary);
+    padding: var(--spacing-xs) var(--spacing-sm);
+    border-bottom: var(--border-width-thin) solid var(--color-gray-100);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.failed-file-item:last-child {
+    border-bottom: none;
+}
+
+.failed-file-item:hover {
+    background: var(--color-gray-50);
+    border-radius: var(--radius-sm);
+}
+
 /* Responsive */
 @media (max-width: 768px) {
     .welcome-section {

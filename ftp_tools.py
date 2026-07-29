@@ -750,7 +750,7 @@ class FTPConnector:
             'uploaded': 0, 'deleted': 0, 'skipped': 0, 'errors': 0,
             'excluded': 0,
             'source_file_count': 0, 'target_file_count': 0,
-            'uploaded_files': [], 'deleted_files': [], 'excluded_files': [],
+            'uploaded_files': [], 'deleted_files': [], 'excluded_files': [], 'failed_files': [],
             'start_time': datetime.now().isoformat(),
             'end_time': None,
             'duration_seconds': 0,
@@ -887,6 +887,7 @@ class FTPConnector:
                             logger.info(message)
                         else:
                             stats['errors'] += 1
+                            stats['failed_files'].append(relative_path)
                             logger.error(message)
                             
                         if success:
@@ -943,9 +944,11 @@ class FTPConnector:
 
                 except ftplib.all_errors as e:
                     stats['errors'] += 1
+                    stats['failed_files'].append(relative_path)
                     logger.error(f"Erreur lors de la suppression de {relative_path}: {e}")
                 except Exception as e:
                     stats['errors'] += 1
+                    stats['failed_files'].append(relative_path)
                     logger.error(f"Erreur inattendue lors de la suppression de {relative_path}: {e}")
             
             # Fin de la phase de suppression
