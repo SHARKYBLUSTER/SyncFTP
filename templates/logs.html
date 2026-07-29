@@ -155,8 +155,9 @@
         return div.innerHTML;
     }
     
-    // Auto-refresh every 10 seconds
-    setInterval(refreshLogs, 10000);
+    // Auto-refresh using config interval (default 3 seconds)
+    const refreshInterval = ({{ config.log_refresh_interval|default(3) }} * 1000);
+    setInterval(refreshLogs, refreshInterval);
     
     // Initial load
     document.addEventListener('DOMContentLoaded', function() {

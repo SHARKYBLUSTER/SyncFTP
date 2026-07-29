@@ -113,6 +113,8 @@ def get_logs():
 def load_config():
     """Charge la configuration depuis le fichier JSON"""
     default_config = {
+        'app_name': 'SyncFTP',
+        'app_version': '1.0.0',
         'log_retention_days': 7,
         'log_refresh_interval': 3,
         'log_level': 'INFO',
@@ -168,6 +170,24 @@ def load_config():
             save_config(config)
         if 'retry_delay' not in config:
             config['retry_delay'] = 5
+            save_config(config)
+        if 'app_name' not in config:
+            config['app_name'] = 'SyncFTP'
+            save_config(config)
+        if 'app_version' not in config:
+            config['app_version'] = '1.0.0'
+            save_config(config)
+        if 'log_retention_days' not in config:
+            config['log_retention_days'] = 7
+            save_config(config)
+        if 'log_refresh_interval' not in config:
+            config['log_refresh_interval'] = 3
+            save_config(config)
+        if 'log_level' not in config:
+            config['log_level'] = 'INFO'
+            save_config(config)
+        if 'auto_refresh' not in config:
+            config['auto_refresh'] = True
             save_config(config)
         return config
     except Exception as e:
@@ -803,7 +823,8 @@ def list_servers():
 @app.route('/logs')
 def logs_page():
     """Page d'affichage des logs"""
-    return render_template('logs.html', app_name=APP_NAME, app_version=APP_VERSION)
+    config = load_config()
+    return render_template('logs.html', config=config, app_name=APP_NAME, app_version=APP_VERSION)
 
 
 @app.route('/config')
