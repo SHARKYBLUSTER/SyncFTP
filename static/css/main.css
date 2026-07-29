@@ -379,7 +379,7 @@ textarea:focus-visible,
 
 .container {
     width: 100%;
-    max-width: var(--spacing-4xl);
+    max-width: 1200px;
     margin: 0 auto;
     padding: 0 var(--spacing-lg);
 }
