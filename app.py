@@ -1392,6 +1392,9 @@ def api_sync_stats():
                 'estimated_end_time': stats.get('estimated_end_time', ''),
                 'start_time': stats.get('start_time', task.get('running_since', '')),
                 'errors': stats.get('errors', 0),
+                'excluded': stats.get('excluded', 0),
+                'excluded_files': stats.get('excluded_files', []),
+                'uploaded_files': stats.get('uploaded_files', []),
                 'is_active': True
             }
             active_syncs.append(sync_info)
@@ -1431,6 +1434,9 @@ def api_sync_stats():
                             'start_time': stats.get('start_time', ''),
                             'end_time': stats.get('end_time', ''),
                             'errors': stats.get('errors', 0),
+                            'excluded': stats.get('excluded', 0),
+                            'excluded_files': stats.get('excluded_files', []),
+                            'uploaded_files': stats.get('uploaded_files', []),
                             'is_active': False
                         })
                         break
@@ -1462,6 +1468,12 @@ def api_sync_stats():
         'active_syncs': active_syncs,
         'global_stats': global_stats
     })
+
+
+@app.route('/api/active_tasks', methods=['GET'])
+def api_active_tasks():
+    """API: Retourne les tâches actives - alias pour /api/sync_stats"""
+    return api_sync_stats()
 
 
 def run_flask_app():

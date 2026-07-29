@@ -120,6 +120,127 @@
     gap: var(--spacing-md);
 }
 
+/* Task Card */
+.task-card {
+    transition: transform 0.2s, box-shadow 0.2s;
+    border-left: 4px solid var(--color-primary-500);
+}
+
+.task-card:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+}
+
+.task-card-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: var(--spacing-sm);
+}
+
+/* Task Stats Grid */
+.task-stats-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+    gap: var(--spacing-sm);
+    margin: var(--spacing-sm) 0;
+}
+
+.stat-item {
+    display: flex;
+    flex-direction: column;
+    padding: var(--spacing-xs) var(--spacing-sm);
+    background: var(--color-gray-50);
+    border-radius: var(--radius-sm);
+}
+
+.stat-label {
+    font-size: var(--font-size-xs);
+    color: var(--color-text-muted);
+    margin-bottom: 2px;
+}
+
+.stat-value {
+    font-size: var(--font-size-sm);
+    font-weight: var(--font-weight-semibold);
+    color: var(--color-text-primary);
+}
+
+/* Task Details */
+.task-details {
+    max-height: 80vh;
+    overflow-y: auto;
+}
+
+.task-info-section {
+    background: var(--color-white);
+    border: 1px solid var(--color-gray-200);
+    border-radius: var(--radius-md);
+    padding: var(--spacing-md);
+    margin-bottom: var(--spacing-md);
+}
+
+.task-info-section h3 {
+    margin-bottom: var(--spacing-md);
+    color: var(--color-text-primary);
+    font-size: var(--font-size-base);
+}
+
+/* File Lists */
+.excluded-files-list,
+.file-list {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+}
+
+.excluded-files-list li,
+.file-list li {
+    padding: var(--spacing-xs) 0;
+    border-bottom: 1px solid var(--color-gray-100);
+    font-size: var(--font-size-sm);
+}
+
+.excluded-files-list li:last-child,
+.file-list li:last-child {
+    border-bottom: none;
+}
+
+/* Modal Large */
+.modal--large .modal {
+    max-width: 90vw;
+    width: 90vw;
+}
+
+.modal--large .modal-body {
+    max-height: 70vh;
+}
+
+/* Modal Overlay for task execution */
+#taskExecutionModal .modal-body {
+    padding: 0;
+}
+
+#taskExecutionContent {
+    padding: var(--spacing-md);
+}
+
+/* Code styling in lists */
+.file-list code,
+.excluded-files-list code {
+    background: var(--color-gray-100);
+    padding: 2px 6px;
+    border-radius: var(--radius-xs);
+    font-family: var(--font-family-mono);
+    font-size: var(--font-size-xs);
+}
+
+/* Task card click effect */
+.task-card:active {
+    transform: translateY(0);
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+}
+
 /* Progress Bar */
 .progress {
     height: var(--spacing-sm);

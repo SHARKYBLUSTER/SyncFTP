@@ -70,6 +70,21 @@
         </div>
     </section>
 
+    <!-- Detailed Task Execution Modal -->
+    <div id="taskExecutionModal" class="modal-overlay" role="dialog" aria-modal="true" aria-labelledby="taskExecutionModalTitle" aria-hidden="true">
+        <div class="modal modal--large" role="document">
+            <div class="modal-header">
+                <h2 id="taskExecutionModalTitle" class="modal-title">📊 Détails de la tâche en cours</h2>
+                <button class="modal-close" onclick="closeTaskExecutionModal()" aria-label="Fermer" type="button">&times;</button>
+            </div>
+            <div class="modal-body">
+                <div id="taskExecutionContent">
+                    <!-- Content will be dynamically inserted -->
+                </div>
+            </div>
+        </div>
+    </div>
+
     <!-- Task Configuration Modal -->
     <div id="taskModal" class="modal-overlay" role="dialog" aria-modal="true" aria-labelledby="taskModalTitle" aria-hidden="true">
         <div class="modal" role="document">
@@ -236,22 +251,78 @@
         }
     }
 
+    // Store current sync data for modal
+    let currentSyncData = null;
+
     // Auto-refresh active tasks
     function refreshActiveTasks() {
         fetch('/api/active_tasks')
             .then(response => response.json())
             .then(data => {
                 const container = document.getElementById('activeTasksList');
-                if (data.active_tasks && data.active_tasks.length > 0) {
-                    let html = '<div class="grid gap-md" style="grid-template-columns: repeat(auto-fill, minmax(400px, 1fr));">';
-                    data.active_tasks.forEach(task => {
+                // Filtrer uniquement les tâches actuellement en cours (status = running ou is_active = true)
+                const activeSyncs = data.active_syncs ? data.active_syncs.filter(s => s.is_active || s.status === 'running') : [];
+                if (activeSyncs && activeSyncs.length > 0) {
+                    let html = '<div class="active-tasks-grid">';
+                    activeSyncs.forEach(sync => {
+                        const progress = sync.total_files_to_process > 0 ? 
+                            ((sync.files_uploaded / sync.total_files_to_process) * 100) : 0;
+                        
+                        // Format elapsed time
+                        const elapsedSeconds = sync.duration_seconds || 0;
+                        const elapsedTime = formatDuration(elapsedSeconds);
+                        
+                        // Format estimated time remaining
+                        const estimatedTime = sync.estimated_end_time ? 
+                            formatTimeRemaining(sync.estimated_end_time) : 'Calcul en cours...';
+                        
+                        // Calculate estimated time based on average speed
+                        const avgSpeed = sync.average_speed_fps || 0;
+                        const filesRemaining = sync.files_remaining || 0;
+                        const timeRemaining = avgSpeed > 0 && filesRemaining > 0 ?
+                            (filesRemaining / avgSpeed).toFixed(1) + ' secondes' : 'Calcul en cours...';
+                        
+                        // Create data attribute with task ID
+                        const taskIdentifier = sync.task_id || sync.task_name || '';
+                        
                         html += `
-                            <div class="card">
-                                <h4 class="mb-sm">${task.name}</h4>
-                                <p class="text-muted mb-xs"><small>Source: ${task.source_directory}</small></p>
-                                <p class="text-muted mb-xs"><small>Fichiers traités: ${task.files_processed || 0} / ${task.total_files || '?'}</small></p>
+                            <div class="card task-card" data-task-id="${taskIdentifier}" onclick="prepareTaskDetails(this)" style="cursor: pointer;">
+                                <div class="task-card-header">
+                                    <h4 class="mb-xs">🔄 ${sync.task_name || 'Tâche inconnue'}</h4>
+                                    <span class="status-badge status-badge--active">EN COURS</span>
+                                </div>
+                                <p class="text-muted mb-sm"><small>Source: ${sync.source_directory || 'Non spécifié'}</small></p>
+                                <p class="text-muted mb-sm"><small>Destination: ${sync.target_directory || 'Non spécifié'}</small></p>
+                                
+                                <div class="task-stats-grid">
+                                    <div class="stat-item">
+                                        <span class="stat-label">Fichiers source:</span>
+                                        <span class="stat-value">${sync.source_file_count || 0}</span>
+                                    </div>
+                                    <div class="stat-item">
+                                        <span class="stat-label">Fichiers exclus:</span>
+                                        <span class="stat-value">${sync.excluded || 0}</span>
+                                    </div>
+                                    <div class="stat-item">
+                                        <span class="stat-label">Uploadés:</span>
+                                        <span class="stat-value">${sync.files_uploaded || 0}</span>
+                                    </div>
+                                    <div class="stat-item">
+                                        <span class="stat-label">Restants:</span>
+                                        <span class="stat-value">${sync.files_remaining || 0}</span>
+                                    </div>
+                                    <div class="stat-item">
+                                        <span class="stat-label">Temps écoulé:</span>
+                                        <span class="stat-value">${elapsedTime}</span>
+                                    </div>
+                                    <div class="stat-item">
+                                        <span class="stat-label">Temps estimé:</span>
+                                        <span class="stat-value">${timeRemaining}</span>
+                                    </div>
+                                </div>
+                                
                                 <div class="progress mt-sm">
-                                    <div class="progress-bar" style="width: ${task.progress || 0}%">${task.progress || 0}%</div>
+                                    <div class="progress-bar" style="width: ${progress}%">${progress.toFixed(1)}%</div>
                                 </div>
                             </div>
                         `;
@@ -261,8 +332,220 @@
                 } else {
                     container.innerHTML = '<p class="text-center text-muted">Aucune tâche en cours d\'exécution</p>';
                 }
+            })
+            .catch(error => {
+                console.error('Error fetching active tasks:', error);
             });
     }
+
+    function formatDuration(seconds) {
+        if (seconds < 60) return seconds.toFixed(1) + 's';
+        const minutes = Math.floor(seconds / 60);
+        const secs = (seconds % 60).toFixed(1);
+        if (minutes < 60) return minutes + 'm ' + secs + 's';
+        const hours = Math.floor(minutes / 60);
+        const mins = minutes % 60;
+        return hours + 'h ' + mins + 'm ' + secs + 's';
+    }
+
+    function formatTimeRemaining(endTime) {
+        if (!endTime) return 'Calcul en cours...';
+        // Si endTime est une heure (HH:MM:SS)
+        if (endTime.indexOf(':') !== -1 && endTime.length <= 8) {
+            return 'Termine à ' + endTime;
+        }
+        // Si c'est un datetime complet
+        try {
+            const endDate = new Date(endTime);
+            const now = new Date();
+            const diffSeconds = Math.floor((endDate - now) / 1000);
+            return formatDuration(diffSeconds);
+        } catch (e) {
+            return endTime;
+        }
+    }
+
+    function prepareTaskDetails(element) {
+        const taskId = element.getAttribute('data-task-id');
+        // Fetch the latest sync stats for this task
+        fetch('/api/sync_stats')
+            .then(response => response.json())
+            .then(data => {
+                if (data.active_syncs && data.active_syncs.length > 0) {
+                    // Find the sync data for this task
+                    const syncData = data.active_syncs.find(s => 
+                        s.task_id === taskId || s.task_name === taskId
+                    );
+                    if (syncData) {
+                        showTaskDetails(syncData);
+                    }
+                }
+            })
+            .catch(error => {
+                console.error('Error fetching task details:', error);
+            });
+    }
+
+    function showTaskDetails(syncData) {
+        const modal = document.getElementById('taskExecutionModal');
+        const content = document.getElementById('taskExecutionContent');
+        
+        const elapsedSeconds = syncData.duration_seconds || 0;
+        const elapsedTime = formatDuration(elapsedSeconds);
+        const avgSpeed = syncData.average_speed_fps || 0;
+        const filesRemaining = syncData.files_remaining || 0;
+        const timeRemaining = avgSpeed > 0 && filesRemaining > 0 ?
+            formatDuration(filesRemaining / avgSpeed) : 'Calcul en cours...';
+        
+        let excludedFilesHtml = '';
+        if (syncData.excluded_files && syncData.excluded_files.length > 0) {
+            excludedFilesHtml = '<ul class="excluded-files-list">';
+            syncData.excluded_files.forEach(file => {
+                excludedFilesHtml += `<li><code>${file}</code></li>`;
+            });
+            excludedFilesHtml += '</ul>';
+        } else {
+            excludedFilesHtml = '<p class="text-muted">Aucun fichier exclu</p>';
+        }
+        
+        let uploadedFilesHtml = '';
+        if (syncData.uploaded_files && syncData.uploaded_files.length > 0) {
+            uploadedFilesHtml = '<ul class="file-list">';
+            const maxFiles = 10; // Afficher max 10 fichiers
+            const filesToShow = syncData.uploaded_files.slice(0, maxFiles);
+            filesToShow.forEach(file => {
+                uploadedFilesHtml += `<li><code>${file}</code></li>`;
+            });
+            if (syncData.uploaded_files.length > maxFiles) {
+                uploadedFilesHtml += `<li class="text-muted">... et ${syncData.uploaded_files.length - maxFiles} autres</li>`;
+            }
+            uploadedFilesHtml += '</ul>';
+        } else {
+            uploadedFilesHtml = '<p class="text-muted">Aucun fichier uploadé pour l\'instant</p>';
+        }
+        
+        let speedInfo = '';
+        if (syncData.average_speed_mbps && syncData.average_speed_mbps > 0) {
+            speedInfo = `
+                <div class="stat-item">
+                    <span class="stat-label">Vitesse:</span>
+                    <span class="stat-value">${syncData.average_speed_mbps.toFixed(2)} Mo/s</span>
+                </div>
+            `;
+        }
+        
+        const progress = syncData.total_files_to_process > 0 ? 
+            ((syncData.files_uploaded / syncData.total_files_to_process) * 100) : 0;
+        
+        content.innerHTML = `
+            <div class="task-details">
+                <div class="task-info-section mb-lg">
+                    <h3>📋 Informations générales</h3>
+                    <div class="task-stats-grid">
+                        <div class="stat-item">
+                            <span class="stat-label">Nom de la tâche:</span>
+                            <span class="stat-value">${syncData.task_name || 'Inconnu'}</span>
+                        </div>
+                        <div class="stat-item">
+                            <span class="stat-label">Statut:</span>
+                            <span class="stat-value"><span class="status-badge status-badge--${syncData.status || 'active'}">${syncData.status || 'En cours'}</span></span>
+                        </div>
+                        <div class="stat-item">
+                            <span class="stat-label">Dossier source:</span>
+                            <span class="stat-value"><code>${syncData.source_directory || 'Non spécifié'}</code></span>
+                        </div>
+                        <div class="stat-item">
+                            <span class="stat-label">Dossier destination:</span>
+                            <span class="stat-value"><code>${syncData.target_directory || 'Non spécifié'}</code></span>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="task-info-section mb-lg">
+                    <h3>📊 Statistiques de synchronisation</h3>
+                    <div class="task-stats-grid">
+                        <div class="stat-item">
+                            <span class="stat-label">Nombre total de fichiers source:</span>
+                            <span class="stat-value">${syncData.source_file_count || 0}</span>
+                        </div>
+                        <div class="stat-item">
+                            <span class="stat-label">Fichiers dans le FTP cible:</span>
+                            <span class="stat-value">${syncData.target_file_count || 0}</span>
+                        </div>
+                        <div class="stat-item">
+                            <span class="stat-label">Fichiers à uploader:</span>
+                            <span class="stat-value">${syncData.total_files_to_process || 0}</span>
+                        </div>
+                        <div class="stat-item">
+                            <span class="stat-label">Fichiers uploadés:</span>
+                            <span class="stat-value">${syncData.files_uploaded || 0}</span>
+                        </div>
+                        <div class="stat-item">
+                            <span class="stat-label">Fichiers restants:</span>
+                            <span class="stat-value">${syncData.files_remaining || 0}</span>
+                        </div>
+                        <div class="stat-item">
+                            <span class="stat-label">Temps écoulé:</span>
+                            <span class="stat-value">${elapsedTime}</span>
+                        </div>
+                        <div class="stat-item">
+                            <span class="stat-label">Temps estimé restant:</span>
+                            <span class="stat-value">${timeRemaining}</span>
+                        </div>
+                        <div class="stat-item">
+                            <span class="stat-label">Progression:</span>
+                            <span class="stat-value">${progress.toFixed(1)}%</span>
+                        </div>
+                        ${speedInfo}
+                        <div class="stat-item">
+                            <span class="stat-label">Vitesse moyenne:</span>
+                            <span class="stat-value">${avgSpeed.toFixed(2)} fichiers/s</span>
+                        </div>
+                    </div>
+                    
+                    <div class="progress mt-md">
+                        <div class="progress-bar" style="width: ${progress}%">${progress.toFixed(1)}%</div>
+                    </div>
+                </div>
+                
+                <div class="task-info-section mb-lg">
+                    <h3>🚫 Fichiers exclus (${syncData.excluded || 0})</h3>
+                    ${excludedFilesHtml}
+                </div>
+                
+                <div class="task-info-section">
+                    <h3>⬆️ Fichiers uploadés (${syncData.uploaded || 0})</h3>
+                    ${uploadedFilesHtml}
+                </div>
+            </div>
+        `;
+        
+        modal.classList.add('is-open');
+        modal.setAttribute('aria-hidden', 'false');
+        document.body.style.overflow = 'hidden';
+    }
+
+    function closeTaskExecutionModal() {
+        const modal = document.getElementById('taskExecutionModal');
+        modal.classList.remove('is-open');
+        modal.setAttribute('aria-hidden', 'true');
+        document.body.style.overflow = '';
+    }
+
+    // Close task execution modal on Escape key or click outside
+    document.addEventListener('keydown', function(e) {
+        const modal = document.getElementById('taskExecutionModal');
+        if (e.key === 'Escape' && modal.classList.contains('is-open')) {
+            closeTaskExecutionModal();
+        }
+    });
+
+    document.addEventListener('click', function(e) {
+        const modal = document.getElementById('taskExecutionModal');
+        if (modal.classList.contains('is-open') && e.target === modal) {
+            closeTaskExecutionModal();
+        }
+    });
 
     setInterval(refreshActiveTasks, 5000);
     document.addEventListener('DOMContentLoaded', refreshActiveTasks);
