@@ -928,7 +928,7 @@ def logs_page():
 def config_page():
     """Page de configuration"""
     config = load_config()
-    return render_template('config.html', config=config, app_name=APP_NAME, app_version=APP_VERSION)
+    return render_template('config.html', config=config, app_name=APP_NAME, app_version=APP_VERSION, shutdown_requested=shutdown_requested)
 
 
 def recreate_file_handler():
