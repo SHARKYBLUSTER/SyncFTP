@@ -842,6 +842,8 @@ python scripts/minify_css.py --all
 - ✅ Export des utilitaires dans `window.SyncFTP` au fur et à mesure
 - ✅ Fusion base.css + components.css + variables.css → main.css
 - ✅ Mise à jour base.html pour utiliser main.css avec cache busting
+- ✅ Correction des balises fermantes dans config.html (lignes 113, 172: </div> → </section>)
+- ✅ Ajout du conteneur .danger-actions pour le grid layout des boutons dangereux dans config.html
 
 **À faire** :
 - [ ] Supprimer les anciens fichiers base.css, components.css, variables.css (optionnel)
