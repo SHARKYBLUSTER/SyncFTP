@@ -951,6 +951,12 @@ def api_cleanup_logs():
 def api_clear_database():
     """API: Supprime tous les logs et l'historique des synchronisations"""
     try:
+        # Fermer le file handler pour permettre la suppression sous Windows
+        global file_handler
+        if file_handler:
+            file_handler.close()
+            file_handler = None
+        
         # Supprimer le fichier de logs
         if os.path.exists(LOG_FILE):
             os.remove(LOG_FILE)
@@ -958,14 +964,25 @@ def api_clear_database():
         
         # Supprimer l'historique des tâches (sync_tasks.json)
         if os.path.exists(TASKS_FILE):
-            # On pourrait le supprimer complètement ou le vider
-            # Pour l'instant, on le supprime
             os.remove(TASKS_FILE)
             app.logger.info("Historique des synchronisations supprimé")
+        
+        # Recréer un file handler vide pour que le logging continue de fonctionner
+        file_handler = logging.FileHandler(LOG_FILE, mode='a', encoding='utf-8')
+        file_handler.setLevel(app.logger.level)
+        file_handler.setFormatter(logging.Formatter(LOG_FORMAT))
+        app.logger.addHandler(file_handler)
         
         return jsonify({'success': True, 'message': 'Logs et historique supprimés'})
     except Exception as e:
         app.logger.error(f"Erreur lors de la suppression des logs et historique: {e}")
+        # Recréer le handler en cas d'erreur
+        global file_handler
+        if file_handler is None:
+            file_handler = logging.FileHandler(LOG_FILE, mode='a', encoding='utf-8')
+            file_handler.setLevel(app.logger.level)
+            file_handler.setFormatter(logging.Formatter(LOG_FORMAT))
+            app.logger.addHandler(file_handler)
         return jsonify({'success': False, 'message': str(e)}), 500
 
 
