@@ -31,7 +31,7 @@ logging.SUCCESS = 25
 
 # Configuration
 APP_NAME = "SyncFTP"
-APP_VERSION = "1.0.0"
+APP_VERSION = "2.0.0"
 DATA_FILE = "ftp_servers.json"
 TASKS_FILE = "sync_tasks.json"
 LOG_FILE = "app.log"
@@ -871,7 +871,24 @@ def index():
     """Page d'accueil - tableau de bord"""
     servers = load_servers()
     tasks = load_tasks()
-    return render_template('index.html', server_count=len(servers), task_count=len(tasks), app_name=APP_NAME, app_version=APP_VERSION)
+    
+    # Compter les tâches par statut
+    disabled_count = sum(1 for t in tasks if not t.get('enabled', True))
+    running_count = sum(1 for t in tasks if t.get('status') == 'running')
+    completed_count = sum(1 for t in tasks if t.get('status') == 'completed')
+    failed_count = sum(1 for t in tasks if t.get('status') == 'failed')
+    idle_count = sum(1 for t in tasks if t.get('status') == 'idle')
+    
+    return render_template('index.html', 
+                         server_count=len(servers), 
+                         task_count=len(tasks),
+                         disabled_count=disabled_count,
+                         running_count=running_count,
+                         completed_count=completed_count,
+                         failed_count=failed_count,
+                         idle_count=idle_count,
+                         app_name=APP_NAME, 
+                         app_version=APP_VERSION)
 
 
 # @app.route('/add')
@@ -1203,6 +1220,7 @@ def test_server():
     """Teste la connexion à un serveur FTP"""
     try:
         server_id = request.form.get('server_id')
+        test_directory = request.form.get('test_directory', '')
         
         if not server_id:
             return jsonify({
@@ -1225,7 +1243,16 @@ def test_server():
                 'error': 'Le serveur avec cet ID n\'existe pas'
             }), 404
         
+        # Si un répertoire de test est fourni, l'utiliser temporairement
+        original_test_dir = server.get('test_directory', '')
+        if test_directory:
+            server['test_directory'] = test_directory
+        
         result = test_ftp_connection(server)
+        
+        # Restaurer le répertoire de test original
+        if test_directory:
+            server['test_directory'] = original_test_dir
         
         return jsonify(result)
     except Exception as e:
@@ -1581,6 +1608,37 @@ def api_sync_stats():
 def api_active_tasks():
     """API: Retourne les tâches actives - alias pour /api/sync_stats"""
     return api_sync_stats()
+
+
+@app.route('/api/reset_failed_tasks', methods=['POST'])
+def reset_failed_tasks():
+    """API: Réinitialise toutes les tâches échouées au statut 'idle'"""
+    tasks = load_tasks()
+    
+    reset_count = 0
+    for task in tasks:
+        if task.get('status') == 'failed':
+            task['status'] = 'idle'
+            # Réinitialiser les infos de dernière exécution
+            if 'last_execution' in task:
+                del task['last_execution']
+            if 'last_result' in task:
+                del task['last_result']
+            if 'last_error' in task:
+                del task['last_error']
+            reset_count += 1
+    
+    save_tasks(tasks)
+    app.logger.info(f"Réinitialisation de {reset_count} tâche(s) échouée(s)")
+    
+    # Redémarrer les threads de synchronisation
+    start_sync_threads()
+    
+    return jsonify({
+        'success': True,
+        'message': f'{reset_count} tâche(s) échouée(s) réinitialisée(s)',
+        'reset_count': reset_count
+    })
 
 
 def run_flask_app():
