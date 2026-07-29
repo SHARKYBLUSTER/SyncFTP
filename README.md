@@ -1,5 +1,7 @@
 # SyncFTP
 
+**Version 1.0.0**
+
 **Application Web de Gestion et Synchronisation FTP**
 
 SyncFTP est une application web légère qui permet de gérer plusieurs serveurs FTP et de configurer des tâches de synchronisation automatique entre des répertoires locaux et distants. L'application propose un système de synchronisation unidirectionnelle (miroir) avec gestion intelligente des erreurs, timeout dynamique pour les gros fichiers, et vérification automatique des fichiers corrompus.
