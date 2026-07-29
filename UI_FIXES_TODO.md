@@ -3,7 +3,7 @@
 > **Document de référence** pour corriger les problèmes de la refonte UI (Phase 1-5)
 > **Date** : 29 juillet 2026
 > **Version** : 1.0.0
-> **Statut** : À implémenter
+> **Statut** : Partiellement implémenté (Priorité 1 et 2 terminées)
 
 ---
 
@@ -831,7 +831,21 @@ python scripts/minify_css.py --all
 | Date | Auteur | Modification | Commit |
 |------|--------|--------------|--------|
 | 29/07/2026 | Analyse | Identification des problèmes | - |
-| À faire | Développeur | Implémentation des corrections | - |
+| 29/07/2026 | Vibe | Implémentation Priorité 1 et 2 | fee0e78 |
+
+**Modifications implémentées** :
+- ✅ Correction des balises HTML (list.html, config.html)
+- ✅ Fix modal display avec `.is-open` au lieu de `d-none + style.display`
+- ✅ Correction des focus traps (vérification `length > 0`)
+- ✅ `window.SyncFTP` déplacé au début de main.js
+- ✅ Validateurs déplacés avant init dans main.js
+- ✅ Export des utilitaires dans `window.SyncFTP` au fur et à mesure
+- ✅ Fusion base.css + components.css + variables.css → main.css
+- ✅ Mise à jour base.html pour utiliser main.css avec cache busting
+
+**À faire** :
+- [ ] Supprimer les anciens fichiers base.css, components.css, variables.css (optionnel)
+- [ ] Tests de validation complets
 
 ---
 
