@@ -1157,6 +1157,41 @@ def delete_server(server_id):
     return redirect(url_for('index'))
 
 
+@app.route('/update_server', methods=['POST'])
+def update_server():
+    """Met à jour un serveur FTP existant"""
+    data = request.form.to_dict()
+    server_id = data.get('server_id')
+    
+    if not server_id:
+        return jsonify({'success': False, 'error': 'ID de serveur manquant'}), 400
+    
+    servers = load_servers()
+    server_index = next((i for i, s in enumerate(servers) if s['id'] == server_id), None)
+    
+    if server_index is None:
+        return jsonify({'success': False, 'error': 'Serveur non trouvé'}), 404
+    
+    # Mettre à jour les données du serveur
+    servers[server_index].update({
+        'name': data.get('name', servers[server_index]['name']),
+        'host': data.get('host', servers[server_index]['host']),
+        'port': data.get('port', servers[server_index]['port']),
+        'username': data.get('username', servers[server_index]['username']),
+        'password': data.get('password', servers[server_index]['password']),
+        'use_ssl': data.get('use_ssl') == 'true' if 'use_ssl' in data else servers[server_index]['use_ssl'],
+        'timeout': data.get('timeout', servers[server_index]['timeout']),
+        'test_directory': data.get('test_directory', servers[server_index]['test_directory']),
+        'updated_at': datetime.now().isoformat()
+    })
+    
+    save_servers(servers)
+    
+    app.logger.info(f"Serveur FTP mis à jour: {servers[server_index]['name']} ({servers[server_index]['host']})")
+    
+    return jsonify({'success': True, 'message': 'Serveur mis à jour avec succès'})
+
+
 @app.route('/test_server', methods=['POST'])
 def test_server():
     """Teste la connexion à un serveur FTP"""

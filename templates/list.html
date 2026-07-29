@@ -41,6 +41,7 @@
                         {% endif %}
                         <div class="server-actions">
                             <button class="btn btn--info btn--sm test-btn" data-server-id="{{ server.id }}">🔍 TESTER</button>
+                            <button class="btn btn--primary btn--sm edit-btn" data-server-id="{{ server.id }}" onclick="openEditServerModal('{{ server.id }}')" aria-label="Éditer le serveur">✏️ ÉDITER</button>
                             <form action="/delete_server/{{ server.id }}" method="POST" class="d-inline">
                                 <button type="submit" class="btn btn--danger btn--sm" onclick="return confirm('Êtes-vous sûr de vouloir supprimer ce serveur ?')">🗑️ Supprimer</button>
                             </form>
@@ -124,6 +125,78 @@
                     <span id="saveServerBtnLoading" class="spinner-sm d-none" aria-hidden="true"></span>
                 </button>
                 <button type="button" class="btn btn--secondary" onclick="closeAddServerModal()" aria-label="Annuler">Annuler</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Edit Server Modal -->
+    <div id="editServerModal" class="modal-overlay" role="dialog" aria-modal="true" aria-labelledby="editServerModalTitle" aria-hidden="true">
+        <div class="modal" role="document">
+            <div class="modal-header">
+                <h2 id="editServerModalTitle" class="modal-title">✏️ Éditer le serveur FTP</h2>
+                <button class="modal-close" onclick="closeEditServerModal()" aria-label="Fermer la fenêtre modale" type="button">&times;</button>
+            </div>
+            <div class="modal-body">
+                <form id="editServerForm" aria-labelledby="editServerModalTitle">
+                    <input type="hidden" id="editServerId" name="server_id">
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label for="editServerName" class="form-label form-label--required">Nom du serveur</label>
+                            <input type="text" id="editServerName" name="name" required placeholder="Mon Serveur FTP" class="form-control form-input" aria-required="true" aria-describedby="editServerNameHelp">
+                            <p id="editServerNameHelp" class="form-hint">Nom unique pour identifier ce serveur FTP</p>
+                        </div>
+                        <div class="form-group">
+                            <label for="editServerHost" class="form-label form-label--required">Hôte</label>
+                            <input type="text" id="editServerHost" name="host" required placeholder="ftp.example.com" class="form-control form-input" aria-required="true" aria-describedby="editServerHostHelp">
+                            <p id="editServerHostHelp" class="form-hint">Adresse IP ou nom d'hôte du serveur FTP</p>
+                        </div>
+                    </div>
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label for="editServerPort" class="form-label">Port</label>
+                            <input type="number" id="editServerPort" name="port" value="21" min="1" max="65535" class="form-control form-input" aria-describedby="editServerPortHelp">
+                            <p id="editServerPortHelp" class="form-hint">Port du serveur FTP (par défaut: 21)</p>
+                        </div>
+                        <div class="form-group">
+                            <label for="editServerUsername" class="form-label">Utilisateur</label>
+                            <input type="text" id="editServerUsername" name="username" value="anonymous" class="form-control form-input" aria-describedby="editServerUsernameHelp">
+                            <p id="editServerUsernameHelp" class="form-hint">Nom d'utilisateur pour la connexion FTP</p>
+                        </div>
+                    </div>
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label for="editServerPassword" class="form-label">Mot de passe</label>
+                            <input type="password" id="editServerPassword" name="password" class="form-control form-input" aria-describedby="editServerPasswordHelp">
+                            <p id="editServerPasswordHelp" class="form-hint">Mot de passe pour la connexion FTP (facultatif pour l'anonyme)</p>
+                        </div>
+                        <div class="form-group">
+                            <label for="editServerTimeout" class="form-label">Timeout (secondes)</label>
+                            <input type="number" id="editServerTimeout" name="timeout" value="30" min="1" class="form-control form-input" aria-describedby="editServerTimeoutHelp">
+                            <p id="editServerTimeoutHelp" class="form-hint">Temps d'attente maximal pour la connexion en secondes</p>
+                        </div>
+                    </div>
+                    <fieldset class="form-row">
+                        <legend class="sr-only">Options de connexion</legend>
+                        <div class="form-group">
+                            <div class="form-check">
+                                <input type="checkbox" id="editServerUseSsl" name="use_ssl" value="true" class="form-check-input">
+                                <label for="editServerUseSsl" class="form-check-label">Utiliser SSL (FTPS)</label>
+                            </div>
+                        </div>
+                        <div class="form-group">
+                            <label for="editServerTestDirectory" class="form-label">Répertoire à tester</label>
+                            <input type="text" id="editServerTestDirectory" name="test_directory" placeholder="/chemin/vers/dossier" class="form-control form-input" aria-describedby="editServerTestDirectoryHelp">
+                            <p id="editServerTestDirectoryHelp" class="form-hint">Chemin du répertoire à tester sur le serveur</p>
+                        </div>
+                    </fieldset>
+                </form>
+            </div>
+            <div class="modal-footer">
+                <button type="button" id="updateServerBtn" class="btn btn--primary" onclick="updateServer()" aria-label="Mettre à jour le serveur FTP">
+                    <span id="updateServerBtnText">💾 METTRE À JOUR</span>
+                    <span id="updateServerBtnLoading" class="spinner-sm d-none" aria-hidden="true"></span>
+                </button>
+                <button type="button" class="btn btn--secondary" onclick="closeEditServerModal()" aria-label="Annuler">Annuler</button>
             </div>
         </div>
     </div>
@@ -357,6 +430,128 @@
         // Escape key closes modal
         if (e.key === 'Escape') {
             closeAddServerModal();
+            return;
+        }
+        
+        // Focus trap
+        if (e.key === 'Tab') {
+            const focusableElements = modal.querySelectorAll('button, [href], input, select, textarea, [tabindex]:not([tabindex="-1"])');
+            if (focusableElements.length === 0) return;
+            
+            const firstElement = focusableElements[0];
+            const lastElement = focusableElements[focusableElements.length - 1];
+            
+            if (e.shiftKey && document.activeElement === firstElement) {
+                lastElement.focus();
+                e.preventDefault();
+            } else if (!e.shiftKey && document.activeElement === lastElement) {
+                firstElement.focus();
+                e.preventDefault();
+            }
+        }
+    });
+
+    // Edit Server Modal Functions
+    let lastFocusedElementEditServer = null;
+    let currentEditingServerId = null;
+
+    function openEditServerModal(serverId) {
+        currentEditingServerId = serverId;
+        const modal = document.getElementById('editServerModal');
+        lastFocusedElementEditServer = document.activeElement;
+        
+        // Charger les données du serveur
+        loadServerData(serverId);
+        
+        modal.classList.add('is-open');
+        const focusableElements = modal.querySelectorAll('button, [href], input, select, textarea, [tabindex]:not([tabindex="-1"])');
+        if (focusableElements.length > 0) {
+            focusableElements[0].focus();
+        }
+        modal.setAttribute('aria-hidden', 'false');
+        document.body.style.overflow = 'hidden';
+    }
+
+    function closeEditServerModal() {
+        const modal = document.getElementById('editServerModal');
+        modal.classList.remove('is-open');
+        modal.setAttribute('aria-hidden', 'true');
+        document.body.style.overflow = '';
+        if (lastFocusedElementEditServer) {
+            lastFocusedElementEditServer.focus();
+        }
+        currentEditingServerId = null;
+    }
+
+    function loadServerData(serverId) {
+        // Récupérer les données du serveur depuis la page (déjà chargées)
+        const servers = {{ servers|tojson|safe }};
+        const server = servers.find(s => s.id === serverId);
+        
+        if (server) {
+            document.getElementById('editServerId').value = server.id;
+            document.getElementById('editServerName').value = server.name || '';
+            document.getElementById('editServerHost').value = server.host || '';
+            document.getElementById('editServerPort').value = server.port || '21';
+            document.getElementById('editServerUsername').value = server.username || 'anonymous';
+            document.getElementById('editServerPassword').value = server.password || '';
+            document.getElementById('editServerTimeout').value = server.timeout || '30';
+            document.getElementById('editServerUseSsl').checked = server.use_ssl || false;
+            document.getElementById('editServerTestDirectory').value = server.test_directory || '';
+        }
+    }
+
+    function updateServer() {
+        const form = document.getElementById('editServerForm');
+        const formData = new FormData(form);
+        const submitBtn = document.getElementById('updateServerBtn');
+        const submitBtnText = document.getElementById('updateServerBtnText');
+        const submitBtnLoading = document.getElementById('updateServerBtnLoading');
+
+        // Validate required fields
+        const name = document.getElementById('editServerName').value;
+        const host = document.getElementById('editServerHost').value;
+        
+        if (!name || !host) {
+            alert('Veuillez remplir les champs obligatoires (Nom du serveur et Hôte)');
+            return;
+        }
+
+        submitBtnText.textContent = 'Mise à jour...';
+        submitBtnLoading.classList.remove('d-none');
+        submitBtn.disabled = true;
+
+        fetch('/update_server', {
+            method: 'POST',
+            body: formData
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                closeEditServerModal();
+                window.location.reload();
+            } else {
+                alert('Erreur: ' + (data.error || 'Impossible de mettre à jour le serveur'));
+            }
+        })
+        .catch(error => {
+            alert('Erreur: ' + error.toString());
+        })
+        .finally(() => {
+            submitBtnText.textContent = '💾 METTRE À JOUR';
+            submitBtnLoading.classList.add('d-none');
+            submitBtn.disabled = false;
+        });
+    }
+
+    // Focus trap for edit server modal
+    document.addEventListener('keydown', function(e) {
+        const modal = document.getElementById('editServerModal');
+        if (!modal.classList.contains('is-open')) return;
+        
+        // Escape key closes modal
+        if (e.key === 'Escape') {
+            closeEditServerModal();
             return;
         }
         
