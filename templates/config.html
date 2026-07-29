@@ -29,7 +29,7 @@
                 <div class="form-row">
                     <div class="form-group">
                         <label for="appName" class="form-label">Nom de l'application</label>
-                        <input type="text" id="appName" name="app_name" value="{{ app_name }}" class="form-control form-input" aria-describedby="appNameHelp">
+                        <input type="text" id="appName" name="app_name" value="{{ app_name }}" class="form-control form-input" data-validate="required" aria-describedby="appNameHelp">
                         <p id="appNameHelp" class="form-hint">Nom affiché dans l'application</p>
                     </div>
                     <div class="form-group">
@@ -41,7 +41,7 @@
                 
                 <div class="form-group">
                     <label for="defaultTimeout" class="form-label">Timeout par défaut (secondes)</label>
-                    <input type="number" id="defaultTimeout" name="default_timeout" value="{{ config.default_timeout|default(30) }}" min="1" class="form-control form-input config-input-narrow" aria-describedby="defaultTimeoutHelp">
+                    <input type="number" id="defaultTimeout" name="default_timeout" value="{{ config.default_timeout|default(30) }}" min="1" class="form-control form-input config-input-narrow" data-validate="number" aria-describedby="defaultTimeoutHelp">
                     <p id="defaultTimeoutHelp" class="form-hint">Timeout de connexion par défaut pour les nouveaux serveurs</p>
                 </div>
                 
@@ -198,6 +198,7 @@
 {% endblock %}
 
 {% block scripts %}
+{{ super() }}
 <script>
     function resetGeneralConfig() {
         if (confirm('Réinitialiser les paramètres généraux ?')) {
@@ -268,22 +269,55 @@
         }
     }
     
-    // Form submission handlers
-    document.getElementById('generalConfigForm').addEventListener('submit', function(e) {
-        e.preventDefault();
-        const formData = new FormData(this);
-        fetch('/save_config', {
+    // Form submission handlers with loading states
+    function handleFormSubmit(form, url, successMessage = 'Configuration enregistrée avec succès') {
+        const submitBtn = form.querySelector('button[type="submit"]');
+        if (submitBtn && window.SyncFTP) {
+            window.SyncFTP.toggleButtonLoading(submitBtn, true);
+            window.SyncFTP.announce('Enregistrement en cours...');
+        }
+        
+        const formData = new FormData(form);
+        fetch(url, {
             method: 'POST',
             body: formData
         }).then(response => response.json())
           .then(data => {
+              if (submitBtn && window.SyncFTP) {
+                  window.SyncFTP.toggleButtonLoading(submitBtn, false);
+              }
               if (data.success) {
-                  alert('Configuration enregistrée avec succès');
+                  window.SyncFTP.announce(successMessage);
+                  alert(successMessage);
                   location.reload();
               } else {
+                  window.SyncFTP.announce('Erreur: ' + (data.message || 'Impossible d\'enregistrer'));
                   alert('Erreur: ' + (data.message || 'Impossible d\'enregistrer'));
               }
+          })
+          .catch(error => {
+              if (submitBtn && window.SyncFTP) {
+                  window.SyncFTP.toggleButtonLoading(submitBtn, false);
+              }
+              window.SyncFTP.announce('Erreur de connexion');
+              alert('Erreur de connexion');
           });
+        return false;
+    }
+    
+    document.getElementById('generalConfigForm').addEventListener('submit', function(e) {
+        e.preventDefault();
+        handleFormSubmit(this, '/save_config', 'Configuration générale enregistrée avec succès');
+    });
+    
+    document.getElementById('networkConfigForm').addEventListener('submit', function(e) {
+        e.preventDefault();
+        handleFormSubmit(this, '/save_network_config', 'Configuration réseau enregistrée avec succès');
+    });
+    
+    document.getElementById('syncConfigForm').addEventListener('submit', function(e) {
+        e.preventDefault();
+        handleFormSubmit(this, '/save_sync_config', 'Configuration de synchronisation enregistrée avec succès');
     });
 </script>
 {% endblock %}

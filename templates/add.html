@@ -15,19 +15,19 @@
             <div class="form-row">
                 <div class="form-group">
                     <label for="name" class="form-label form-label--required">Nom du serveur</label>
-                    <input type="text" id="name" name="name" required placeholder="Mon Serveur FTP" class="form-control form-input" aria-required="true" aria-describedby="nameHelp">
+                    <input type="text" id="name" name="name" required placeholder="Mon Serveur FTP" class="form-control form-input" data-validate="required" aria-required="true" aria-describedby="nameHelp">
                     <p id="nameHelp" class="form-hint">Nom unique pour identifier ce serveur FTP</p>
                 </div>
                 <div class="form-group">
                     <label for="host" class="form-label form-label--required">Hôte</label>
-                    <input type="text" id="host" name="host" required placeholder="ftp.example.com" class="form-control form-input" aria-required="true" aria-describedby="hostHelp">
+                    <input type="text" id="host" name="host" required placeholder="ftp.example.com" class="form-control form-input" data-validate="required" aria-required="true" aria-describedby="hostHelp">
                     <p id="hostHelp" class="form-hint">Adresse IP ou nom d'hôte du serveur FTP</p>
                 </div>
             </div>
             <div class="form-row">
                 <div class="form-group">
                     <label for="port" class="form-label">Port</label>
-                    <input type="number" id="port" name="port" value="21" min="1" max="65535" class="form-control form-input" aria-describedby="portHelp">
+                    <input type="number" id="port" name="port" value="21" min="1" max="65535" class="form-control form-input" data-validate="validateFtpPort" aria-describedby="portHelp">
                     <p id="portHelp" class="form-hint">Port du serveur FTP (par défaut: 21)</p>
                 </div>
                 <div class="form-group">
@@ -44,7 +44,7 @@
                 </div>
                 <div class="form-group">
                     <label for="timeout" class="form-label">Timeout (secondes)</label>
-                    <input type="number" id="timeout" name="timeout" value="30" min="1" class="form-control form-input" aria-describedby="timeoutHelp">
+                    <input type="number" id="timeout" name="timeout" value="30" min="1" class="form-control form-input" data-validate="number" aria-describedby="timeoutHelp">
                     <p id="timeoutHelp" class="form-hint">Temps d'attente maximal pour la connexion en secondes</p>
                 </div>
             </div>
@@ -58,13 +58,13 @@
                 </div>
                 <div class="form-group">
                     <label for="test_directory" class="form-label">Répertoire à tester</label>
-                    <input type="text" id="test_directory" name="test_directory" placeholder="/chemin/vers/dossier" class="form-control form-input" aria-describedby="testDirectoryHelp">
+                    <input type="text" id="test_directory" name="test_directory" placeholder="/chemin/vers/dossier" class="form-control form-input" data-validate="validateFtpPath" aria-describedby="testDirectoryHelp">
                     <p id="testDirectoryHelp" class="form-hint">Chemin du répertoire à tester sur le serveur</p>
                 </div>
             </fieldset>
             <div class="form-row">
                 <div class="form-group flex items-center gap-sm">
-                    <button type="submit" class="btn btn--primary" aria-label="Enregistrer le serveur FTP">💾 ENREGISTRER FTP</button>
+                    <button type="submit" id="submitBtn" class="btn btn--primary" aria-label="Enregistrer le serveur FTP">💾 ENREGISTRER FTP</button>
                     <a href="/list" class="btn btn--secondary" aria-label="Retour à la liste des serveurs">🔙 Retour à la liste</a>
                 </div>
             </div>
@@ -73,11 +73,15 @@
 {% endblock %}
 
 {% block scripts %}
+{{ super() }}
 <script>
+    // Use SyncFTP loading state utilities
     document.getElementById('addServerForm').addEventListener('submit', function(e) {
-        const submitBtn = this.querySelector('button[type="submit"]');
-        submitBtn.textContent = '🔄 Enregistrement en cours...';
-        submitBtn.disabled = true;
+        const submitBtn = document.getElementById('submitBtn');
+        if (submitBtn && window.SyncFTP) {
+            window.SyncFTP.toggleButtonLoading(submitBtn, true);
+            window.SyncFTP.announce('Enregistrement du serveur FTP en cours...');
+        }
     });
 </script>
 {% endblock %}

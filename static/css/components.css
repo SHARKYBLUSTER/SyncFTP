@@ -1053,6 +1053,185 @@
 }
 
 /* ========================================
+   Loading States
+   ======================================== */
+
+/* Loading state for buttons */
+.btn.is-loading {
+    position: relative;
+    color: transparent;
+    pointer-events: none;
+}
+
+.btn.is-loading::after {
+    content: '';
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    width: 16px;
+    height: 16px;
+    border: 2px solid currentColor;
+    border-top-color: transparent;
+    border-radius: 50%;
+    animation: spin 0.6s linear infinite;
+}
+
+.btn.is-loading .btn-text {
+    visibility: hidden;
+}
+
+/* Loading overlay for forms and containers */
+.loading-overlay {
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: rgba(255, 255, 255, 0.8);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 10;
+    border-radius: var(--radius-md);
+}
+
+.loading-overlay--dark {
+    background: rgba(0, 0, 0, 0.5);
+}
+
+/* Inline loading spinner */
+.loading-spinner {
+    display: inline-block;
+    width: 16px;
+    height: 16px;
+    border: 2px solid currentColor;
+    border-top-color: transparent;
+    border-radius: 50%;
+    animation: spin 0.6s linear infinite;
+    vertical-align: middle;
+}
+
+/* Loading state for form groups */
+.form-group.is-loading {
+    position: relative;
+    opacity: 0.7;
+}
+
+.form-group.is-loading::after {
+    content: '';
+    position: absolute;
+    top: 50%;
+    right: var(--spacing-md);
+    transform: translateY(-50%);
+    width: 16px;
+    height: 16px;
+    border: 2px solid var(--color-primary-600);
+    border-top-color: transparent;
+    border-radius: 50%;
+    animation: spin 0.6s linear infinite;
+}
+
+/* ========================================
+   Form Validation Feedback
+   ======================================== */
+
+/* Input validation states */
+.form-control.form-control--error {
+    border-color: var(--color-danger-500);
+    background-color: var(--color-danger-50);
+}
+
+.form-control.form-control--error:focus {
+    border-color: var(--color-danger-500);
+    box-shadow: 0 0 0 3px rgba(220, 53, 69, 0.15);
+}
+
+.form-control.form-control--success {
+    border-color: var(--color-success-500);
+    background-color: var(--color-success-50);
+}
+
+.form-control.form-control--success:focus {
+    border-color: var(--color-success-500);
+    box-shadow: 0 0 0 3px rgba(28, 200, 132, 0.15);
+}
+
+.form-control.form-control--warning {
+    border-color: var(--color-warning-500);
+    background-color: var(--color-warning-50);
+}
+
+/* Validation message */
+.form-error {
+    font-size: var(--font-size-xs);
+    color: var(--color-danger-500);
+    margin-top: var(--spacing-xs);
+    display: flex;
+    align-items: center;
+    gap: var(--spacing-xs);
+}
+
+.form-error::before {
+    content: '! ';
+    font-weight: bold;
+}
+
+.form-success {
+    font-size: var(--font-size-xs);
+    color: var(--color-success-500);
+    margin-top: var(--spacing-xs);
+    display: flex;
+    align-items: center;
+    gap: var(--spacing-xs);
+}
+
+.form-success::before {
+    content: '✓ ';
+    font-weight: bold;
+}
+
+/* Validation icon for inputs */
+.form-control--error + .form-input-icon,
+.form-control--success + .form-input-icon,
+.form-control--warning + .form-input-icon {
+    position: absolute;
+    right: var(--spacing-md);
+    top: 50%;
+    transform: translateY(-50%);
+    font-size: var(--font-size-lg);
+    pointer-events: none;
+}
+
+.form-control--error + .form-input-icon {
+    color: var(--color-danger-500);
+}
+
+.form-control--success + .form-input-icon {
+    color: var(--color-success-500);
+}
+
+.form-control--warning + .form-input-icon {
+    color: var(--color-warning-500);
+}
+
+/* Form group with validation */
+.form-group.has-error .form-label {
+    color: var(--color-danger-500);
+}
+
+.form-group.has-success .form-label {
+    color: var(--color-success-500);
+}
+
+/* Required field indicator */
+.form-label--required::after {
+    content: '* ';
+    color: var(--color-danger-500);
+    font-weight: bold;
+}
+
+/* ========================================
    Tooltip Components
    ======================================== */
 

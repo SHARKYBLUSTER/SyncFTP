@@ -24,6 +24,7 @@
     <!-- Preload critical resources -->
     <link rel="preload" href="{{ url_for('static', filename='css/variables.css') }}" as="style">
     <link rel="preload" href="{{ url_for('static', filename='css/base.css') }}" as="style">
+    <link rel="preload" href="{{ url_for('static', filename='js/main.js') }}" as="script">
     
     <!-- Skip to content link for accessibility -->
     <a href="#main-content" class="skip-link">Aller au contenu principal</a>
@@ -32,23 +33,7 @@
     {% block head %}{% endblock %}
 </head>
 <body>
-    <!-- Skip link styles (hidden but accessible) -->
-    <style>
-        .skip-link {
-            position: absolute;
-            top: -40px;
-            left: 0;
-            background: var(--color-primary-600);
-            color: var(--color-white);
-            padding: var(--spacing-sm) var(--spacing-md);
-            z-index: 9999;
-            transition: top 0.3s;
-        }
-        
-        .skip-link:focus {
-            top: 0;
-        }
-    </style>
+    <!-- Skip link styles moved to base.css for better caching -->
 
     <div class="container">
         <!-- Header -->
@@ -94,6 +79,12 @@
             baseUrl: '{{ request.base_url }}'
         };
     </script>
+    
+    <!-- Live region for screen reader announcements -->
+    <div id="announcements" class="live-region" aria-live="polite" aria-atomic="true" role="status"></div>
+    
+    <!-- Main JavaScript -->
+    <script src="{{ url_for('static', filename='js/main.js') }}" defer></script>
     
     <!-- Page-specific scripts -->
     {% block scripts %}{% endblock %}

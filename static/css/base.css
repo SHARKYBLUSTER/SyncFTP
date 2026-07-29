@@ -104,6 +104,25 @@ textarea:focus-visible,
     box-shadow: 0 0 0 4px rgba(102, 126, 234, 0.25);
 }
 
+/* High contrast focus for better accessibility */
+@media (prefers-contrast: high) {
+    :focus-visible {
+        outline: 3px solid var(--color-primary-700);
+        outline-offset: 3px;
+    }
+    
+    button:focus-visible,
+    a:focus-visible,
+    input:focus-visible,
+    select:focus-visible,
+    textarea:focus-visible,
+    [tabindex]:focus-visible {
+        outline: 3px solid var(--color-primary-700);
+        outline-offset: 3px;
+        box-shadow: 0 0 0 6px rgba(102, 126, 234, 0.4);
+    }
+}
+
 /* Screen reader only class - visually hidden but accessible */
 .sr-only {
     position: absolute;
@@ -115,6 +134,62 @@ textarea:focus-visible,
     clip: rect(0, 0, 0, 0);
     white-space: nowrap;
     border: 0;
+}
+
+/* Skip link for accessibility - visible on focus */
+.skip-link {
+    position: absolute;
+    top: -100px;
+    left: 0;
+    background: var(--color-primary-600);
+    color: var(--color-white);
+    padding: var(--spacing-sm) var(--spacing-md);
+    z-index: 9999;
+    transition: top 0.3s ease;
+    text-decoration: none;
+    font-weight: var(--font-weight-semibold);
+    border-radius: 0 0 var(--radius-md) var(--radius-md);
+}
+
+.skip-link:focus {
+    top: 0;
+    outline: 3px solid var(--color-primary-800);
+    outline-offset: -3px;
+}
+
+/* Visually hidden but accessible to screen readers */
+.visually-hidden {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    padding: 0;
+    margin: -1px;
+    overflow: hidden;
+    clip: rect(0, 0, 0, 0);
+    white-space: nowrap;
+    border: 0;
+}
+
+/* Live region for dynamic content announcements */
+.live-region {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    padding: 0;
+    margin: -1px;
+    overflow: hidden;
+    clip: rect(0, 0, 0, 0);
+    white-space: nowrap;
+    border: 0;
+}
+
+.live-region[aria-live] {
+    position: static;
+    width: auto;
+    height: auto;
+    margin: 0;
+    clip: auto;
+    white-space: normal;
 }
 
 /* --- Base HTML Elements --- */
@@ -968,6 +1043,32 @@ header h1 {
 .mb-3 { margin-bottom: 1rem; }
 .mb-4 { margin-bottom: 1.5rem; }
 
+/* Responsive breakpoints utilities */
+.d-sm-none { display: none; }
+.d-md-none { display: none; }
+.d-lg-none { display: none; }
+.d-sm-block { display: block; }
+.d-md-block { display: block; }
+.d-lg-block { display: block; }
+
+@media (min-width: 640px) {
+    .d-sm-none { display: none !important; }
+    .d-sm-block { display: block !important; }
+    .d-sm-flex { display: flex !important; }
+}
+
+@media (min-width: 768px) {
+    .d-md-none { display: none !important; }
+    .d-md-block { display: block !important; }
+    .d-md-flex { display: flex !important; }
+}
+
+@media (min-width: 1024px) {
+    .d-lg-none { display: none !important; }
+    .d-lg-block { display: block !important; }
+    .d-lg-flex { display: flex !important; }
+}
+
 /* Responsive utilities */
 @media (max-width: 768px) {
     .container {
@@ -1000,5 +1101,58 @@ header h1 {
     .form-row {
         flex-direction: column;
         gap: var(--spacing-md);
+    }
+    
+    /* Mobile-specific adjustments */
+    header {
+        padding: var(--spacing-lg);
+    }
+    
+    .nav-btn {
+        padding: var(--spacing-sm) var(--spacing-md);
+        font-size: var(--font-size-sm);
+    }
+}
+
+@media (max-width: 480px) {
+    /* Extra small devices */
+    body {
+        padding: var(--spacing-sm);
+    }
+    
+    .section {
+        padding: var(--spacing-md);
+    }
+    
+    header h1 {
+        font-size: var(--font-size-2xl);
+    }
+    
+    .btn {
+        padding: var(--spacing-sm) var(--spacing-md);
+    }
+    
+    .nav-btn {
+        width: 100%;
+    }
+}
+
+/* Touch target sizes for mobile accessibility */
+@media (hover: none) and (pointer: coarse) {
+    button,
+    a,
+    input[type="button"],
+    input[type="submit"],
+    input[type="reset"],
+    .btn,
+    .nav-btn {
+        min-height: 44px;
+        min-width: 44px;
+    }
+    
+    /* Increase tap target for form controls */
+    .form-control {
+        min-height: 44px;
+        padding: var(--spacing-md) var(--spacing-lg);
     }
 }
