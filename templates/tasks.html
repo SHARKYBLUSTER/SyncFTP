@@ -33,7 +33,15 @@
                             <tr>
                                 <td><strong>{{ task.name }}</strong></td>
                                 <td>{{ task.source_directory }}</td>
-                                <td>{{ task.target_ftp_server|default('-') }}</td>
+                                <td>
+                                    {% set server = servers|selectattr('id', 'equalto', task.server_id)|first %}
+                                    {% if server %}
+                                        {{ server.name }}
+                                        {% if task.target_directory %}/{{ task.target_directory }}{% endif %}
+                                    {% else %}
+                                        -
+                                    {% endif %}
+                                </td>
                                 <td>
                                     <span class="status-badge status-badge--{{ task.status|default('inactive') }}" role="status" aria-label="Statut: {{ task.status|default('Inactif') }}">
                                         {{ task.status|default('Inactif') }}
