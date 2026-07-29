@@ -23,9 +23,8 @@
     <section aria-labelledby="general-config-title">
         <h3 id="general-config-title" class="config-section-title">📋 Paramètres généraux</h3>
         
-        <form id="mainConfigForm" action="/api/config" method="POST" class="mt-lg" aria-label="Formulaire de configuration principale">
-            <fieldset>
-                <legend class="sr-only">Paramètres généraux</legend>
+        <form id="mainConfigForm" action="/api/config" method="POST" aria-label="Formulaire de configuration principale">
+            <div class="mt-lg">
                 <div class="form-row">
                     <div class="form-group">
                         <label for="appName" class="form-label">Nom de l'application</label>
@@ -39,22 +38,23 @@
                     </div>
                 </div>
                 
-                <div class="form-group">
-                    <div class="form-check">
-                        <input type="checkbox" id="autoRefresh" name="auto_refresh" value="true" {% if config.auto_refresh|default(true) %}checked{% endif %} class="form-check-input">
-                        <label for="autoRefresh" class="form-check-label">Rafraîchissement automatique</label>
+                <div class="form-row">
+                    <div class="form-group">
+                        <div class="form-check">
+                            <input type="checkbox" id="autoRefresh" name="auto_refresh" value="true" {% if config.auto_refresh|default(true) %}checked{% endif %} class="form-check-input">
+                            <label for="autoRefresh" class="form-check-label">Rafraîchissement automatique</label>
+                        </div>
+                        <p class="form-hint">Rafraîchir automatiquement les données</p>
                     </div>
-                    <p class="form-hint">Rafraîchir automatiquement les données</p>
-                </div>
-                
-                <div class="form-group">
-                    <div class="form-check">
-                        <input type="checkbox" id="debugLogging" name="debug_logging_enabled" value="true" {% if config.debug_logging_enabled|default(false) %}checked{% endif %} class="form-check-input">
-                        <label for="debugLogging" class="form-check-label">Logs détaillés (mode debug)</label>
+                    <div class="form-group">
+                        <div class="form-check">
+                            <input type="checkbox" id="debugLogging" name="debug_logging_enabled" value="true" {% if config.debug_logging_enabled|default(false) %}checked{% endif %} class="form-check-input">
+                            <label for="debugLogging" class="form-check-label">Logs détaillés (mode debug)</label>
+                        </div>
+                        <p class="form-hint">Active les logs DEBUG pour le débogage</p>
                     </div>
-                    <p class="form-hint">Active les logs DEBUG pour le débogage</p>
                 </div>
-            </fieldset>
+            </div>
         </form>
     </section>
 
