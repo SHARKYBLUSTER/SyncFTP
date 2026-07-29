@@ -175,18 +175,6 @@
             </div>
         </div>
     </section>
-
-    <!-- Danger Zone -->
-    <section class="danger-zone" aria-labelledby="danger-zone-title">
-        <h3 id="danger-zone-title" class="config-section-title config-section-title--danger">⚠️ Zone dangereuse</h3>
-        
-        <div class="danger-actions">
-            <div class="danger-action">
-                <button class="btn btn--danger" onclick="confirmClearDatabase()" aria-label="Effacer les logs et l'historique. Attention, cette action est irréversible">🧹 Effacer les logs et l'historique</button>
-                <p class="form-hint">Supprime définitivement tous les logs et l'historique des synchronisations</p>
-            </div>
-        </div>
-    </section>
 {% endblock %}
 
 {% block scripts %}
@@ -197,24 +185,7 @@
             document.getElementById('mainConfigForm').reset();
         }
     }
-    
-    function confirmClearDatabase() {
-        if (confirm('⚠️ ÊTES-VOUS SÛR ? Cette action supprimera définitivement tous les logs et l\'historique. Elle est IRRÉVERSIBLE !')) {
-            fetch('/api/clear_database', {
-                method: 'POST',
-                headers: { 'X-Confirm': 'true' }
-            }).then(response => response.json())
-              .then(data => {
-                  if (data.success) {
-                      alert('Logs et historique supprimés');
-                      window.location.reload();
-                  } else {
-                      alert('Erreur: ' + (data.message || 'Action annulée'));
-                  }
-              });
-        }
-    }
-    
+
     // Form submission handler for main config form
     function handleMainConfigSubmit(e) {
         e.preventDefault();
