@@ -122,7 +122,7 @@ def load_config():
         'log_mode': 'standard',
         'auto_refresh': True,
         'corrupted_files_check_interval': 300,  # 5 minutes en secondes
-        'exclude_patterns': '*.tmp,*.part,*.temp,*.~lk,*.lock,Thumbs.db,desktop.ini,.github*,.env',  # Patterns à exclure
+        'exclude_patterns': '*.tmp,*.part,*.temp,*.~lk,*.lock,Thumbs.db,desktop.ini,.github/,.env',  # Patterns à exclure
         'debug_logging_enabled': False,  # Active les logs DEBUG de performance
         'task_save_throttle': 10,  # Nombre de fichiers entre chaque sauvegarde pendant la sync
         'small_file_timeout': 10,  # Timeout en secondes pour les petits fichiers
@@ -159,7 +159,7 @@ def load_config():
             config['corrupted_files_check_interval'] = 300
             save_config(config)
         if 'exclude_patterns' not in config:
-            config['exclude_patterns'] = '*.tmp,*.part,*.temp,*.~lk,*.lock,Thumbs.db,desktop.ini,.github*,.env'
+            config['exclude_patterns'] = '*.tmp,*.part,*.temp,*.~lk,*.lock,Thumbs.db,desktop.ini,.github/,.env'
             save_config(config)
         if 'debug_logging_enabled' not in config:
             config['debug_logging_enabled'] = False

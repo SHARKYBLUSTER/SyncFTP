@@ -34,13 +34,14 @@ class FTPConnectionError(Exception):
     pass
 
 
-def should_exclude_file(filename: str, exclude_patterns: str) -> bool:
+def should_exclude_file(filename: str, exclude_patterns: str, filepath: str = None) -> bool:
     """
     Vérifie si un fichier doit être exclu de la synchronisation.
     
     Args:
         filename: Nom du fichier à vérifier
-        exclude_patterns: Chaîne de patterns séparés par des virgules (ex: "*.tmp,*.part,Thumbs.db")
+        exclude_patterns: Chaîne de patterns séparés par des virgules (ex: "*.tmp,*.part,Thumbs.db,.github/")
+        filepath: Chemin complet du fichier (optionnel, permet d'exclure des répertoires entiers)
     
     Returns:
         bool: True si le fichier doit être exclu, False sinon
@@ -50,11 +51,19 @@ def should_exclude_file(filename: str, exclude_patterns: str) -> bool:
     
     patterns = [p.strip() for p in exclude_patterns.split(',') if p.strip()]
     for pattern in patterns:
+        # Vérifier le nom de fichier
         if fnmatch.fnmatch(filename, pattern):
             return True
-        # También verificar si el patrón coincide con la parte final del nombre (para casos como .tmp)
+        # Vérifier la fin du nom (pour *.tmp)
         if pattern.startswith('*') and filename.endswith(pattern[1:]):
             return True
+        # Vérifier le chemin complet si fourni (pour exclure des répertoires comme .github/)
+        if filepath:
+            if fnmatch.fnmatch(filepath, pattern):
+                return True
+            # Vérifier si le chemin contient le pattern (pour .github/)
+            if pattern in filepath:
+                return True
     return False
 
 
@@ -797,7 +806,7 @@ class FTPConnector:
                 filtered_source_files = {}
                 for filepath, size in source_files_dict.items():
                     filename = os.path.basename(filepath)
-                    if not should_exclude_file(filename, exclude_patterns):
+                    if not should_exclude_file(filename, exclude_patterns, filepath):
                         filtered_source_files[filepath] = size
                     else:
                         stats['excluded'] += 1

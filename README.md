@@ -214,7 +214,7 @@ python app.py --host 127.0.0.1 --port 8080
   "max_log_size_mb": 10,
   "auto_refresh": true,
   "corrupted_files_check_interval": 300,
-  "exclude_patterns": "*.tmp,*.part,*.temp,*.~lk,*.lock,Thumbs.db,desktop.ini,.github*,.env",
+  "exclude_patterns": "*.tmp,*.part,*.temp,*.~lk,*.lock,Thumbs.db,desktop.ini,.github/,.env",
   "debug_logging_enabled": false,
   "task_save_throttle": 10,
   "small_file_timeout": 10,
