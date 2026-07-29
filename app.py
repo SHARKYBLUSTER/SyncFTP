@@ -868,10 +868,10 @@ def index():
     return render_template('index.html', server_count=len(servers), task_count=len(tasks), app_name=APP_NAME, app_version=APP_VERSION)
 
 
-@app.route('/add')
-def add_page():
-    """Page d'ajout d'un serveur FTP"""
-    return render_template('add.html', app_name=APP_NAME, app_version=APP_VERSION)
+# @app.route('/add')
+# def add_page():
+#     """Page d'ajout d'un serveur FTP - Désactivée car remplacée par la modale dans /list"""
+#     return render_template('add.html', app_name=APP_NAME, app_version=APP_VERSION)
 
 
 @app.route('/list')
@@ -1112,6 +1112,37 @@ def add_server():
     app.logger.info(f"Serveur FTP ajouté: {server['name']} ({server['host']})")
     
     return redirect(url_for('index'))
+
+
+@app.route('/add_server_ajax', methods=['POST'])
+def add_server_ajax():
+    """Ajoute un nouveau serveur FTP via AJAX (retourne JSON)"""
+    data = request.form.to_dict()
+    
+    # Générer un ID unique
+    import uuid
+    server_id = str(uuid.uuid4())
+    
+    server = {
+        'id': server_id,
+        'name': data.get('name', 'Nouveau Serveur'),
+        'host': data.get('host', ''),
+        'port': data.get('port', '21'),
+        'username': data.get('username', 'anonymous'),
+        'password': data.get('password', ''),
+        'use_ssl': data.get('use_ssl') == 'true',
+        'timeout': data.get('timeout', '30'),
+        'test_directory': data.get('test_directory', ''),
+        'created_at': datetime.now().isoformat()
+    }
+    
+    servers = load_servers()
+    servers.append(server)
+    save_servers(servers)
+    
+    app.logger.info(f"Serveur FTP ajouté via AJAX: {server['name']} ({server['host']})")
+    
+    return jsonify({'success': True, 'server_id': server_id, 'message': 'Serveur ajouté avec succès'})
 
 
 @app.route('/delete_server/<server_id>', methods=['POST'])

@@ -2,6 +2,16 @@
    List Page Specific Styles - SyncFTP
    ============================================ */
 
+/* Section Header */
+.section-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: var(--spacing-lg);
+    flex-wrap: wrap;
+    gap: var(--spacing-md);
+}
+
 /* Servers Grid */
 .servers-grid {
     display: grid;

@@ -10,7 +10,10 @@
 
     <!-- Servers List Section -->
     <section aria-labelledby="servers-title">
-        <h2 id="servers-title" class="section-title">📋 Vos serveurs FTP</h2>
+        <div class="section-header">
+            <h2 id="servers-title" class="section-title">📋 Vos serveurs FTP</h2>
+            <button id="addServerBtn" class="btn btn--primary" onclick="openAddServerModal()" aria-label="Ajouter un serveur FTP">➕ Ajouter un serveur FTP</button>
+        </div>
         
         {% if servers %}
             <div class="servers-grid">
@@ -49,10 +52,80 @@
             <div class="alert alert--info">
                 <div class="alert-content">
                     <h4 class="alert-title">➖ Aucun serveur FTP enregistré</h4>
-                    <p class="alert-message">Ajoutez un serveur via le menu "AJOUTER SERVEUR FTP"</p>
+                    <p class="alert-message">Ajoutez un serveur en cliquant sur le bouton "Ajouter un serveur FTP" ci-dessus</p>
                 </div>
             </div>
         {% endif %}
+
+    <!-- Add Server Modal -->
+    <div id="addServerModal" class="modal-overlay" role="dialog" aria-modal="true" aria-labelledby="addServerModalTitle" aria-hidden="true">
+        <div class="modal" role="document">
+            <div class="modal-header">
+                <h2 id="addServerModalTitle" class="modal-title">➕ Ajouter un serveur FTP</h2>
+                <button class="modal-close" onclick="closeAddServerModal()" aria-label="Fermer la fenêtre modale" type="button">&times;</button>
+            </div>
+            <div class="modal-body">
+                <form id="addServerForm" aria-labelledby="addServerModalTitle">
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label for="serverName" class="form-label form-label--required">Nom du serveur</label>
+                            <input type="text" id="serverName" name="name" required placeholder="Mon Serveur FTP" class="form-control form-input" aria-required="true" aria-describedby="serverNameHelp">
+                            <p id="serverNameHelp" class="form-hint">Nom unique pour identifier ce serveur FTP</p>
+                        </div>
+                        <div class="form-group">
+                            <label for="serverHost" class="form-label form-label--required">Hôte</label>
+                            <input type="text" id="serverHost" name="host" required placeholder="ftp.example.com" class="form-control form-input" aria-required="true" aria-describedby="serverHostHelp">
+                            <p id="serverHostHelp" class="form-hint">Adresse IP ou nom d'hôte du serveur FTP</p>
+                        </div>
+                    </div>
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label for="serverPort" class="form-label">Port</label>
+                            <input type="number" id="serverPort" name="port" value="21" min="1" max="65535" class="form-control form-input" aria-describedby="serverPortHelp">
+                            <p id="serverPortHelp" class="form-hint">Port du serveur FTP (par défaut: 21)</p>
+                        </div>
+                        <div class="form-group">
+                            <label for="serverUsername" class="form-label">Utilisateur</label>
+                            <input type="text" id="serverUsername" name="username" value="anonymous" class="form-control form-input" aria-describedby="serverUsernameHelp">
+                            <p id="serverUsernameHelp" class="form-hint">Nom d'utilisateur pour la connexion FTP</p>
+                        </div>
+                    </div>
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label for="serverPassword" class="form-label">Mot de passe</label>
+                            <input type="password" id="serverPassword" name="password" class="form-control form-input" aria-describedby="serverPasswordHelp">
+                            <p id="serverPasswordHelp" class="form-hint">Mot de passe pour la connexion FTP (facultatif pour l'anonyme)</p>
+                        </div>
+                        <div class="form-group">
+                            <label for="serverTimeout" class="form-label">Timeout (secondes)</label>
+                            <input type="number" id="serverTimeout" name="timeout" value="30" min="1" class="form-control form-input" aria-describedby="serverTimeoutHelp">
+                            <p id="serverTimeoutHelp" class="form-hint">Temps d'attente maximal pour la connexion en secondes</p>
+                        </div>
+                    </div>
+                    <fieldset class="form-row">
+                        <legend class="sr-only">Options de connexion</legend>
+                        <div class="form-group">
+                            <div class="form-check">
+                                <input type="checkbox" id="serverUseSsl" name="use_ssl" value="true" class="form-check-input">
+                                <label for="serverUseSsl" class="form-check-label">Utiliser SSL (FTPS)</label>
+                            </div>
+                        </div>
+                        <div class="form-group">
+                            <label for="serverTestDirectory" class="form-label">Répertoire à tester</label>
+                            <input type="text" id="serverTestDirectory" name="test_directory" placeholder="/chemin/vers/dossier" class="form-control form-input" aria-describedby="serverTestDirectoryHelp">
+                            <p id="serverTestDirectoryHelp" class="form-hint">Chemin du répertoire à tester sur le serveur</p>
+                        </div>
+                    </fieldset>
+                </form>
+            </div>
+            <div class="modal-footer">
+                <button type="button" id="saveServerBtn" class="btn btn--primary" onclick="saveServer()" aria-label="Enregistrer le serveur FTP">
+                    <span id="saveServerBtnText">💾 ENREGISTRER</span>
+                    <span id="saveServerBtnLoading" class="spinner-sm d-none" aria-hidden="true"></span>
+                </button>
+                <button type="button" class="btn btn--secondary" onclick="closeAddServerModal()" aria-label="Annuler">Annuler</button>
+            </div>
+        </div>
     </div>
 
     <!-- Test Results Section -->
@@ -100,6 +173,7 @@
 <script>
     // Modal accessibility utilities
     let lastFocusedElement = null;
+    let lastFocusedElementAddServer = null;
 
     function openModal() {
         const modal = document.getElementById('testModal');
@@ -202,6 +276,106 @@
             document.getElementById('serverSelect').value = serverId;
             openModal();
         });
+    });
+
+    // Add Server Modal Functions
+    function openAddServerModal() {
+        const modal = document.getElementById('addServerModal');
+        lastFocusedElementAddServer = document.activeElement;
+        modal.classList.add('is-open');
+        // Focus first focusable element in modal
+        const focusableElements = modal.querySelectorAll('button, [href], input, select, textarea, [tabindex]:not([tabindex="-1"])');
+        if (focusableElements.length > 0) {
+            focusableElements[0].focus();
+        }
+        modal.setAttribute('aria-hidden', 'false');
+        document.body.style.overflow = 'hidden';
+        // Reset form
+        document.getElementById('addServerForm').reset();
+    }
+
+    function closeAddServerModal() {
+        const modal = document.getElementById('addServerModal');
+        modal.classList.remove('is-open');
+        modal.setAttribute('aria-hidden', 'true');
+        document.body.style.overflow = '';
+        // Return focus to previously focused element
+        if (lastFocusedElementAddServer) {
+            lastFocusedElementAddServer.focus();
+        }
+    }
+
+    function saveServer() {
+        const form = document.getElementById('addServerForm');
+        const formData = new FormData(form);
+        const submitBtn = document.getElementById('saveServerBtn');
+        const submitBtnText = document.getElementById('saveServerBtnText');
+        const submitBtnLoading = document.getElementById('saveServerBtnLoading');
+
+        // Validate required fields
+        const name = document.getElementById('serverName').value;
+        const host = document.getElementById('serverHost').value;
+        
+        if (!name || !host) {
+            alert('Veuillez remplir les champs obligatoires (Nom du serveur et Hôte)');
+            return;
+        }
+
+        submitBtnText.textContent = 'Enregistrement...';
+        submitBtnLoading.classList.remove('d-none');
+        submitBtn.disabled = true;
+
+        fetch('/add_server_ajax', {
+            method: 'POST',
+            body: formData
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                closeAddServerModal();
+                // Refresh the page to show the new server
+                window.location.reload();
+            } else {
+                alert('Erreur: ' + (data.error || 'Impossible d\'ajouter le serveur'));
+            }
+        })
+        .catch(error => {
+            alert('Erreur: ' + error.toString());
+        })
+        .finally(() => {
+            submitBtnText.textContent = '💾 ENREGISTRER';
+            submitBtnLoading.classList.add('d-none');
+            submitBtn.disabled = false;
+        });
+    }
+
+    // Focus trap for add server modal
+    document.addEventListener('keydown', function(e) {
+        const modal = document.getElementById('addServerModal');
+        if (!modal.classList.contains('is-open')) return;
+        
+        // Escape key closes modal
+        if (e.key === 'Escape') {
+            closeAddServerModal();
+            return;
+        }
+        
+        // Focus trap
+        if (e.key === 'Tab') {
+            const focusableElements = modal.querySelectorAll('button, [href], input, select, textarea, [tabindex]:not([tabindex="-1"])');
+            if (focusableElements.length === 0) return;
+            
+            const firstElement = focusableElements[0];
+            const lastElement = focusableElements[focusableElements.length - 1];
+            
+            if (e.shiftKey && document.activeElement === firstElement) {
+                lastElement.focus();
+                e.preventDefault();
+            } else if (!e.shiftKey && document.activeElement === lastElement) {
+                firstElement.focus();
+                e.preventDefault();
+            }
+        }
     });
 </script>
 {% endblock %}
