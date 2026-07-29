@@ -240,18 +240,25 @@ def debug_log(message):
         app.logger.debug(f"[PERF] {message}")
 
 
-def should_save_tasks():
+def should_save_tasks(force_during_sync=False):
     """
     Vérifie si on doit sauvegarder les tâches en fonction du throttle configuré.
     Utilise un compteur thread-safe pour limiter la fréquence des sauvegardes.
+    Si force_during_sync est True, on sauvegarde plus souvent (toutes les 2 fois au lieu de 10).
     """
     global task_save_counter
     config = load_config()
     throttle = config.get('task_save_throttle', 10)
     
+    # Pendant une synchronisation active, on sauvegarde plus souvent pour les stats en temps réel
+    if force_during_sync:
+        effective_throttle = 2  # Sauvegarder toutes les 2 progressions pendant une sync
+    else:
+        effective_throttle = throttle
+    
     with task_save_counter_lock:
         task_save_counter += 1
-        if task_save_counter >= throttle:
+        if task_save_counter >= effective_throttle:
             task_save_counter = 0
             return True
         return False
@@ -622,8 +629,8 @@ def execute_sync_task(task):
                             debug_log(f"Tâche {task['id']}: Progression {uploaded}/{total} ({percentage:.1f}%), "
                                     f"vitesse: {speed:.2f} fichiers/s, temps écoulé: {elapsed:.1f}s")
                     
-                    # Sauvegarder uniquement si le throttle le permet
-                    if should_save_tasks():
+                    # Sauvegarder les tâches toutes les 2 progressions pendant l'exécution pour des stats quasi temps réel
+                    if should_save_tasks(force_during_sync=True):
                         save_tasks(tasks)
             
             # Exécuter la synchronisation
@@ -1364,11 +1371,10 @@ def api_sync_stats():
             result = task.get('last_result', {})
             stats = result.get('stats', {})
             
-            # Si last_result est vide mais que la tâche est en cours depuis un moment,
-            # on peut essayer de charger les stats depuis le fichier
-            if not stats and task.get('running_since'):
-                # Pour les tâches en cours, les stats sont dans last_result seulement à la fin
-                # Donc on initialise avec des valeurs par défaut
+            # Si last_result existe mais stats est vide, on garde les valeurs par défaut
+            # Les stats sont mises à jour en temps réel via progress_callback dans execute_sync_task
+            if not stats:
+                # Initialiser avec des valeurs par défaut si aucune stat disponible
                 stats = {}
             
             sync_info = {
