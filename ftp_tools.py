@@ -887,7 +887,7 @@ class FTPConnector:
                             logger.info(message)
                         else:
                             stats['errors'] += 1
-                            stats['failed_files'].append(relative_path)
+                            stats['failed_files'].append({'path': relative_path, 'size': file_size})
                             logger.error(message)
                             
                         if success:
@@ -944,11 +944,11 @@ class FTPConnector:
 
                 except ftplib.all_errors as e:
                     stats['errors'] += 1
-                    stats['failed_files'].append(relative_path)
+                    stats['failed_files'].append({'path': relative_path, 'size': 0})
                     logger.error(f"Erreur lors de la suppression de {relative_path}: {e}")
                 except Exception as e:
                     stats['errors'] += 1
-                    stats['failed_files'].append(relative_path)
+                    stats['failed_files'].append({'path': relative_path, 'size': 0})
                     logger.error(f"Erreur inattendue lors de la suppression de {relative_path}: {e}")
             
             # Fin de la phase de suppression

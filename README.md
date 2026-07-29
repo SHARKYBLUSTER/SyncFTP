@@ -1,6 +1,6 @@
 # SyncFTP
 
-**Version 2.5.2**
+**Version 2.5.3**
 
 **Application Web de Gestion et Synchronisation FTP**
 
@@ -111,6 +111,16 @@ python -m venv venv
 source venv/Scripts/activate
 pip install flask
 ```
+
+## Mise à jour
+
+Pour mettre à jour l'application vers la dernière version :
+
+```bash
+git pull origin main
+```
+
+Cette commande télécharge et applique automatiquement les dernières modifications depuis le dépôt GitHub.
 
 ## Utilisation
 
@@ -276,6 +286,7 @@ Licence libre - Utilisation, modification et distribution autorisées.
 
 ## Historique des versions
 
+- **2.5.3** - Ajout section mise à jour via git pull dans README
 - **2.5.2** - Correction réactivation bouton arrêt serveur
 - **2.5.1** - Ajout bouton arret serveur dans page configuration
 - **2.5.0** - Affichage des fichiers échoués par tâche sur le tableau de bord, suppression du copyright, améliorations UI

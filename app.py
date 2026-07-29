@@ -31,7 +31,7 @@ logging.SUCCESS = 25
 
 # Configuration
 APP_NAME = "SyncFTP"
-APP_VERSION = "2.5.2"
+APP_VERSION = "2.5.3"
 DATA_FILE = "ftp_servers.json"
 TASKS_FILE = "sync_tasks.json"
 LOG_FILE = "app.log"
@@ -886,9 +886,19 @@ def index():
             stats = task['last_result'].get('stats', {})
             if 'failed_files' in stats:
                 for file in stats['failed_files']:
+                    # Gérer les anciens formats (chaîne) et le nouveau format (dict)
+                    if isinstance(file, dict):
+                        file_path = file.get('path', 'Chemin inconnu')
+                        file_size = file.get('size', 0)
+                    else:
+                        # Ancien format: juste le chemin en chaîne
+                        file_path = file
+                        file_size = 0
+                    
                     failed_files.append({
                         'task_name': task.get('name', 'Tâche inconnue'),
-                        'file_name': file
+                        'file_path': file_path,
+                        'file_size': file_size
                     })
     
     return render_template('index.html', 
@@ -1665,9 +1675,19 @@ def api_failed_files():
             stats = task['last_result'].get('stats', {})
             if 'failed_files' in stats:
                 for file in stats['failed_files']:
+                    # Gérer les anciens formats (chaîne) et le nouveau format (dict)
+                    if isinstance(file, dict):
+                        file_path = file.get('path', 'Chemin inconnu')
+                        file_size = file.get('size', 0)
+                    else:
+                        # Ancien format: juste le chemin en chaîne
+                        file_path = file
+                        file_size = 0
+                    
                     failed_files.append({
                         'task_name': task.get('name', 'Tâche inconnue'),
-                        'file_name': file
+                        'file_path': file_path,
+                        'file_size': file_size
                     })
     
     return jsonify({

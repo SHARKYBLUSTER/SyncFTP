@@ -31,7 +31,7 @@
         <article class="stat-card">
             <div class="icon">❌</div>
             <div class="value">{{ failed_count }}</div>
-            <div class="label">fichiers échoués</div>
+            <div class="label">Tâches échouées</div>
             <button onclick="resetFailedTasks()" class="btn btn-sm btn-secondary mt-sm" title="Réinitialiser les tâches échouées">🔄 Réinitialiser</button>
         </article>
         <article class="stat-card">
@@ -44,13 +44,24 @@
             <div class="value">{{ idle_count }}</div>
             <div class="label">Tâches inactives</div>
         </article>
-        <article class="stat-card failed-files-card" style="display: none;">
-            <div class="icon">❌</div>
-            <div class="value">0</div>
-            <div class="label">Fichiers échoués</div>
-            <div class="failed-files-list"></div>
-        </article>
     </div>
+
+    <!-- Section pour les fichiers échoués -->
+    <section class="failed-files-section" style="display: none;">
+        <h3>📋 Fichiers échoués (<span class="failed-files-count">0</span>)</h3>
+        <div class="failed-files-container">
+            <table class="failed-files-table">
+                <thead>
+                    <tr>
+                        <th>Tâche</th>
+                        <th>Chemin du fichier</th>
+                        <th>Taille</th>
+                    </tr>
+                </thead>
+                <tbody class="failed-files-list"></tbody>
+            </table>
+        </div>
+    </section>
 {% endblock %}
 
 {% block scripts %}
@@ -85,15 +96,35 @@ function refreshFailedFiles() {
     .then(data => {
         if (data.success) {
             const container = document.querySelector('.failed-files-list');
-            const countElement = document.querySelector('.failed-files-card .value');
-            const card = document.querySelector('.failed-files-card');
+            const countElement = document.querySelector('.failed-files-count');
+            const section = document.querySelector('.failed-files-section');
             
             if (data.failed_files && data.failed_files.length > 0) {
                 let html = '';
                 data.failed_files.forEach(item => {
                     const taskName = escapeHtml(item.task_name || 'Tâche inconnue');
-                    const fileName = escapeHtml(item.file_name || 'Fichier inconnu');
-                    html += `<div class="failed-file-item"><strong>${taskName}:</strong> ${fileName}</div>`;
+                    const filePath = escapeHtml(item.file_path || 'Chemin inconnu');
+                    const fileSize = item.file_size || 0;
+                    
+                    // Formater la taille
+                    let sizeDisplay = '0 octets';
+                    if (fileSize > 0) {
+                        if (fileSize < 1024) {
+                            sizeDisplay = fileSize + ' octets';
+                        } else if (fileSize < 1024 * 1024) {
+                            sizeDisplay = (fileSize / 1024).toFixed(2) + ' Ko';
+                        } else if (fileSize < 1024 * 1024 * 1024) {
+                            sizeDisplay = (fileSize / (1024 * 1024)).toFixed(2) + ' Mo';
+                        } else {
+                            sizeDisplay = (fileSize / (1024 * 1024 * 1024)).toFixed(2) + ' Go';
+                        }
+                    }
+                    
+                    html += `<tr class="failed-file-item">
+                        <td>${taskName}</td>
+                        <td title="${filePath}">${filePath}</td>
+                        <td>${sizeDisplay}</td>
+                    </tr>`;
                 });
                 
                 if (container) {
@@ -102,8 +133,8 @@ function refreshFailedFiles() {
                 if (countElement) {
                     countElement.textContent = data.count;
                 }
-                if (card) {
-                    card.style.display = 'block';
+                if (section) {
+                    section.style.display = 'block';
                 }
             } else {
                 if (container) {
@@ -112,8 +143,8 @@ function refreshFailedFiles() {
                 if (countElement) {
                     countElement.textContent = '0';
                 }
-                if (card) {
-                    card.style.display = 'none';
+                if (section) {
+                    section.style.display = 'none';
                 }
             }
         }
