@@ -7,6 +7,11 @@
     'use strict';
 
     // ========================================
+    // Global Namespace
+    // ========================================
+    window.SyncFTP = window.SyncFTP || {};
+
+    // ========================================
     // Utility Functions
     // ========================================
 
@@ -27,6 +32,7 @@
             announcer.textContent = '';
         }, 1000);
     }
+    window.SyncFTP.announce = announceToScreenReader;
 
     /**
      * Toggle loading state for a button
@@ -47,6 +53,7 @@
             btn.removeAttribute('disabled');
         }
     }
+    window.SyncFTP.toggleButtonLoading = toggleButtonLoading;
 
     /**
      * Show loading overlay on a form or container
@@ -70,6 +77,7 @@
             cont.removeAttribute('aria-busy');
         }
     }
+    window.SyncFTP.toggleLoadingOverlay = toggleLoadingOverlay;
 
     /**
      * Validate form field and show feedback
@@ -132,6 +140,7 @@
             return true;
         }
     }
+    window.SyncFTP.validateField = validateField;
 
     /**
      * Debounce function for performance
@@ -147,6 +156,36 @@
             timeout = setTimeout(later, wait);
         };
     }
+
+    // ========================================
+    // Custom Validators
+    // ========================================
+
+    /**
+     * Validate FTP port number
+     */
+    function validateFtpPort(value) {
+        const port = parseInt(value, 10);
+        return {
+            isValid: !value || (port >= 1 && port <= 65535),
+            message: 'Le port doit être compris entre 1 et 65535'
+        };
+    }
+    window.SyncFTP.validateFtpPort = validateFtpPort;
+
+    /**
+     * Validate FTP path
+     */
+    function validateFtpPath(value) {
+        if (!value) return { isValid: true };
+        // Basic check for valid path characters
+        const invalidChars = /[<>:"|?*]/;
+        return {
+            isValid: !invalidChars.test(value),
+            message: 'Le chemin contient des caractères non valides'
+        };
+    }
+    window.SyncFTP.validateFtpPath = validateFtpPath;
 
     // ========================================
     // Auto-Init Features
@@ -220,7 +259,7 @@
                 default:
                     // Custom validation function (if provided in data-validate)
                     try {
-                        validator = window[validateType] || (() => ({ isValid: true }));
+                        validator = window[validateType] || window.SyncFTP[validateType] || (() => ({ isValid: true }));
                     } catch {
                         validator = () => ({ isValid: true });
                     }
@@ -298,13 +337,6 @@
         
         // Announce page load (delayed to allow content to render)
         setTimeout(announcePageLoaded, 500);
-        
-        // Add global loading state utilities
-        window.SyncFTP = window.SyncFTP || {};
-        window.SyncFTP.toggleButtonLoading = toggleButtonLoading;
-        window.SyncFTP.toggleLoadingOverlay = toggleLoadingOverlay;
-        window.SyncFTP.announce = announceToScreenReader;
-        window.SyncFTP.validateField = validateField;
     }
 
     // Run initialization
@@ -322,31 +354,3 @@
         document.body.addEventListener('htmx:afterSettle', init);
     }
 })();
-
-// ========================================
-// Custom Validators (can be extended)
-// ========================================
-
-/**
- * Validate FTP port number
- */
-function validateFtpPort(value) {
-    const port = parseInt(value, 10);
-    return {
-        isValid: !value || (port >= 1 && port <= 65535),
-        message: 'Le port doit être compris entre 1 et 65535'
-    };
-}
-
-/**
- * Validate FTP path
- */
-function validateFtpPath(value) {
-    if (!value) return { isValid: true };
-    // Basic check for valid path characters
-    const invalidChars = /[<>:"|?*]/;
-    return {
-        isValid: !invalidChars.test(value),
-        message: 'Le chemin contient des caractères non valides'
-    };
-}

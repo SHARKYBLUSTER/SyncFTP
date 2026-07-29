@@ -872,11 +872,15 @@ header h1 {
     right: 0;
     bottom: 0;
     background: rgba(0, 0, 0, 0.5);
-    display: flex;
+    display: none;
     align-items: center;
     justify-content: center;
     z-index: var(--z-modal-backdrop);
     backdrop-filter: blur(4px);
+}
+
+.modal-overlay.is-open {
+    display: flex;
 }
 
 .modal {
@@ -1052,21 +1056,21 @@ header h1 {
 .d-lg-block { display: block; }
 
 @media (min-width: 640px) {
-    .d-sm-none { display: none !important; }
-    .d-sm-block { display: block !important; }
-    .d-sm-flex { display: flex !important; }
+    .d-sm-none { display: none; }
+    .d-sm-block { display: block; }
+    .d-sm-flex { display: flex; }
 }
 
 @media (min-width: 768px) {
-    .d-md-none { display: none !important; }
-    .d-md-block { display: block !important; }
-    .d-md-flex { display: flex !important; }
+    .d-md-none { display: none; }
+    .d-md-block { display: block; }
+    .d-md-flex { display: flex; }
 }
 
 @media (min-width: 1024px) {
-    .d-lg-none { display: none !important; }
-    .d-lg-block { display: block !important; }
-    .d-lg-flex { display: flex !important; }
+    .d-lg-none { display: none; }
+    .d-lg-block { display: block; }
+    .d-lg-flex { display: flex; }
 }
 
 /* Responsive utilities */

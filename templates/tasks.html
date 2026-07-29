@@ -71,7 +71,7 @@
     </section>
 
     <!-- Task Configuration Modal -->
-    <div id="taskModal" class="modal-overlay d-none" role="dialog" aria-modal="true" aria-labelledby="taskModalTitle" aria-hidden="true">
+    <div id="taskModal" class="modal-overlay" role="dialog" aria-modal="true" aria-labelledby="taskModalTitle" aria-hidden="true">
         <div class="modal" role="document">
             <div class="modal-header">
                 <h2 id="taskModalTitle" class="modal-title">⚙️ Configurer une tâche de synchronisation</h2>
@@ -137,7 +137,7 @@
     function openTaskModal(taskId = '') {
         const modal = document.getElementById('taskModal');
         lastFocusedElementTask = document.activeElement;
-        modal.style.display = 'flex';
+        modal.classList.add('is-open');
         
         if (taskId) {
             // Edit mode - load task data
@@ -174,7 +174,7 @@
 
     function closeTaskModal() {
         const modal = document.getElementById('taskModal');
-        modal.style.display = 'none';
+        modal.classList.remove('is-open');
         modal.setAttribute('aria-hidden', 'true');
         document.body.style.overflow = '';
         // Return focus to previously focused element
@@ -186,7 +186,7 @@
     // Focus trap for task modal
     document.addEventListener('keydown', function(e) {
         const modal = document.getElementById('taskModal');
-        if (modal.style.display !== 'flex') return;
+        if (!modal.classList.contains('is-open')) return;
         
         // Escape key closes modal
         if (e.key === 'Escape') {
@@ -197,6 +197,8 @@
         // Focus trap
         if (e.key === 'Tab') {
             const focusableElements = modal.querySelectorAll('button, [href], input, select, textarea, [tabindex]:not([tabindex="-1"])');
+            if (focusableElements.length === 0) return;
+            
             const firstElement = focusableElements[0];
             const lastElement = focusableElements[focusableElements.length - 1];
             

@@ -42,7 +42,7 @@
                                 <button type="submit" class="btn btn--danger btn--sm" onclick="return confirm('Êtes-vous sûr de vouloir supprimer ce serveur ?')">🗑️ Supprimer</button>
                             </form>
                         </div>
-                    </div>
+                    </article>
                 {% endfor %}
             </div>
         {% else %}
@@ -64,7 +64,7 @@
     </div>
 
     <!-- Test Modal -->
-    <div id="testModal" class="modal-overlay d-none" role="dialog" aria-modal="true" aria-labelledby="testModalTitle" aria-hidden="true">
+    <div id="testModal" class="modal-overlay" role="dialog" aria-modal="true" aria-labelledby="testModalTitle" aria-hidden="true">
         <div class="modal" role="document">
             <div class="modal-header">
                 <h2 id="testModalTitle" class="modal-title">🔍 Tester la connexion FTP</h2>
@@ -104,8 +104,7 @@
     function openModal() {
         const modal = document.getElementById('testModal');
         lastFocusedElement = document.activeElement;
-        modal.classList.remove('d-none');
-        modal.style.display = 'flex';
+        modal.classList.add('is-open');
         // Focus first focusable element in modal
         const focusableElements = modal.querySelectorAll('button, [href], input, select, textarea, [tabindex]:not([tabindex="-1"])');
         if (focusableElements.length > 0) {
@@ -118,8 +117,7 @@
 
     function closeModal() {
         const modal = document.getElementById('testModal');
-        modal.classList.add('d-none');
-        modal.style.display = 'none';
+        modal.classList.remove('is-open');
         modal.setAttribute('aria-hidden', 'true');
         document.body.style.overflow = '';
         // Return focus to previously focused element
@@ -131,7 +129,7 @@
     // Focus trap for modal
     document.addEventListener('keydown', function(e) {
         const modal = document.getElementById('testModal');
-        if (modal.classList.contains('d-none')) return;
+        if (!modal.classList.contains('is-open')) return;
         
         // Escape key closes modal
         if (e.key === 'Escape') {
@@ -142,6 +140,8 @@
         // Focus trap
         if (e.key === 'Tab') {
             const focusableElements = modal.querySelectorAll('button, [href], input, select, textarea, [tabindex]:not([tabindex="-1"])');
+            if (focusableElements.length === 0) return;
+            
             const firstElement = focusableElements[0];
             const lastElement = focusableElements[focusableElements.length - 1];
             
