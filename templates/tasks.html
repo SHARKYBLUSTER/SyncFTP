@@ -50,6 +50,9 @@
                                 <td>{{ task.last_run|default('Jamais') }}</td>
                                 <td class="action-btns">
                                     <button class="action-btn action-btn--sync" onclick="runTask({{ task.id }})" title="Exécuter" aria-label="Exécuter la tâche {{ task.name }}">🔄</button>
+                                    <button onclick="toggleTask('{{ task.id }}')" class="action-btn action-btn--toggle" title="{{ 'Désactiver' if task.enabled|default(false) else 'Activer' }} la synchronisation automatique" aria-label="{{ 'Désactiver' if task.enabled|default(false) else 'Activer' }} la synchronisation automatique pour {{ task.name }}">
+                                        {% if task.enabled|default(false) %}✅{% else %}❌{% endif %}
+                                    </button>
                                     <button onclick="openTaskModal('{{ task.id }}')" class="action-btn action-btn--edit" title="Modifier" aria-label="Modifier la tâche {{ task.name }}">✏️</button>
                                     <form action="/delete_task/{{ task.id }}" method="POST" class="d-inline">
                                         <button type="submit" class="action-btn action-btn--delete" onclick="return confirm('Êtes-vous sûr ?')" title="Supprimer" aria-label="Supprimer la tâche {{ task.name }}">🗑️</button>
@@ -243,6 +246,22 @@
             }
         }
     });
+
+    function toggleTask(taskId) {
+        fetch('/toggle_task/' + taskId, {method: 'POST'})
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    // Recharger la page pour mettre à jour l'icône
+                    location.reload();
+                } else {
+                    alert('Erreur: ' + (data.message || 'Impossible de modifier la tâche'));
+                }
+            })
+            .catch(error => {
+                alert('Erreur: Impossible de contacter le serveur');
+            });
+    }
 
     function runTask(taskId) {
         if (confirm('Exécuter cette tâche maintenant ?')) {
