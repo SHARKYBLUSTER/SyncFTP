@@ -25,6 +25,7 @@ from ftp_tools import FTPConfig, FTPConnector
 
 # Configuration
 APP_NAME = "FTP Server Manager"
+APP_VERSION = "1.0.0"
 DATA_FILE = "ftp_servers.json"
 TASKS_FILE = "sync_tasks.json"
 LOG_FILE = "app.log"
@@ -723,33 +724,33 @@ def index():
     """Page d'accueil - tableau de bord"""
     servers = load_servers()
     tasks = load_tasks()
-    return render_template('index.html', server_count=len(servers), task_count=len(tasks), app_name=APP_NAME)
+    return render_template('index.html', server_count=len(servers), task_count=len(tasks), app_name=APP_NAME, app_version=APP_VERSION)
 
 
 @app.route('/add')
 def add_page():
     """Page d'ajout d'un serveur FTP"""
-    return render_template('add.html', app_name=APP_NAME)
+    return render_template('add.html', app_name=APP_NAME, app_version=APP_VERSION)
 
 
 @app.route('/list')
 def list_servers():
     """Page de liste des serveurs"""
     servers = load_servers()
-    return render_template('list.html', servers=servers, app_name=APP_NAME)
+    return render_template('list.html', servers=servers, app_name=APP_NAME, app_version=APP_VERSION)
 
 
 @app.route('/logs')
 def logs_page():
     """Page d'affichage des logs"""
-    return render_template('logs.html', app_name=APP_NAME)
+    return render_template('logs.html', app_name=APP_NAME, app_version=APP_VERSION)
 
 
 @app.route('/config')
 def config_page():
     """Page de configuration"""
     config = load_config()
-    return render_template('config.html', config=config, app_name=APP_NAME)
+    return render_template('config.html', config=config, app_name=APP_NAME, app_version=APP_VERSION)
 
 
 def recreate_file_handler():
@@ -957,7 +958,7 @@ def tasks_page():
     # Masquer les mots de passe
     for server in servers:
         server['password'] = '********' if server.get('password') else ''
-    return render_template('tasks.html', tasks=tasks, servers=servers, app_name=APP_NAME)
+    return render_template('tasks.html', tasks=tasks, servers=servers, app_name=APP_NAME, app_version=APP_VERSION)
 
 
 @app.route('/api/tasks', methods=['GET'])
