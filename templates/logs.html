@@ -80,7 +80,7 @@
 
 {% block scripts %}
 <script>
-    let autoScrollEnabled = false;
+    let autoScrollEnabled = true;
     
     function refreshLogs() {
         const levelFilter = document.getElementById('logLevelFilter').value;
@@ -108,7 +108,9 @@
                 }
                 
                 logsContent.innerHTML = html;
-                scrollToTop();
+                if (autoScrollEnabled) {
+                    scrollToTop();
+                }
             });
     }
     
@@ -123,6 +125,9 @@
                 .then(data => {
                     if (data.success) {
                         document.getElementById('logsContent').innerHTML = '<div class="log-entry"><span class="log-message text-muted">Logs effacés</span></div>';
+                        if (autoScrollEnabled) {
+                            scrollToTop();
+                        }
                     } else {
                         alert('Erreur: ' + (data.message || 'Impossible d\'effacer les logs'));
                     }
@@ -135,7 +140,7 @@
         const btn = document.getElementById('autoScrollBtn');
         btn.textContent = autoScrollEnabled ? '📍 Suivre: ACTIF' : '📍 Suivre';
         if (autoScrollEnabled) {
-            refreshLogs();
+            scrollToTop();
         }
     }
     
