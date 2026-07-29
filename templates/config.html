@@ -19,11 +19,11 @@
         </div>
     </section>
 
-    <!-- General Configuration -->
+    <!-- Main Configuration Form -->
     <section aria-labelledby="general-config-title">
         <h3 id="general-config-title" class="config-section-title">📋 Paramètres généraux</h3>
         
-        <form id="generalConfigForm" action="/save_config" method="POST" class="mt-lg" aria-label="Formulaire de configuration générale">
+        <form id="mainConfigForm" action="/api/config" method="POST" class="mt-lg" aria-label="Formulaire de configuration principale">
             <fieldset>
                 <legend class="sr-only">Paramètres généraux</legend>
                 <div class="form-row">
@@ -40,32 +40,21 @@
                 </div>
                 
                 <div class="form-group">
-                    <label for="defaultTimeout" class="form-label">Timeout par défaut (secondes)</label>
-                    <input type="number" id="defaultTimeout" name="default_timeout" value="{{ config.default_timeout|default(30) }}" min="1" class="form-control form-input config-input-narrow" data-validate="number" aria-describedby="defaultTimeoutHelp">
-                    <p id="defaultTimeoutHelp" class="form-hint">Timeout de connexion par défaut pour les nouveaux serveurs</p>
+                    <div class="form-check">
+                        <input type="checkbox" id="autoRefresh" name="auto_refresh" value="true" {% if config.auto_refresh|default(true) %}checked{% endif %} class="form-check-input">
+                        <label for="autoRefresh" class="form-check-label">Rafraîchissement automatique</label>
+                    </div>
+                    <p class="form-hint">Rafraîchir automatiquement les données</p>
                 </div>
                 
                 <div class="form-group">
                     <div class="form-check">
-                        <input type="checkbox" id="autoSyncEnabled" name="auto_sync_enabled" value="true" {% if config.auto_sync_enabled|default(false) %}checked{% endif %} class="form-check-input">
-                        <label for="autoSyncEnabled" class="form-check-label">Activer la synchronisation automatique par défaut</label>
+                        <input type="checkbox" id="debugLogging" name="debug_logging_enabled" value="true" {% if config.debug_logging_enabled|default(false) %}checked{% endif %} class="form-check-input">
+                        <label for="debugLogging" class="form-check-label">Logs détaillés (mode debug)</label>
                     </div>
-                </div>
-                
-                <div class="form-group">
-                    <div class="form-check">
-                        <input type="checkbox" id="debugMode" name="debug_mode" value="true" {% if config.debug_mode|default(false) %}checked{% endif %} class="form-check-input">
-                        <label for="debugMode" class="form-check-label">Mode debug (plus de logs détaillés)</label>
-                    </div>
+                    <p class="form-hint">Active les logs DEBUG pour le débogage</p>
                 </div>
             </fieldset>
-            
-            <div class="form-row mt-lg">
-                <div class="form-group">
-                    <button type="submit" class="btn btn--primary" aria-label="Enregistrer les paramètres généraux">💾 Enregistrer les paramètres</button>
-                    <button type="button" class="btn btn--secondary" onclick="resetGeneralConfig()" aria-label="Réinitialiser les paramètres généraux">↺ Réinitialiser</button>
-                </div>
-            </div>
         </form>
     </section>
 
@@ -73,102 +62,119 @@
     <section aria-labelledby="network-config-title">
         <h3 id="network-config-title" class="config-section-title">🌐 Paramètres réseau</h3>
         
-        <form id="networkConfigForm" action="/save_network_config" method="POST" class="mt-lg" aria-label="Formulaire de configuration réseau">
-            <fieldset>
-                <legend class="sr-only">Paramètres réseau</legend>
-                <div class="form-row">
-                    <div class="form-group">
-                        <label for="maxConnections" class="form-label">Connexions simultanées maximales</label>
-                        <input type="number" id="maxConnections" name="max_connections" value="{{ config.max_connections|default(5) }}" min="1" max="20" class="form-control form-input config-input-narrow" aria-describedby="maxConnectionsHelp">
-                        <p id="maxConnectionsHelp" class="form-hint">Nombre maximum de connexions FTP simultanées</p>
-                    </div>
-                    <div class="form-group">
-                        <label for="connectionTimeout" class="form-label">Timeout de connexion (secondes)</label>
-                        <input type="number" id="connectionTimeout" name="connection_timeout" value="{{ config.connection_timeout|default(30) }}" min="1" class="form-control form-input config-input-narrow" aria-describedby="connectionTimeoutHelp">
-                        <p id="connectionTimeoutHelp" class="form-hint">Temps maximal pour établir une connexion</p>
-                    </div>
-                </div>
-                
-                <div class="form-row">
-                    <div class="form-group">
-                        <label for="retryAttempts" class="form-label">Nombre de tentatives de reconnexion</label>
-                        <input type="number" id="retryAttempts" name="retry_attempts" value="{{ config.retry_attempts|default(3) }}" min="0" max="10" class="form-control form-input config-input-narrow" aria-describedby="retryAttemptsHelp">
-                        <p id="retryAttemptsHelp" class="form-hint">Nombre de tentatives avant d'abandonner</p>
-                    </div>
-                    <div class="form-group">
-                        <label for="retryDelay" class="form-label">Délai entre tentatives (secondes)</label>
-                        <input type="number" id="retryDelay" name="retry_delay" value="{{ config.retry_delay|default(5) }}" min="0" max="60" class="form-control form-input config-input-narrow" aria-describedby="retryDelayHelp">
-                        <p id="retryDelayHelp" class="form-hint">Temps d'attente entre chaque tentative de reconnexion</p>
-                    </div>
-                </div>
-            </fieldset>
-            
-            <div class="form-row mt-lg">
+        <div class="mt-lg">
+            <div class="form-row">
                 <div class="form-group">
-                    <button type="submit" class="btn btn--primary" aria-label="Enregistrer les paramètres réseau">💾 Enregistrer</button>
-                    <button type="button" class="btn btn--secondary" onclick="resetNetworkConfig()" aria-label="Réinitialiser les paramètres réseau">↺ Réinitialiser</button>
+                    <label for="connectionTimeout" class="form-label">Timeout de connexion (secondes)</label>
+                    <input type="number" id="connectionTimeout" name="connection_timeout" value="{{ config.connection_timeout|default(30) }}" min="1" class="form-control form-input config-input-narrow" aria-describedby="connectionTimeoutHelp" form="mainConfigForm">
+                    <p id="connectionTimeoutHelp" class="form-hint">Temps maximal pour établir une connexion</p>
+                </div>
+                <div class="form-group">
+                    <label for="maxConnections" class="form-label">Connexions simultanées maximales</label>
+                    <input type="number" id="maxConnections" name="max_connections" value="{{ config.max_connections|default(5) }}" min="1" max="20" class="form-control form-input config-input-narrow" aria-describedby="maxConnectionsHelp" form="mainConfigForm">
+                    <p id="maxConnectionsHelp" class="form-hint">Nombre maximum de connexions FTP simultanées</p>
                 </div>
             </div>
-        </form>
+            
+            <div class="form-row">
+                <div class="form-group">
+                    <label for="retryAttempts" class="form-label">Tentatives de reconnexion</label>
+                    <input type="number" id="retryAttempts" name="retry_attempts" value="{{ config.retry_attempts|default(3) }}" min="0" max="10" class="form-control form-input config-input-narrow" aria-describedby="retryAttemptsHelp" form="mainConfigForm">
+                    <p id="retryAttemptsHelp" class="form-hint">Nombre de tentatives avant d'abandonner</p>
+                </div>
+                <div class="form-group">
+                    <label for="retryDelay" class="form-label">Délai entre tentatives (secondes)</label>
+                    <input type="number" id="retryDelay" name="retry_delay" value="{{ config.retry_delay|default(5) }}" min="0" max="60" class="form-control form-input config-input-narrow" aria-describedby="retryDelayHelp" form="mainConfigForm">
+                    <p id="retryDelayHelp" class="form-hint">Temps d'attente entre chaque tentative</p>
+                </div>
+            </div>
+        </div>
     </section>
 
     <!-- Sync Configuration -->
     <section aria-labelledby="sync-config-title">
         <h3 id="sync-config-title" class="config-section-title">🔄 Paramètres de synchronisation</h3>
         
-        <form id="syncConfigForm" action="/save_sync_config" method="POST" class="mt-lg" aria-label="Formulaire de configuration de synchronisation">
-            <fieldset>
-                <legend class="sr-only">Paramètres de synchronisation</legend>
-                <div class="form-row">
-                    <div class="form-group">
-                        <label for="largeFileThreshold" class="form-label">Seuil fichier volumineux (Mo)</label>
-                        <input type="number" id="largeFileThreshold" name="large_file_threshold" value="{{ config.large_file_threshold|default(50) }}" min="1" class="form-control form-input config-input-narrow" aria-describedby="largeFileThresholdHelp">
-                        <p id="largeFileThresholdHelp" class="form-hint">Fichiers supérieurs à ce seuil utiliseront un timeout plus long</p>
-                    </div>
-                    <div class="form-group">
-                        <label for="largeFileTimeout" class="form-label">Timeout fichier volumineux (minutes)</label>
-                        <input type="number" id="largeFileTimeout" name="large_file_timeout" value="{{ config.large_file_timeout|default(30) }}" min="1" class="form-control form-input config-input-narrow" aria-describedby="largeFileTimeoutHelp">
-                        <p id="largeFileTimeoutHelp" class="form-hint">Timeout pour les fichiers dépassant le seuil</p>
-                    </div>
-                </div>
-                
-                <div class="form-row">
-                    <div class="form-group">
-                        <label for="smallFileTimeout" class="form-label">Timeout fichier standard (minutes)</label>
-                        <input type="number" id="smallFileTimeout" name="small_file_timeout" value="{{ config.small_file_timeout|default(10) }}" min="1" class="form-control form-input config-input-narrow" aria-describedby="smallFileTimeoutHelp">
-                        <p id="smallFileTimeoutHelp" class="form-hint">Timeout pour les fichiers sous le seuil</p>
-                    </div>
-                    <div class="form-group">
-                        <label for="bufferSize" class="form-label">Taille du buffer (Ko)</label>
-                        <input type="number" id="bufferSize" name="buffer_size" value="{{ config.buffer_size|default(8192) }}" min="1024" step="1024" class="form-control form-input config-input-narrow" aria-describedby="bufferSizeHelp">
-                        <p id="bufferSizeHelp" class="form-hint">Taille du buffer de transfert en kilo-octets</p>
-                    </div>
-                </div>
-                
+        <div class="mt-lg">
+            <div class="form-row">
                 <div class="form-group">
-                    <div class="form-check">
-                        <input type="checkbox" id="verifyChecksum" name="verify_checksum" value="true" {% if config.verify_checksum|default(false) %}checked{% endif %} class="form-check-input">
-                        <label for="verifyChecksum" class="form-check-label">Vérifier la somme de contrôle (MD5) après transfert</label>
-                    </div>
-                    <p class="form-hint" id="verifyChecksumHelp">Vérifie l'intégrité des fichiers transférés (peut ralentir la synchronisation)</p>
+                    <label for="largeFileThreshold" class="form-label">Seuil fichier volumineux (Mo)</label>
+                    <input type="number" id="largeFileThreshold" name="large_file_threshold_mb" value="{{ config.large_file_threshold_mb|default(50) }}" min="1" class="form-control form-input config-input-narrow" aria-describedby="largeFileThresholdHelp" form="mainConfigForm">
+                    <p id="largeFileThresholdHelp" class="form-hint">Fichiers supérieurs à ce seuil utiliseront un timeout plus long</p>
                 </div>
-                
                 <div class="form-group">
-                    <div class="form-check">
-                        <input type="checkbox" id="deleteSourceAfterSync" name="delete_source_after_sync" value="true" {% if config.delete_source_after_sync|default(false) %}checked{% endif %} class="form-check-input" aria-describedby="deleteSourceHelp">
-                        <label for="deleteSourceAfterSync" class="form-check-label">Supprimer les fichiers source après synchronisation</label>
-                    </div>
-                    <p class="form-error" id="deleteSourceHelp">⚠️ Attention: cette option supprimera les fichiers locaux après transfert réussi</p>
-                </div>
-            </fieldset>
-            
-            <div class="form-row mt-lg">
-                <div class="form-group">
-                    <button type="submit" class="btn btn--primary" aria-label="Enregistrer les paramètres de synchronisation">💾 Enregistrer</button>
-                    <button type="button" class="btn btn--secondary" onclick="resetSyncConfig()" aria-label="Réinitialiser les paramètres de synchronisation">↺ Réinitialiser</button>
+                    <label for="largeFileTimeout" class="form-label">Timeout fichier volumineux (secondes)</label>
+                    <input type="number" id="largeFileTimeout" name="large_file_timeout" value="{{ config.large_file_timeout|default(60) }}" min="1" class="form-control form-input config-input-narrow" aria-describedby="largeFileTimeoutHelp" form="mainConfigForm">
+                    <p id="largeFileTimeoutHelp" class="form-hint">Timeout pour les fichiers dépassant le seuil</p>
                 </div>
             </div>
-        </form>
+            
+            <div class="form-row">
+                <div class="form-group">
+                    <label for="smallFileTimeout" class="form-label">Timeout fichier standard (secondes)</label>
+                    <input type="number" id="smallFileTimeout" name="small_file_timeout" value="{{ config.small_file_timeout|default(10) }}" min="1" class="form-control form-input config-input-narrow" aria-describedby="smallFileTimeoutHelp" form="mainConfigForm">
+                    <p id="smallFileTimeoutHelp" class="form-hint">Timeout pour les fichiers sous le seuil</p>
+                </div>
+                <div class="form-group">
+                    <label for="taskSaveThrottle" class="form-label">Seuil sauvegarde tâche</label>
+                    <input type="number" id="taskSaveThrottle" name="task_save_throttle" value="{{ config.task_save_throttle|default(10) }}" min="1" class="form-control form-input config-input-narrow" aria-describedby="taskSaveThrottleHelp" form="mainConfigForm">
+                    <p id="taskSaveThrottleHelp" class="form-hint">Nombre de fichiers entre chaque sauvegarde pendant la synchronisation</p>
+                </div>
+            </div>
+            
+            <div class="form-group">
+                <label for="excludePatterns" class="form-label">Patterns à exclure</label>
+                <input type="text" id="excludePatterns" name="exclude_patterns" value="{{ config.exclude_patterns|default('*.tmp,*.part,*.temp,*.~lk,*.lock,Thumbs.db,desktop.ini') }}" class="form-control form-input" aria-describedby="excludePatternsHelp" form="mainConfigForm">
+                <p id="excludePatternsHelp" class="form-hint">Séparés par des virgules, ex: *.tmp,*.log</p>
+            </div>
+        </div>
+    </section>
+
+    <!-- Log Configuration -->
+    <section aria-labelledby="log-config-title">
+        <h3 id="log-config-title" class="config-section-title">📝 Paramètres des logs</h3>
+        
+        <div class="mt-lg">
+            <div class="form-row">
+                <div class="form-group">
+                    <label for="logRetentionDays" class="form-label">Rétention des logs (jours)</label>
+                    <input type="number" id="logRetentionDays" name="log_retention_days" value="{{ config.log_retention_days|default(7) }}" min="1" class="form-control form-input config-input-narrow" aria-describedby="logRetentionDaysHelp" form="mainConfigForm">
+                    <p id="logRetentionDaysHelp" class="form-hint">Nombre de jours de conservation des logs</p>
+                </div>
+                <div class="form-group">
+                    <label for="logRefreshInterval" class="form-label">Rafraîchissement logs (secondes)</label>
+                    <input type="number" id="logRefreshInterval" name="log_refresh_interval" value="{{ config.log_refresh_interval|default(3) }}" min="1" class="form-control form-input config-input-narrow" aria-describedby="logRefreshIntervalHelp" form="mainConfigForm">
+                    <p id="logRefreshIntervalHelp" class="form-hint">Intervalle de rafraîchissement automatique des logs</p>
+                </div>
+            </div>
+            
+            <div class="form-group">
+                <label for="logLevel" class="form-label">Niveau de log</label>
+                <select id="logLevel" name="log_level" class="form-control form-select" form="mainConfigForm" aria-describedby="logLevelHelp">
+                    <option value="DEBUG" {% if config.log_level|default('INFO') == 'DEBUG' %}selected{% endif %}>DEBUG</option>
+                    <option value="INFO" {% if config.log_level|default('INFO') == 'INFO' %}selected{% endif %}>INFO</option>
+                    <option value="WARNING" {% if config.log_level|default('INFO') == 'WARNING' %}selected{% endif %}>WARNING</option>
+                    <option value="ERROR" {% if config.log_level|default('INFO') == 'ERROR' %}selected{% endif %}>ERROR</option>
+                </select>
+                <p id="logLevelHelp" class="form-hint">Niveau de détail des logs</p>
+            </div>
+            
+            <div class="form-group">
+                <label for="corruptedCheckInterval" class="form-label">Vérification fichiers corrompus (secondes)</label>
+                <input type="number" id="corruptedCheckInterval" name="corrupted_files_check_interval" value="{{ config.corrupted_files_check_interval|default(300) }}" min="1" class="form-control form-input config-input-narrow" aria-describedby="corruptedCheckIntervalHelp" form="mainConfigForm">
+                <p id="corruptedCheckIntervalHelp" class="form-hint">Intervalle de vérification des fichiers corrompus (0 = désactivé)</p>
+            </div>
+        </div>
+    </section>
+    
+    <!-- Submit Button -->
+    <section class="mt-lg">
+        <div class="form-row">
+            <div class="form-group">
+                <button type="submit" form="mainConfigForm" class="btn btn--primary" aria-label="Enregistrer toute la configuration">💾 Enregistrer toute la configuration</button>
+                <button type="button" class="btn btn--secondary" onclick="resetMainConfig()" aria-label="Réinitialiser la configuration">↺ Réinitialiser</button>
+            </div>
+        </div>
     </section>
 
     <!-- Danger Zone -->
@@ -202,21 +208,9 @@
 {% block scripts %}
 {{ super() }}
 <script>
-    function resetGeneralConfig() {
-        if (confirm('Réinitialiser les paramètres généraux ?')) {
-            document.getElementById('generalConfigForm').reset();
-        }
-    }
-    
-    function resetNetworkConfig() {
-        if (confirm('Réinitialiser les paramètres réseau ?')) {
-            document.getElementById('networkConfigForm').reset();
-        }
-    }
-    
-    function resetSyncConfig() {
-        if (confirm('Réinitialiser les paramètres de synchronisation ?')) {
-            document.getElementById('syncConfigForm').reset();
+    function resetMainConfig() {
+        if (confirm('Réinitialiser toute la configuration aux valeurs par défaut ?')) {
+            document.getElementById('mainConfigForm').reset();
         }
     }
     
@@ -271,26 +265,81 @@
         }
     }
     
-    // Form submission handlers with loading states
-    function handleFormSubmit(form, url, successMessage = 'Configuration enregistrée avec succès') {
+    // Form submission handler for main config form
+    function handleMainConfigSubmit(e) {
+        e.preventDefault();
+        
+        const form = document.getElementById('mainConfigForm');
         const submitBtn = form.querySelector('button[type="submit"]');
+        
         if (submitBtn && window.SyncFTP) {
             window.SyncFTP.toggleButtonLoading(submitBtn, true);
             window.SyncFTP.announce('Enregistrement en cours...');
         }
         
+        // Collect all form data including fields outside the form element
         const formData = new FormData(form);
-        fetch(url, {
+        
+        // Add fields from network, sync, and log sections that are associated with mainConfigForm
+        const externalFields = document.querySelectorAll('[form="mainConfigForm"]');
+        externalFields.forEach(field => {
+            if (field.name && !formData.has(field.name)) {
+                formData.append(field.name, field.value);
+            }
+        });
+        
+        // Get all checkboxes in the form to handle unchecked ones
+        const allCheckboxes = form.querySelectorAll('input[type="checkbox"]');
+        allCheckboxes.forEach(checkbox => {
+            if (checkbox.form && checkbox.form.id === 'mainConfigForm') {
+                if (!formData.has(checkbox.name)) {
+                    formData.append(checkbox.name, 'false');
+                }
+            }
+        });
+        
+        // Also handle external checkboxes
+        const externalCheckboxes = document.querySelectorAll('[form="mainConfigForm"][type="checkbox"]');
+        externalCheckboxes.forEach(checkbox => {
+            if (!formData.has(checkbox.name)) {
+                formData.append(checkbox.name, 'false');
+            }
+        });
+        
+        // Convert to JSON for the API
+        const configData = {};
+        formData.forEach((value, key) => {
+            // Handle checkboxes
+            if (key.endsWith('[]')) {
+                // Skip array fields for now
+                return;
+            }
+            // Handle checkbox values
+            if (value === 'true' || value === 'on' || value === true) {
+                configData[key] = true;
+            } else if (value === 'false' || value === false) {
+                configData[key] = false;
+            } else {
+                // Try to convert to number if possible
+                const numValue = Number(value);
+                configData[key] = !isNaN(numValue) ? numValue : value;
+            }
+        });
+        
+        fetch('/api/config', {
             method: 'POST',
-            body: formData
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify(configData)
         }).then(response => response.json())
           .then(data => {
               if (submitBtn && window.SyncFTP) {
                   window.SyncFTP.toggleButtonLoading(submitBtn, false);
               }
               if (data.success) {
-                  window.SyncFTP.announce(successMessage);
-                  alert(successMessage);
+                  window.SyncFTP.announce('Configuration enregistrée avec succès');
+                  alert('Configuration enregistrée avec succès');
                   location.reload();
               } else {
                   window.SyncFTP.announce('Erreur: ' + (data.message || 'Impossible d\'enregistrer'));
@@ -302,24 +351,12 @@
                   window.SyncFTP.toggleButtonLoading(submitBtn, false);
               }
               window.SyncFTP.announce('Erreur de connexion');
-              alert('Erreur de connexion');
+              alert('Erreur de connexion: ' + error.message);
           });
+        
         return false;
     }
     
-    document.getElementById('generalConfigForm').addEventListener('submit', function(e) {
-        e.preventDefault();
-        handleFormSubmit(this, '/save_config', 'Configuration générale enregistrée avec succès');
-    });
-    
-    document.getElementById('networkConfigForm').addEventListener('submit', function(e) {
-        e.preventDefault();
-        handleFormSubmit(this, '/save_network_config', 'Configuration réseau enregistrée avec succès');
-    });
-    
-    document.getElementById('syncConfigForm').addEventListener('submit', function(e) {
-        e.preventDefault();
-        handleFormSubmit(this, '/save_sync_config', 'Configuration de synchronisation enregistrée avec succès');
-    });
+    document.getElementById('mainConfigForm').addEventListener('submit', handleMainConfigSubmit);
 </script>
 {% endblock %}

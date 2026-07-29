@@ -113,7 +113,11 @@ def load_config():
         'task_save_throttle': 10,  # Nombre de fichiers entre chaque sauvegarde pendant la sync
         'small_file_timeout': 10,  # Timeout en secondes pour les petits fichiers
         'large_file_timeout': 60,  # Timeout en secondes pour les gros fichiers (> threshold)
-        'large_file_threshold_mb': 50  # Seuil en Mo pour les gros fichiers
+        'large_file_threshold_mb': 50,  # Seuil en Mo pour les gros fichiers
+        'connection_timeout': 30,  # Timeout de connexion en secondes
+        'max_connections': 5,  # Nombre maximum de connexions simultanées
+        'retry_attempts': 3,  # Nombre de tentatives de reconnexion
+        'retry_delay': 5  # Délai entre les tentatives en secondes
     }
     if not os.path.exists(CONFIG_FILE):
         save_config(default_config)
@@ -142,6 +146,18 @@ def load_config():
             save_config(config)
         if 'large_file_threshold_mb' not in config:
             config['large_file_threshold_mb'] = 50
+            save_config(config)
+        if 'connection_timeout' not in config:
+            config['connection_timeout'] = 30
+            save_config(config)
+        if 'max_connections' not in config:
+            config['max_connections'] = 5
+            save_config(config)
+        if 'retry_attempts' not in config:
+            config['retry_attempts'] = 3
+            save_config(config)
+        if 'retry_delay' not in config:
+            config['retry_delay'] = 5
             save_config(config)
         return config
     except Exception as e:
