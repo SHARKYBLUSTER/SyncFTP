@@ -14,6 +14,7 @@ Utilisation:
 
 import os
 import json
+import re
 import argparse
 import logging
 import threading
@@ -243,20 +244,54 @@ def cleanup_old_logs():
         app.logger.error(f"Erreur lors du nettoyage des logs: {e}")
 
 
-def filter_logs(logs, log_type=None):
-    """Filtre les logs par type"""
-    if not log_type or log_type == 'ALL':
-        return logs
+def filter_logs(logs, log_type=None, level=None, search=None, limit=None):
+    """Filtre les logs par type, niveau, recherche et limite"""
+    if not logs or logs.strip() == "":
+        return []
     
+    lines = logs.split('\n')
     filtered_lines = []
-    for line in logs.split('\n'):
-        # Exclure les logs des requêtes API 200 du filtre INFO
-        if log_type == 'INFO' and ('" 200 ' in line or '" 200-' in line):
-            continue
-        if f'] {log_type}:' in line:
-            filtered_lines.append(line)
     
-    return '\n'.join(filtered_lines)
+    for line in lines:
+        if not line.strip():
+            continue
+            
+        # Filtrer par type (ancienne méthode pour compatibilité)
+        if log_type and log_type != 'ALL':
+            if log_type == 'INFO' and ('" 200 ' in line or '" 200-' in line):
+                continue
+            if f'] {log_type}:' not in line:
+                continue
+        
+        # Filtrer par niveau (nouveau système)
+        if level and level != '':
+            # Extraire le niveau du log (format: [timestamp] LEVEL: message)
+            level_match = re.search(r'\] (INFO|WARNING|ERROR|SUCCESS|DEBUG):', line)
+            if level_match:
+                log_level = level_match.group(1)
+                if log_level != level:
+                    continue
+            else:
+                # Si on ne trouve pas le niveau, on saute
+                if 'INFO' not in line and 'WARNING' not in line and 'ERROR' not in line and 'SUCCESS' not in line and 'DEBUG' not in line:
+                    continue
+        
+        # Filtrer par recherche
+        if search and search != '':
+            if search.lower() not in line.lower():
+                continue
+        
+        filtered_lines.append(line)
+    
+    # Appliquer la limite (du plus récent au plus ancien)
+    if limit and limit != '':
+        try:
+            limit_num = int(limit)
+            filtered_lines = filtered_lines[:limit_num]
+        except ValueError:
+            pass
+    
+    return filtered_lines
 
 
 def load_servers():
@@ -788,6 +823,9 @@ def recreate_file_handler():
 def api_logs():
     """API: Retourne ou efface le contenu des logs"""
     log_type = request.args.get('type', 'ALL')
+    level = request.args.get('level', '')
+    search = request.args.get('search', '')
+    limit = request.args.get('limit', '')
     
     if request.method == 'DELETE':
         try:
@@ -813,8 +851,32 @@ def api_logs():
             return jsonify({'success': False, 'message': str(e)}), 500
     else:
         logs = get_logs()
-        filtered_logs = filter_logs(logs, log_type)
-        return jsonify({'logs': filtered_logs})
+        filtered_logs = filter_logs(logs, log_type, level, search, limit)
+        
+        # Formater les logs pour le frontend
+        log_entries = []
+        for line in filtered_logs:
+            if line.strip():
+                # Parser la ligne de log: [timestamp] LEVEL: message
+                match = re.match(r'\[([^\]]+)\] (INFO|WARNING|ERROR|SUCCESS|DEBUG): (.+)', line)
+                if match:
+                    timestamp = match.group(1)
+                    level_str = match.group(2)
+                    message = match.group(3)
+                    log_entries.append({
+                        'timestamp': timestamp,
+                        'level': level_str,
+                        'message': message
+                    })
+                else:
+                    # Format alternatif ou ligne mal formatée
+                    log_entries.append({
+                        'timestamp': '',
+                        'level': 'INFO',
+                        'message': line.strip()
+                    })
+        
+        return jsonify({'logs': log_entries})
 
 
 @app.route('/api/config', methods=['GET', 'POST'])

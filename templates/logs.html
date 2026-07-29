@@ -83,7 +83,11 @@
     let autoScrollEnabled = false;
     
     function refreshLogs() {
-        fetch('/api/logs')
+        const levelFilter = document.getElementById('logLevelFilter').value;
+        const searchQuery = document.getElementById('logSearch').value;
+        const limit = document.getElementById('logLimit').value;
+        
+        fetch(`/api/logs?level=${levelFilter}&search=${encodeURIComponent(searchQuery)}&limit=${limit}`)
             .then(response => response.json())
             .then(data => {
                 const logsContent = document.getElementById('logsContent');
@@ -111,37 +115,12 @@
     }
     
     function filterLogs() {
-        const levelFilter = document.getElementById('logLevelFilter').value;
-        const searchQuery = document.getElementById('logSearch').value.toLowerCase();
-        const limit = document.getElementById('logLimit').value;
-        
-        fetch(`/api/logs?level=${levelFilter}&search=${encodeURIComponent(searchQuery)}&limit=${limit}`)
-            .then(response => response.json())
-            .then(data => {
-                const logsContent = document.getElementById('logsContent');
-                let html = '';
-                
-                if (data.logs && data.logs.length > 0) {
-                    data.logs.forEach(log => {
-                        html += `
-                            <div class="log-entry log-entry--${log.level.toLowerCase()}">
-                                <span class="log-timestamp">${log.timestamp}</span>
-                                <span class="log-level">${log.level}</span>
-                                <span class="log-message">${escapeHtml(log.message)}</span>
-                            </div>
-                        `;
-                    });
-                } else {
-                    html = '<div class="log-entry"><span class="log-message text-muted">Aucun log trouvé avec ces filtres</span></div>';
-                }
-                
-                logsContent.innerHTML = html;
-            });
+        refreshLogs();
     }
     
     function clearLogs() {
         if (confirm('Êtes-vous sûr de vouloir effacer tous les logs ?')) {
-            fetch('/api/logs/clear', { method: 'POST' })
+            fetch('/api/logs', { method: 'DELETE' })
                 .then(response => response.json())
                 .then(data => {
                     if (data.success) {
@@ -158,6 +137,7 @@
         const btn = document.getElementById('autoScrollBtn');
         btn.textContent = autoScrollEnabled ? '📍 Suivre: ACTIF' : '📍 Suivre';
         if (autoScrollEnabled) {
+            refreshLogs();
             scrollToBottom();
         }
     }
