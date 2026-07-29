@@ -45,10 +45,10 @@
 
 /* Log Entry */
 .log-entry {
-    padding: var(--spacing-xs) 0;
+    padding: var(--spacing-sm) 0;
     border-bottom: var(--border-width-thin) solid var(--color-gray-800);
     display: flex;
-    align-items: center;
+    align-items: flex-start;
     gap: var(--spacing-sm);
 }
 
@@ -72,15 +72,16 @@
     width: 80px;
     font-weight: var(--font-weight-semibold);
     white-space: nowrap;
+    font-size: var(--font-size-xs);
 }
 
 /* Log Message */
 .log-message {
     flex: 1;
     color: var(--color-gray-300);
-    white-space: nowrap;
-    overflow: hidden;
-    text-overflow: ellipsis;
+    white-space: pre-wrap;
+    word-break: break-all;
+    font-size: var(--font-size-xs);
 }
 
 /* Log Entry by Level */

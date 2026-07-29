@@ -1,6 +1,6 @@
 # SyncFTP
 
-**Version 2.5.4**
+**Version 2.5.5**
 
 **Application Web de Gestion et Synchronisation FTP**
 
@@ -286,6 +286,7 @@ Licence libre - Utilisation, modification et distribution autorisées.
 
 ## Historique des versions
 
+- **2.5.5** - Correction affichage logs (taille réduite et retour à la ligne), suppression fichier sync_tasks copy.json
 - **2.5.4** - Exclusion des répertoires .github/ et .stfolder/ par défaut, amélioration exclusion répertoires, textarea plus large pour les patterns
 - **2.5.3** - Ajout section mise à jour via git pull dans README
 - **2.5.2** - Correction réactivation bouton arrêt serveur
