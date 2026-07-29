@@ -548,6 +548,12 @@ def execute_sync_task(task):
         'timestamp': datetime.now().isoformat()
     }
     
+    # Vérifier si la tâche est activée
+    if not task.get('enabled', True):
+        result['message'] = f"Tâche désactivée: {task['name']}"
+        app.logger.warning(result['message'])
+        return result
+    
     # Acquérir le verrou global pour éviter les conflits
     with sync_lock:
         try:
@@ -1397,6 +1403,10 @@ def run_task(task_id):
     
     if not task:
         return jsonify({'success': False, 'message': 'Tâche non trouvée'}), 404
+    
+    # Vérifier si la tâche est activée
+    if not task.get('enabled', True):
+        return jsonify({'success': False, 'message': f"Tâche désactivée: {task['name']}. Activez-la d'abord."}), 400
     
     result = execute_sync_task(task)
     
