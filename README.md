@@ -1,6 +1,6 @@
 # SyncFTP
 
-**Version 2.0.0**
+**Version 2.5.0**
 
 **Application Web de Gestion et Synchronisation FTP**
 
@@ -266,5 +266,6 @@ Licence libre - Utilisation, modification et distribution autorisées.
 
 ## Historique des versions
 
+- **2.5.0** - Affichage des fichiers échoués par tâche sur le tableau de bord, suppression du copyright, améliorations UI
 - **2.0.0** - Mise à jour majeure de l'UI, correction des bugs, amélioration des fonctionnalités
 - **1.0.0** - Version initiale

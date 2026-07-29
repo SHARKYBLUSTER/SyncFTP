@@ -31,7 +31,7 @@ logging.SUCCESS = 25
 
 # Configuration
 APP_NAME = "SyncFTP"
-APP_VERSION = "2.0.0"
+APP_VERSION = "2.5.0"
 DATA_FILE = "ftp_servers.json"
 TASKS_FILE = "sync_tasks.json"
 LOG_FILE = "app.log"
