@@ -898,6 +898,7 @@ class FTPConnector:
                             # Calculer la vitesse moyenne et l'heure estimée
                             current_time = time.time()
                             elapsed_time = current_time - transfer_start_time
+                            stats['duration_seconds'] = elapsed_time
                             if elapsed_time > 0:
                                 stats['average_speed_bps'] = stats['total_bytes_transferred'] / elapsed_time
                                 stats['average_speed_fps'] = stats['uploaded'] / elapsed_time
