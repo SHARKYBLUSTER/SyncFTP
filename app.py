@@ -1389,24 +1389,6 @@ def delete_task(task_id):
     return jsonify({'success': True, 'message': 'Tâche supprimée avec succès'})
 
 
-@app.route('/toggle_task/<task_id>', methods=['POST'])
-def toggle_task(task_id):
-    """Active ou désactive une tâche de synchronisation"""
-    tasks = load_tasks()
-    task = next((t for t in tasks if t['id'] == task_id), None)
-    
-    if not task:
-        return jsonify({'success': False, 'message': 'Tâche non trouvée'}), 404
-    
-    # Toggle l'état enabled
-    task['enabled'] = not task.get('enabled', False)
-    save_tasks(tasks)
-    
-    app.logger.info(f"Tâche {task_id} {'activée' if task['enabled'] else 'désactivée'}")
-    
-    return jsonify({'success': True, 'enabled': task['enabled']})
-
-
 @app.route('/run_task/<task_id>', methods=['POST'])
 def run_task(task_id):
     """Exécute immédiatement une tâche de synchronisation"""
