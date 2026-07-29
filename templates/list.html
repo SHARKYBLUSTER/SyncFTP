@@ -314,7 +314,13 @@
         testBtnText.textContent = 'Test en cours...';
         testBtnLoading.classList.remove('d-none');
 
-        fetch('/test_server/' + serverId)
+        fetch('/test_server/' + serverId, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/x-www-form-urlencoded',
+            },
+            body: 'server_id=' + encodeURIComponent(serverId)
+        })
             .then(response => response.json())
             .then(data => {
                 closeModal();
@@ -342,13 +348,14 @@
         resultsDiv.innerHTML = html;
     }
 
-    // Event listeners for test buttons
-    document.querySelectorAll('.test-btn').forEach(btn => {
-        btn.addEventListener('click', function() {
-            const serverId = this.getAttribute('data-server-id');
+    // Event listeners for test buttons using event delegation
+    document.addEventListener('click', function(e) {
+        if (e.target.closest('.test-btn')) {
+            const btn = e.target.closest('.test-btn');
+            const serverId = btn.getAttribute('data-server-id');
             document.getElementById('serverSelect').value = serverId;
             openModal();
-        });
+        }
     });
 
     // Add Server Modal Functions
